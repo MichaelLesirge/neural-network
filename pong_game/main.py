@@ -12,10 +12,12 @@ WINDOW_NAME = "Pong Game"
 FRAMERATE = 60
 
 BALL_SIZE = 10
+BALL_MAX_VELOCITY = 6
+
 BALL_START_LOCATION = 0.07, 0.1
 BALL_START_SLOPE = 2 / 1
-BALL_START_VELOCITY = 1.3
-BALL_BOUNCE_VELOCITY_MULTIPLYER = 1.1
+BALL_START_VELOCITY = 2
+BALL_BOUNCE_VELOCITY_INCREACE = 0.1
 
 PADDLE_START_LOCATION = 0.06, 0.5
 NORMAL_PADDLE_SIZE = 0.01, 0.2
@@ -35,7 +37,7 @@ def main():
 
     ball = Ball(
         BALL_SIZE, to_rect_relitive_points(screen_rect, BALL_START_LOCATION),
-        BALL_START_SLOPE, BALL_START_VELOCITY
+        BALL_START_SLOPE, BALL_START_VELOCITY, BALL_MAX_VELOCITY
     )
 
     player1 = HumanPaddle(
@@ -69,7 +71,7 @@ def main():
 
         if ball.rect.collideobjects((player1.rect, player2.rect)):
             ball.bounce_x()
-            ball.add_velocity(BALL_BOUNCE_VELOCITY_MULTIPLYER)
+            ball.add_velocity(BALL_BOUNCE_VELOCITY_INCREACE)
 
         player1_lost = ball.rect.right < screen_rect.left
         player2_lost = ball.rect.left > screen_rect.right
