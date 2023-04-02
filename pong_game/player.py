@@ -1,41 +1,32 @@
 import pygame
+from utils import rect_centered_point 
 
 SPEED = 3
 
 class PaddleBase(pygame.sprite.Sprite):
-    def __init__(self, screen_rect: pygame.rect.Rect, start_position: tuple[int, int], size: tuple[int, int]) -> None:
+    def __init__(self, start_position: tuple[int, int], size: tuple[int, int]) -> None:
         super().__init__()
-        
-        self.screen_rect = screen_rect
         
         self.image = pygame.Surface(size)
         self.image.fill("white")
         
         self.rect = self.image.get_rect()
         
-        self.start_x, self.start_y = start_position[0] - size[0] // 2, start_position[1] - size[1] // 2
-        self.to_start_position()
-    
-    def to_start_position(self) -> None:
-        self.x, self.y = self.start_x, self.start_y
-        
+        self.rect.x, self.rect.y = rect_centered_point(self.rect, start_position)
+        self.start_position = start_position
+                    
     def go_up(self) -> None:
-        self.y -= SPEED
-        if self.rect.top <= self.screen_rect.top:
-            self.y = self.screen_rect.top
+        self.rect.y -= SPEED
     
     def go_down(self) -> None:
-        self.y += SPEED
-        if self.rect.bottom >= self.screen_rect.bottom:
-            self.y = self.screen_rect.bottom - self.rect.height
+        self.rect.y += SPEED
     
     def update(self) -> None:
-        self.rect.x = self.x
-        self.rect.y = self.y
+        pass
 
 class HumanPaddle(PaddleBase):
-    def __init__(self, screen_rect: pygame.rect.Rect, start_position: tuple[int, int], size: tuple[int, int], up_key, down_key) -> None:
-        super().__init__(screen_rect, start_position, size)
+    def __init__(self, start_position: tuple[int, int], size: tuple[int, int], up_key, down_key) -> None:
+        super().__init__(start_position, size)
         
         self.up_key = up_key
         self.down_key = down_key
@@ -48,10 +39,11 @@ class HumanPaddle(PaddleBase):
         if keys[self.down_key]: self.go_down()
         
         super().update()
+        
 
 class AiPaddle(PaddleBase):
-    def __init__(self, screen_rect: pygame.rect.Rect, start_position: tuple[int, int], size: tuple[int, int], network) -> None:
-        super().__init__(screen_rect, start_position, size)
+    def __init__(self, start_position: tuple[int, int], size: tuple[int, int], network) -> None:
+        super().__init__(start_position, size)
         
         self.network = network
         
