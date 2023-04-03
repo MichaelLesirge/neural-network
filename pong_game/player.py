@@ -1,11 +1,13 @@
 import pygame
 from utils import rect_centered_point 
 
-SPEED = 3
+SPEED = 5
 
 class PaddleBase(pygame.sprite.Sprite):
     def __init__(self, start_position: tuple[int, int], size: tuple[int, int]) -> None:
         super().__init__()
+        
+        self.score = 0
         
         self.image = pygame.Surface(size)
         self.image.fill("white")
@@ -14,6 +16,9 @@ class PaddleBase(pygame.sprite.Sprite):
         
         self.rect.x, self.rect.y = rect_centered_point(self.rect, start_position)
         self.start_position = start_position
+        
+    def add_score(self) -> None:
+        self.score += 1
                     
     def go_up(self) -> None:
         self.rect.y -= SPEED
