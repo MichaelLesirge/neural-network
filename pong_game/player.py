@@ -32,7 +32,7 @@ class PaddleBase(pygame.sprite.Sprite):
 class HumanPaddle(PaddleBase):
     def __init__(self, start_position: tuple[int, int], size: tuple[int, int], up_key, down_key) -> None:
         super().__init__(start_position, size)
-        
+            
         self.up_key = up_key
         self.down_key = down_key
         

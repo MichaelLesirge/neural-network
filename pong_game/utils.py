@@ -10,3 +10,6 @@ def to_rect_relitive_points(rect: pygame.rect.Rect, point: tuple[float, float], 
 
 def rect_centered_point(rect: pygame.rect.Rect, point: tuple[int, int]) -> tuple[int, int]:
     return point[0] - (rect.width // 2), point[1] - (rect.height // 2)
+
+def reverse_point(value: tuple[int, int], reverse_x = False, reverse_y = False) -> tuple[int, int]:
+    return (value[0] * (-1 if reverse_x else 1), value[1] * (-1 if reverse_y else 1))
