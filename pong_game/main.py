@@ -33,6 +33,8 @@ class BallConstants:
 class PaddleConstants:
     START_LOCATION = 0.06, 0.5
     PADDLE_SIZE = 0.005, 0.1
+    
+    TOP_AREA_SIZE = 1
 
 
 class Game:
@@ -95,6 +97,13 @@ class Game:
             player2_score_font.get_rect(),                                                     
             to_rect_relitive_points(self.screen_rect, GameConstants.SCORE_LOCATION, reverse_x=True))
         )
+    
+    def detect_ball_hit(self, player_rect: pygame.rect.Rect) -> bool:     
+        if self.ball.rect.colliderect(player_rect):
+            self.ball.bounce_x()
+            return True
+            
+        return False
 
     def update_screen(self) -> None:
         self.screen.fill("black")
@@ -107,14 +116,15 @@ class Game:
         # prevent paddles from leaving screen
         self.left_player.rect.clamp_ip(self.screen_rect)
         self.right_player.rect.clamp_ip(self.screen_rect)
-
-        if self.ball.rect.collideobjects((self.left_player.rect, self.right_player.rect)):
-            # ball hit a paddle
-            self.ball.bounce_x()
+        
+        hit_left = self.detect_ball_hit(self.left_player.rect)
+        hit_right = self.detect_ball_hit(self.right_player.rect)
+        
+        if hit_left or hit_right:
             self.ball.add_velocity(BallConstants.BOUNCE_VELOCITY_INCREACE)
+            
         
-        
-        elif self.ball.rect.right < self.screen_rect.left:
+        if self.ball.rect.right < self.screen_rect.left:
             # ball went over left side of wall
             self.ball_to_starting_position(to_reverse_side=True)
             self.right_player.add_score()
@@ -122,9 +132,7 @@ class Game:
         elif self.ball.rect.left > self.screen_rect.right:
             # ball went over right side of wall
             self.ball_to_starting_position(to_reverse_side=False)
-            self.left_player.add_score()
-
-                
+            self.left_player.add_score()         
 
         if self.ball.rect.top < self.screen_rect.top or self.ball.rect.bottom > self.screen_rect.bottom:
             # ball hit top or buttom

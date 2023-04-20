@@ -9,7 +9,7 @@ class Ball(pygame.sprite.Sprite):
 
         self.rect = self.image.get_rect()
         
-        self.start_velocity = 10
+        self.start_velocity = start_velocity
         self.max_velocity = max_velocity
         
         self.set_new_motion(start_position, start_slope)
