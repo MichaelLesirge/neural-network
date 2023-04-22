@@ -1,7 +1,7 @@
 import pygame
 from ball import Ball
 from player import HumanPaddle, AiPaddle, WallPaddle
-from utils import to_rect_relitive_points, rect_centered_point, to_size_relitive_value, reverse_point
+from utils import to_rect_relitive_points, rect_centered_point, reverse_point
 
 
 def make_screen_size(size_px: int, aspect_ration: float, horizontal: bool = True) -> tuple[int, int]:
@@ -35,7 +35,7 @@ class BallConstants:
 
 class PaddleConstants:
     START_LOCATION = 0.06, 0.5
-    PADDLE_HEIGHT = 0.1
+    PADDLE_SIZE = 0.005, 0.1
     
     TOP_AREA_SIZE = 1
 
@@ -61,13 +61,13 @@ def main() -> None:
 
     left_player = HumanPaddle(
         to_rect_relitive_points(screen_rect, PaddleConstants.START_LOCATION, reverse_x=False),
-        to_size_relitive_value(screen_rect.height, PaddleConstants.PADDLE_HEIGHT),
+        to_rect_relitive_points(screen_rect, PaddleConstants.PADDLE_SIZE),
         pygame.K_q, pygame.K_a
     )
 
     right_player = HumanPaddle(
         to_rect_relitive_points(screen_rect, PaddleConstants.START_LOCATION, reverse_x=True),
-        to_size_relitive_value(screen_rect.height, PaddleConstants.PADDLE_HEIGHT),
+        to_rect_relitive_points(screen_rect, PaddleConstants.PADDLE_SIZE),
         pygame.K_p, pygame.K_l
     )
     
@@ -105,8 +105,16 @@ def main() -> None:
         left_player.rect.clamp_ip(screen_rect) 
         right_player.rect.clamp_ip(screen_rect) 
 
-        if ball.rect.collideobjects((left_player, right_player)):
-            ball.bounce_x()
+
+        collisions = collision_paddle = pygame.sprite.spritecollide(ball, players, False)
+        if collisions:
+            collision_paddle = collisions[0].rect
+            if abs(ball.rect.right - collision_paddle.left) < ball.max_velocity or abs(ball.rect.left - collision_paddle.right) < ball.max_velocity:
+                ball.bounce_x()
+            if abs(ball.rect.top - collision_paddle.bottom) < ball.max_velocity or abs(ball.rect.bottom - collision_paddle.top) < ball.max_velocity:
+                ball.bounce_y()
+
+            ball.add_velocity(BallConstants.BOUNCE_VELOCITY_INCREACE)
         
         if ball.rect.right < screen_rect.left:
             # ball went over left side of wall

@@ -1,5 +1,4 @@
 import pygame
-from utils import rect_centered_point 
 
 class Ball(pygame.sprite.Sprite):
     def __init__(self, size: int, start_position: tuple[int, int], start_slope: tuple[int, int], start_velocity: int, max_velocity: int) -> None:

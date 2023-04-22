@@ -1,23 +1,21 @@
 import pygame
-from utils import rect_centered_point 
 
 class Contants:
     SPEED = 5
-    WIDTH = 5
     COLOR = "white"
 
 class PaddleBase(pygame.sprite.Sprite):
-    def __init__(self, start_position: tuple[int, int], height: int) -> None:
+    def __init__(self, start_position: tuple[int, int], size: tuple[int, int]) -> None:
         super().__init__()
         
         self.score = 0
         
-        self.image = pygame.Surface((Contants.WIDTH, height))
+        self.image = pygame.Surface(size)
         self.image.fill(Contants.COLOR)
         
         self.rect = self.image.get_rect()
         
-        self.rect.x, self.rect.y = rect_centered_point(self.rect, start_position)
+        self.rect.centerx, self.rect.centery = start_position
         self.start_position = start_position
         
     def add_score(self) -> None:
@@ -33,8 +31,8 @@ class PaddleBase(pygame.sprite.Sprite):
         pass
 
 class HumanPaddle(PaddleBase):
-    def __init__(self, start_position: tuple[int, int], height: int, up_key, down_key) -> None:
-        super().__init__(start_position, height)
+    def __init__(self, start_position: tuple[int, int], size: tuple[int, int], up_key, down_key) -> None:
+        super().__init__(start_position, size)
             
         self.up_key = up_key
         self.down_key = down_key
@@ -50,8 +48,8 @@ class HumanPaddle(PaddleBase):
         
 
 class AiPaddle(PaddleBase):
-    def __init__(self, start_position: tuple[int, int], height: int, network) -> None:
-        super().__init__(start_position, height)
+    def __init__(self, start_position: tuple[int, int], size: tuple[int, int], network) -> None:
+        super().__init__(start_position, size)
         
         self.network = network
         
