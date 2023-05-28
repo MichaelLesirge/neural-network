@@ -1,8 +1,7 @@
 import pygame
 from ball import Ball
-from player import HumanPaddle, AiPaddle, WallPaddle
-from utils import to_rect_relitive_points, rect_centered_point, reverse_point
-
+from player import AiPaddle, HumanPaddle, WallPaddle
+from utils import RelitiveRectPoint
 
 def make_screen_size(size_px: int, aspect_ration: float, horizontal: bool = True) -> tuple[int, int]:
     return int(size_px * ((aspect_ration * (horizontal)) or 1)), int(size_px * ((aspect_ration * (not horizontal)) or 1))
@@ -10,7 +9,7 @@ def make_screen_size(size_px: int, aspect_ration: float, horizontal: bool = True
 
 class GameConstants:
     BACKGROUND_COLOR = "black"
-    EXTRA_ITEM_COLOR = "white"
+    MAP_ITEM_COLOR = "white"
     
     WINDOW_NAME = "Pong Game"
     FRAMERATE = 60
@@ -35,7 +34,7 @@ class BallConstants:
 
 class PaddleConstants:
     START_LOCATION = 0.06, 0.5
-    PADDLE_SIZE = 0.005, 0.1
+    PADDLE_SIZE = 0.005, 0.5
     
     TOP_AREA_SIZE = 1
 
@@ -44,69 +43,68 @@ def main() -> None:
     pygame.init()
     
     screen = pygame.display.set_mode(
-        make_screen_size(size_px=400, aspect_ration=16/10, horizontal=True)
+        make_screen_size(size_px=400, aspect_ration=16/10, horizontal=True), 
+        flags = pygame.RESIZABLE
     )
     pygame.display.set_caption(GameConstants.WINDOW_NAME)
-
-    screen_rect = screen.get_rect()
 
     clock = pygame.time.Clock()
 
     font = pygame.font.Font('freesansbold.ttf', 32)
 
     ball = Ball(
-        BallConstants.SIZE, to_rect_relitive_points(screen_rect, BallConstants.START_LOCATION),
+        BallConstants.SIZE, RelitiveRectPoint(screen, BallConstants.START_LOCATION),
         BallConstants.START_SLOPE, BallConstants.START_VELOCITY,  BallConstants.MAX_VELOCITY
     )
 
     left_player = HumanPaddle(
-        to_rect_relitive_points(screen_rect, PaddleConstants.START_LOCATION, reverse_x=False),
-        to_rect_relitive_points(screen_rect, PaddleConstants.PADDLE_SIZE),
+        RelitiveRectPoint(screen, PaddleConstants.START_LOCATION, reverse_x=False),
+        RelitiveRectPoint(screen, PaddleConstants.PADDLE_SIZE),
         pygame.K_q, pygame.K_a
     )
 
     right_player = HumanPaddle(
-        to_rect_relitive_points(screen_rect, PaddleConstants.START_LOCATION, reverse_x=True),
-        to_rect_relitive_points(screen_rect, PaddleConstants.PADDLE_SIZE),
+        RelitiveRectPoint(screen, PaddleConstants.START_LOCATION, reverse_x=True),
+        RelitiveRectPoint(screen, PaddleConstants.PADDLE_SIZE),
         pygame.K_p, pygame.K_l
     )
     
-    players = pygame.sprite.Group(left_player, right_player)  # type: ignore
-    all_sprites = pygame.sprite.Group(*players, ball)  # type: ignore
-
-
-    def ball_to_starting_position(to_reverse_side=False):
-        ball.set_new_motion(
-            to_rect_relitive_points(screen_rect, BallConstants.START_LOCATION, reverse_x=to_reverse_side),
-            reverse_point(BallConstants.START_SLOPE, reverse_y=to_reverse_side)
-        )
+    players = pygame.sprite.Group([left_player, right_player])  # type: ignore
+    
+    all_sprites = pygame.sprite.Group([*players, ball])  # type: ignore
 
     def draw_score() -> None:
-        player1_score_font = font.render(str(left_player.score), True, GameConstants.EXTRA_ITEM_COLOR)
+        left_player_score_font = font.render(str(left_player.score), True, GameConstants.MAP_ITEM_COLOR)
         screen.blit(
-            player1_score_font, rect_centered_point(player1_score_font.get_rect(),
-            to_rect_relitive_points(screen_rect, GameConstants.SCORE_LOCATION, reverse_x=False))
+            left_player_score_font,
+            RelitiveRectPoint(screen, GameConstants.SCORE_LOCATION, reverse_x=False).point_centerd_for(left_player_score_font)
         )
-
-        player2_score_font = font.render(str(right_player.score), True, GameConstants.EXTRA_ITEM_COLOR)
-        screen.blit(player2_score_font, rect_centered_point(
-            player2_score_font.get_rect(),                             
-            to_rect_relitive_points(screen_rect, GameConstants.SCORE_LOCATION, reverse_x=True))
+        
+        right_player_score_font = font.render(str(right_player.score), True, GameConstants.MAP_ITEM_COLOR)
+        screen.blit(
+            right_player_score_font,
+            RelitiveRectPoint(screen, GameConstants.SCORE_LOCATION, reverse_x=True).point_centerd_for(right_player_score_font)
         )
     
     while not pygame.event.get(pygame.QUIT):
         screen.fill(GameConstants.BACKGROUND_COLOR)
-        pygame.draw.line(screen, GameConstants.EXTRA_ITEM_COLOR,
-                to_rect_relitive_points(screen_rect, GameConstants.LINE_LOCATION),
-                to_rect_relitive_points(screen_rect, GameConstants.LINE_LOCATION, reverse_y=True))
+        pygame.draw.line(screen, GameConstants.MAP_ITEM_COLOR,
+                RelitiveRectPoint(screen, GameConstants.LINE_LOCATION, reverse_y=False).point,
+                RelitiveRectPoint(screen, GameConstants.LINE_LOCATION, reverse_y=True).point)
+        
 
         all_sprites.update()
+         
+        for player in players:
+            player.rect.clamp_ip(screen.get_rect()) 
         
-        left_player.rect.clamp_ip(screen_rect) 
-        right_player.rect.clamp_ip(screen_rect) 
+        if isinstance(left_player, AiPaddle):
+            left_player.update_network(ball, screen, left_player.image.get_rect())
+            
+        if isinstance(right_player, AiPaddle):
+            right_player.update_network(ball, screen, left_player.image.get_rect())
 
-
-        collisions = collision_paddle = pygame.sprite.spritecollide(ball, players, False)
+        collisions = pygame.sprite.spritecollide(ball, players, False)
         if collisions:
             collision_paddle = collisions[0].rect
             if abs(ball.rect.right - collision_paddle.left) < ball.max_velocity or abs(ball.rect.left - collision_paddle.right) < ball.max_velocity:
@@ -116,17 +114,17 @@ def main() -> None:
 
             ball.add_velocity(BallConstants.BOUNCE_VELOCITY_INCREACE)
         
-        if ball.rect.right < screen_rect.left:
+        if ball.rect.right < screen.get_rect().left:
             # ball went over left side of wall
-            ball_to_starting_position(to_reverse_side=True)
+            ball.to_starting_position(to_reverse_side=True)
             right_player.add_score()
         
-        elif ball.rect.left > screen_rect.right:
+        elif ball.rect.left > screen.get_rect().right:
             # ball went over right side of wall
-            ball_to_starting_position(to_reverse_side=False)
+            ball.to_starting_position(to_reverse_side=False)
             left_player.add_score()     
 
-        if ball.rect.top < screen_rect.top or ball.rect.bottom > screen_rect.bottom:
+        if ball.rect.top < screen.get_rect().top or ball.rect.bottom > screen.get_rect().bottom:
             # ball hit top or buttom
             ball.bounce_y()
 

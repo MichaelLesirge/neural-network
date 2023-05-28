@@ -1,15 +1,27 @@
 import pygame
 
-def to_size_relitive_value(size: int, value: float, reverse = False) -> int:
-    relitive_point = int(size * value)
-    if reverse: relitive_point = size - relitive_point
-    return relitive_point
+class RelitiveRectPoint:
+    __slots__ = ("_base_surface", "_x", "_y")
+    
+    def __init__(self, base: pygame.Surface, point: tuple[float, float], *, reverse_x = False, reverse_y = False) -> None:
+        self._base_surface = base
+        self._x, self._y = point
+        if reverse_x: self._x = 1 - self._x
+        if reverse_y: self._y = 1 - self._y
+         
+    @property
+    def x(self) -> int: return round(self._base_surface.get_width() * self._x)
+    
+    @property
+    def y(self) -> int: return round(self._base_surface.get_height() * self._y)
+    
+    @property
+    def point(self) -> tuple[int, int]: return (self.x, self.y)
+    
+    def __getitem__(self, index) -> int: return self.point[index]
 
-def to_rect_relitive_points(rect: pygame.rect.Rect, point: tuple[float, float], reverse_x = False, reverse_y = False) -> tuple[int, int]:
-    return to_size_relitive_value(rect.width, point[0], reverse_x), to_size_relitive_value(rect.height, point[1], reverse_y)
-
-def rect_centered_point(rect: pygame.rect.Rect, point: tuple[int, int]) -> tuple[int, int]:
-    return point[0] - (rect.width // 2), point[1] - (rect.height // 2)
-
-def reverse_point(value: tuple[int, int], reverse_x = False, reverse_y = False) -> tuple[int, int]:
-    return (value[0] * (-1 if reverse_x else 1), value[1] * (-1 if reverse_y else 1))
+    def flip(self, flip_x = False, flip_y = False) -> "RelitiveRectPoint":
+        return self.__class__(self._base_surface, (self._x, self._y), reverse_x=flip_x, reverse_y=flip_y)
+    
+    def point_centerd_for(self, surface: pygame.Surface) -> tuple[int, int]:
+        return (self.x - (surface.get_width() // 2), self.y - (surface.get_height() // 2))
