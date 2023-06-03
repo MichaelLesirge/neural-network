@@ -51,7 +51,7 @@ def main() -> None:
     
     good_enough_error = 0.000000000000000000000000000000000000000000000000000000000000000000000000000000000000001
     print(good_enough_error)
-    best_network = NeuralNetwork([0])
+    best_network = None
     min_error = float("inf")
     
     while min_error > good_enough_error:
@@ -65,7 +65,11 @@ def main() -> None:
         
         if cur_error < min_error:
             min_error = cur_error
+            best_network = network
             print("Best min error:", min_error)
+            print(outputs)
+            print()
+            print()
     
     print()
     
@@ -74,9 +78,9 @@ def main() -> None:
     
         outputs = best_network.feed_forward(inputs)
         
+        print("activations:")
         print(outputs)
 
-        best_network.output_activation()
         cur_error = error(outputs, inputs)
         
         print("Error: ", cur_error)
