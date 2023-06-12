@@ -110,7 +110,7 @@ def swish(x):
     Swish. 
     Pros: Does not abruptly change directions like ReLU, keeps small negatives that may be important but zeros out larger ones,  
     """
-    return x * hard_sigmoid(x)
+    return x * sigmoid(x)
 
 
 def gelu(x):
