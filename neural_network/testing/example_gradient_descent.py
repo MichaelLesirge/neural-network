@@ -27,7 +27,7 @@ def gradient_descent(target, *, learning_rate=0.01, num_iterations=1000, start_x
 
     return errors, xs
 
-def error_derivative(x, target, delta=1e-5):
+def error_derivative(x, target, delta=0.00001):
     error1 = calculate_error(x, target)
     error2 = calculate_error(x + delta, target)
     gradient = (error2 - error1) / delta
@@ -44,15 +44,15 @@ def main() -> None:
 
     iterations = 5000 + 1
     
-    errors, gradient_x_vals = gradient_descent(target=target_y, learning_rate=0.001, num_iterations=iterations, start_x=start_x)
+    errors, gradient_x_vals = gradient_descent(target=target_y, learning_rate=0.01, num_iterations=iterations, start_x=start_x)
 
-    error_fig, error_axis = plt.subplots()
-    error_fig.suptitle("Error")
+    error_figure, error_axis = plt.subplots()
+    error_figure.suptitle("Error")
     error_axis.plot(list(range(iterations)), errors, label = "Error")
     error_axis.legend(loc="best")
     
-    dot_fig, dot_axis = plt.subplots()
-    dot_fig.suptitle("Gradient Descent Animation")
+    dot_figure, dot_axis = plt.subplots()
+    dot_figure.suptitle("Gradient Descent Animation")
     dot_axis.plot(x_vals, y_vals, label="Line")
     (dots,) = dot_axis.plot([], [], "ro", label="Point")
     dot_axis.legend(loc="best")
@@ -71,7 +71,7 @@ def main() -> None:
         
         return (dots,)
 
-    anim = FuncAnimation(dot_fig, update, frames=iterations, init_func=init, blit=True, interval=0.1, repeat=False)
+    animation = FuncAnimation(dot_figure, update, frames=iterations, init_func=init, blit=True, interval=0.1, repeat=False)
 
     plt.show()
 
