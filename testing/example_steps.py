@@ -23,7 +23,6 @@ learning_rate = 0.001
 # [1*3 + 2*6, 1*4 + 2*7, 1*5 + 2*8]
 # [3 + 12, 4 + 14, 5 + 16]
 # [15, 18, 21]
-
 prediction = np.dot(inputs, weights)
 print("inputs * weights =", prediction)
 
