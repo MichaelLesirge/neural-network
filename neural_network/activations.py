@@ -5,8 +5,9 @@ from abc import ABC, abstractmethod
 
 
 class ActivationBase(ABC):
+    __verbose_name = "Activation"
+    
     def __init__(self):
-        self.__verbose_name = "Activation"
         super().__init__()
 
     def __str__(self) -> str:
