@@ -5,7 +5,7 @@ import numpy as np
 
 inputs = np.array([1, 2])
 
-weights = np.array([[3, 4, 5], [6, 7, 8]])
+weights = np.array([[3, 4], [5, 6], [7, 8]])
 
 biases = np.array([9, 10, 11])
 
@@ -19,37 +19,28 @@ error_function = mse
 
 learning_rate = 0.001
 
-# [1, 2] * [[3, 4, 5], [6, 7, 8]]
-# [1*3 + 2*6, 1*4 + 2*7, 1*5 + 2*8]
-# [3 + 12, 4 + 14, 5 + 16]
-# [15, 18, 21]
-prediction = np.dot(inputs, weights)
-print("inputs * weights =", prediction)
+# [1, 2] * [[3, 4], [5, 6], [7, 8]]
+# [1*3 + 2*4, 1*5 + 2*6, 1*7 + 2*8]
+# [3 + 8, 5 + 12, 7 + 16]
+# [11, 17, 23]
+prediction_weights = np.dot(weights, inputs)
+print("inputs * weights =", prediction_weights)
+print(f"{inputs.tolist()} * {weights.tolist()} =", prediction_weights)
+print()
 
-# [15, 18, 22] + [15, 18, 21]
-# [15 + 9, 18 + 10, 21 + 11]
-# [24, 28, 32]
-prediction = prediction + biases
-print("inputs * weights + biases =", prediction)
+prediction_biases = prediction_weights + biases
+print("inputs * weights + biases =", prediction_biases)
+print(f"{prediction_weights.tolist()} + {biases.tolist()} =", prediction_biases)
+print()
 
+prediction_activation = relu(prediction_biases)
+print("activation(inputs * weights + biases) =", prediction_activation)
+print(f"{activation.__name__}({prediction_biases.tolist()}) =", prediction_biases)
+print()
 
-# relu([24, 28, 32])
-# [max(24, 0), max(28, 0), max(32, 0)])
-# [24, 28, 32]
-prediction = relu(prediction)
-print("activation(inputs * weights + biases) =", prediction)
-
-# mean(([10, 20, 30] - [24, 28, 32]) ^ 2)
-# mean(([10-24, 20-28, 30-32]) ^ 2)
-# mean(([-14, -8, -2]) ** 2)
-# mean(([-14^2, -8^2, -2^2]))
-# mean(([196, 64, 4]))
-
-# sum([196, 64, 4]) / len([196, 64, 4])
-# 264 / 3
-# 88
-
-error = mse(actual, prediction)
-print("output_error =", error)
+error = mse(actual, prediction_activation)
+print("error(activation(inputs * weights + biases)) =", error)
+print(f"{error_function.__name__}({prediction_activation.tolist()}) =", error)
+print()
 
 
