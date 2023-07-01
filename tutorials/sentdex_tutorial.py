@@ -66,7 +66,7 @@ print(loss)
 
 prediction = np.argmax(pred, axis=1)
 accuracy = np.mean(prediction == y_true)
-print(format(accuracy, "%"))
 
-plt.scatter(X[:, 0], X[:, 1], c=y_true, s=40, cmap="brg")
-plt.show()
+# print(format(accuracy, "%"))
+# plt.scatter(X[:, 0], X[:, 1], c=y_true, s=40, cmap="brg")
+# plt.show()
