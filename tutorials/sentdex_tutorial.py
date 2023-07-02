@@ -30,9 +30,8 @@ class LossCategoricalCrossEntropy:
         return np.mean(self.forward(output, y))
     
     def forward(self, y_pred: np.ndarray, y_true: np.ndarray) -> np.ndarray:
-        
         if len(y_true.shape) == 1:
-            y_pred = np.eye[len(y_pred), y_true]
+            y_pred = np.eye(len(y_pred))[y_true]
         elif len(y_true.shape) == 2:
             y_pred = np.sum(y_pred * y_true, axis=1)
             
@@ -53,12 +52,19 @@ softmax_function = ActivationSoftMax()
 
 loss_function = LossCategoricalCrossEntropy()
 
-pred = dense1.forward(X)
-pred = relu_function.forward(pred)
-pred = dense2.forward(pred)
-pred = relu_function.forward(pred)
-pred = dense3.forward(pred)
-pred = softmax_function.forward(pred)
+def forward(inputs):
+    pred = dense1.forward(inputs)
+    pred = relu_function.forward(pred)
+    pred = dense2.forward(pred)
+    pred = relu_function.forward(pred)
+    pred = dense3.forward(pred)
+    pred = softmax_function.forward(pred)
+    return pred
+
+def backward():
+    pass
+
+pred = forward(X)
 
 loss = loss_function.calculate(pred, y_true)
 
@@ -66,6 +72,7 @@ print(loss)
 
 prediction = np.argmax(pred, axis=1)
 accuracy = np.mean(prediction == y_true)
+print(format(accuracy, "%"))
 
 # print(format(accuracy, "%"))
 # plt.scatter(X[:, 0], X[:, 1], c=y_true, s=40, cmap="brg")
