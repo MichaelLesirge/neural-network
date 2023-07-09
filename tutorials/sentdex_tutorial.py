@@ -8,8 +8,7 @@ from matplotlib import pyplot as plt
 class LayerDense:
     def __init__(self, n_inputs: int, n_neurons: int) -> None:
         
-        self.weights = np.random.rand(n_inputs, n_neurons) - 0.5
-        
+        self.weights = np.random.rand(n_inputs, n_neurons) 
         self.biases = np.zeros((1, n_neurons))
 
     def forward(self, inputs: np.ndarray) -> np.ndarray:
@@ -73,7 +72,3 @@ print(loss)
 prediction = np.argmax(pred, axis=1)
 accuracy = np.mean(prediction == y_true)
 print(format(accuracy, "%"))
-
-# print(format(accuracy, "%"))
-# plt.scatter(X[:, 0], X[:, 1], c=y_true, s=40, cmap="brg")
-# plt.show()
