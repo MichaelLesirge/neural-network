@@ -2,9 +2,8 @@ import numpy as np
 from nnfs.datasets import vertical_data, spiral_data
 from matplotlib import pyplot as plt
 
-# Sorry for crappy code, just doing it to get my head around it
-# https://www.youtube.com/playlist?list=PLQVvvaa0QuDcjD5BAw2DxE6OF2tius3V3. Ended on ep9, no ep10 :(
-
+# Incomplete tutorial. Ended on ep9, no ep10 :(
+# https://www.youtube.com/playlist?list=PLQVvvaa0QuDcjD5BAw2DxE6OF2tius3V3.
 class LayerDense:
     def __init__(self, n_inputs: int, n_neurons: int) -> None:
         
