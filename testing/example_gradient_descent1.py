@@ -2,8 +2,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
-# def f(x): return np.sin(0.5 * x) + 0.3 * np.sin(2 * x) + 0.2 * x
-def f(x): return 0.1 * x ** 2
+# example with Numerical differentiation
+
+def f(x): return np.sin(0.5 * x) + 0.3 * np.sin(2 * x) + 0.2 * x
+# def f(x): return 0.1 * x ** 2
 
 def mean_squared_error(predicted, target):
     return np.mean(np.square(predicted - target))    
