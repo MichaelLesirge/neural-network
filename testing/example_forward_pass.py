@@ -5,7 +5,8 @@ import numpy as np
 
 inputs = np.array([1, 2])
 
-weights = np.array([[3, 4, 5], [6, 7, 8]])
+weights = np.array([[3, 4, 5],
+                    [6, 7, 8]])
 
 biases = np.array([9, 10, 11])
 
@@ -15,6 +16,7 @@ activation_function = relu
 actual = [10, 20, 30]
 
 def mse(true, actual): return np.mean(np.square(true - actual))
+def categorical_cross_entropy(y_true, y_pred): return np.mean(-np.sum(y_true * np.log(np.clip(y_pred, 1e-7, 1-1e-7))))
 error_function = mse
 
 # [1, 2] * [[3, 4, 5], [6, 7, 8]]
