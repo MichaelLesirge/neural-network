@@ -13,18 +13,18 @@ class Activation(ABC):
 
     def __repr__(self) -> str:
         dict_str = ", ".join(f"{key}={value}" for key,
-                             value in self.__dict__.items())
+                             value in self.__dict__.items() if not key.startswith("_"))
         return f"{type(self).__name__}({dict_str})"
 
-    def __call__(self, x):
-        return self.func(x)
+    def __call__(self, z: np.ndarray) -> np.ndarray:
+        return self.func(z)
 
     @abstractmethod
-    def func(self, x):
+    def func(self, inputs: np.ndarray) -> np.ndarray:
         ...
 
     @abstractmethod
-    def gradient(self, x):
+    def gradient(self, output_gradient: np.ndarray) -> np.ndarray:
         ...
 
 # https://www.v7labs.com/blog/neural-networks-activation-functions
@@ -41,28 +41,11 @@ class BinaryStep(Activation):
         super().__init__()
         self.threshold = threshold
 
-    def func(self, x):
-        return np.where(x < self.threshold, 0.0, 1.0)
+    def func(self, inputs):
+        return np.where(inputs < self.threshold, 0.0, 1.0)
 
-    def gradient(self, x):
-        return np.zeros(x.shape, dtype=float)
-
-
-class Linear(Activation):
-    """ 
-    Linear / No activation.
-    Cons: All layers will just become basically one layer, bad for back prop because gradient is always 1.
-    """
-    _verbose_name = "linear"
-
-    def __init__(self):
-        super().__init__()
-
-    def func(self, x):
-        return x
-
-    def gradient(self, x):
-        return np.ones(x.shape, dtype=float)
+    def gradient(self, output_gradient):
+        return np.zeros_like(output_gradient, dtype=float)
 
 
 class Sigmoid(Activation):
@@ -78,11 +61,11 @@ class Sigmoid(Activation):
     def __init__(self):
         super().__init__()
 
-    def func(self, x):
-        return 1.0 / (1.0 + np.exp(-x))
+    def func(self, inputs):
+        return 1.0 / (1.0 + np.exp(-inputs))
 
-    def gradient(self, x):
-        s = self.func(x)
+    def gradient(self, output_gradient):
+        s = self.func(output_gradient)
         return s * (1.0-s)
 
 
@@ -96,32 +79,74 @@ class HardSigmoid(Activation):
     def __init__(self):
         super().__init__()
 
-    def func(self, x):
-        x = 0.2 * x + 0.5
-        return np.clip(x, 0.0, 1.0)
+    def func(self, inputs):
+        inputs = 0.2 * inputs + 0.5
+        return np.clip(inputs, 0.0, 1.0)
 
-    def gradient(self, x):
-        return np.where((x >= -2.5) & (x <= 2.5), 0.2, 0)
+    def gradient(self, output_gradient):
+        return np.where((output_gradient >= -2.5) & (output_gradient <= 2.5), 0.2, 0.0)
 
 
 class Tanh(Activation):
     """
-    Tanh Function (Hyperbolic Tangent).
+    Tanh / Hyperbolic Tangent.
     Similar to sigmoid, but between -1 and 1. It is usually used in hidden layers
     Pros: Zero centered so it can be seen as either negative, positive, or neutral;
     and it keeps the data centered making learning easier because gradients can move both positive or negative
     Cons: Same problem as sigmoid, little change in values ~3 or more from zero.
     """
-    _verbose_name = "tanh"
+    _verbose_name = "hyperbolic tangent"
 
     def __init__(self):
         super().__init__()
 
-    def func(self, x):
-        return np.tanh(x)
+    def func(self, inputs):
+        return np.tanh(inputs)
 
-    def gradient(self, x):
-        return 1 - np.tanh(x) ** 2
+    def gradient(self, output_gradient):
+        return 1 - np.tanh(output_gradient) ** 2
+
+
+class Affine(Activation):
+    """
+    Affine.
+    Just y = mx + b
+    """
+    _verbose_name = "Affine"
+
+    def __init__(self, slope=1, intercept=0):
+        super().__init__()
+        self.slope = slope
+        self.intercept = intercept
+
+    def func(self, inputs):
+        return self.slope * inputs + self.intercept
+
+    def gradient(self, output_gradient):
+        return np.ones_like(output_gradient, dtype=float) * self.slope
+
+
+class Linear(Affine):
+    """ 
+    Linear / Identity / No activation.
+    Cons: All layers will just become basically one layer, bad for back prop because gradient is always 1.
+    """
+    _verbose_name = "linear"
+
+    def __init__(self):
+        super().__init__(slope=1, intercept=0)
+        
+class Exponential(Activation):
+    _verbose_name = "Exponential"
+    
+    def __init__(self):
+        super().__init__()
+
+    def func(self, inputs):
+        return np.exp(inputs)
+
+    def gradient(self, output_gradient):
+        return np.exp(output_gradient)
 
 class ReLU(Activation):
     """
@@ -135,11 +160,11 @@ class ReLU(Activation):
     def __init__(self):
         super().__init__()
 
-    def func(self, x):
-        return np.maximum(x, 0)
+    def func(self, inputs):
+        return np.maximum(inputs, 0.0)
 
-    def gradient(self, x):
-        return
+    def gradient(self, output_gradient):
+        return (output_gradient > 0).astype(float)
 
 
 class LeakyReLU(Activation):
@@ -150,14 +175,15 @@ class LeakyReLU(Activation):
     """
     _verbose_name = "leaky rectified linear unit"
 
-    def __init__(self):
+    def __init__(self, alpha=0.3):
         super().__init__()
+        self.alpha = alpha
 
-    def func(self, x):
-        return np.maximum(x, x * 0.01)
+    def func(self, inputs):
+        return np.where(inputs > 0, inputs, inputs * self.alpha)
 
-    def gradient(self, x):
-        return
+    def gradient(self, output_gradient):
+        return np.where(output_gradient > 0, 1.0, self.alpha)
 
 
 class ELU(Activation):
@@ -172,11 +198,15 @@ class ELU(Activation):
         super().__init__()
         self.alpha = alpha
 
-    def func(self, x):
-        return np.where(x >= 0, x, self.alpha * (np.exp(x) - 1))
+    def func(self, inputs):
+        return np.where(inputs > 0, inputs, self.alpha * (np.exp(inputs) - 1))
 
-    def gradient(self, x):
-        return
+    def gradient(self, output_gradient):
+        np.where(output_gradient > 0, 1.0,
+                 self.alpha * np.exp(output_gradient))
+
+
+# Todo: GELU (gaussian Error Linear Unit), SELU (scaled exponential linear unit), and SoftPlus
 
 
 class Softmax(Activation):
@@ -189,43 +219,60 @@ class Softmax(Activation):
     def __init__(self):
         super().__init__()
 
-    def func(self, x):
-        exp_x = np.exp(x - np.max(x, axis=1, keepdims=True))
-        return exp_x / np.sum(exp_x, axis=1, keepdims=True)
+    def func(self, inputs):
+        e_x = np.exp(inputs - np.max(inputs, axis=-1, keepdims=True))
+        self._output = e_x / np.sum(e_x, axis=-1, keepdims=True)
+        return self._output
 
-    def gradient(self, x):
-        return
+    def _gradient(self, output_gradient, last_output):
+        return np.dot((np.identity(np.size(output_gradient), dtype=float) - last_output.T) * last_output, output_gradient)
 
+    def gradient(self, output_gradient):
+        # n = np.size(output_gradient, axis=-1)
+        # return np.dot((np.identity(n, dtype=float) - self.output.T) * self.output, output_gradient)
 
-class Swish(Activation):
-    """
-    Swish. 
-    Pros: Does not abruptly change directions like ReLU, keeps small negatives that may be important but zeros out larger ones,  
-    """
-    _verbose_name = "swish"
+        is_batch = len(output_gradient.shape) == 2
 
-    def __init__(self):
-        super().__init__()
-        self.sigmoid = Sigmoid()
-
-    def func(self, x):
-        return x * self.sigmoid(x)
-
-    def gradient(self, x):
-        return
-
-
-class GELU(Activation):
-    _verbose_name = "Gaussian error linear unit"
-    def __init__(self) -> None:
-        super().__init__()
+        if is_batch:
+            return np.array([self._gradient(grad, out) for grad, out in zip(output_gradient, self._output)])
+        else:
+            return self._gradient(output_gradient, self._output)
 
 
 def main() -> None:
+
+    def binary_cross_entropy(y_true, y_pred):
+        return np.mean((-y_true * np.log(y_pred)) - (1 - y_true) * np.log(1 - y_pred))
+
+    def binary_cross_entropy_prime(y_true, y_pred):
+        return (((1 - y_true) / (1 - y_pred)) - (y_true / y_pred)) / np.size(y_true, axis=-1)
+
+    y_pred = np.array(
+        [[0.4, 0.7, 0.2, 1.3], [0.4, 0.7, 0.2, 1.3]], dtype=float)
+    y_true = np.array(
+        [[0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0]], dtype=float)
+    # y_pred = np.array([0.4, 0.7, 0.2, 1.3], dtype=float)
+    # y_true = np.array([0.0, 1.0, 0.0, 0.0], dtype=float)
+    print(y_pred)
+    print(y_true)
+
+    softmax = Softmax()
+
+    y_pred = softmax(y_pred)
+    print()
+    print(y_pred)
+
+    gradient = binary_cross_entropy_prime(y_true, y_pred)
+    print()
+    print(gradient)
+
+    gradient = softmax.gradient(gradient)
+    print()
+
+    # --- Plots ---
     from matplotlib import pyplot as plt
 
-    x_min, x_max = -2, 2
-    y_min, y_max = -2, 2
+    x_min, x_max = -5, 5
 
     precision = 100
 
@@ -235,16 +282,14 @@ def main() -> None:
     activation_funcs = [Linear(), BinaryStep(), Sigmoid(),
                         HardSigmoid(), Tanh(), ReLU(), LeakyReLU(), ELU(), Swish()]
 
-    plt.ylim(y_min, y_max)
+    for activation in activation_funcs:
+        y = activation(x)
 
-    # test_times(activation_funcs)
-
-    for func in activation_funcs:
-        y = func(x)
-        plt.plot(x, y, label=str(func))
-
-    plt.legend(loc='best')
-    plt.show()
+        plt.title(str(activation))
+        plt.plot(x, y, label="func")
+        plt.plot(x, activation.gradient(y), label="grad")
+        plt.legend()
+        plt.show()
 
 
 if __name__ == "__main__":
