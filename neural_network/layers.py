@@ -20,7 +20,7 @@ class Dense(Layer):
 
         # Initialize biases to 0s.
         # One bias for each output.
-        self.biases = np.zeros(output_size)
+        self.biases = np.zeros(output_size, dtype=float)
 
         # save activation function
         self.activation = activation
@@ -28,8 +28,8 @@ class Dense(Layer):
     def forward(self, input: np.ndarray) -> np.ndarray:
         self.input = input
 
-        # standard forward pass of neuron
-        forward = np.dot(self.weights, self.input) + self.biases
+        # standard forward pass of neuron with no activation
+        forward = np.dot(self.input, self.weights) + self.biases
 
         # use activation function
         return self.activation.func(forward)
@@ -39,10 +39,12 @@ class Dense(Layer):
         # factor in gradient from activation function
         output_gradient = self.activation.gradient(output_gradient)
 
-        # calculate gradients
+        # calculate gradient of input by linking up output_gradients with columns that align with that output
         input_gradient = np.dot(self.weights.T, output_gradient)
 
+        # 
         weights_gradient = np.dot(output_gradient, self.input.T)
+        # biases gradient stays output gradient
         biases_gradient = output_gradient
 
         # change 
@@ -50,3 +52,18 @@ class Dense(Layer):
         self.biases -= learning_rate * biases_gradient
         
         return input_gradient
+    
+def main():
+    from activations import ReLU
+    
+    l = Dense(2, 3, activation=ReLU())
+    
+    l.weights = np.array([[3, 4, 5],
+                          [6, 7, 8]])
+    l.biases = np.array([9, 10, 11])
+    
+    # print(l.forward([1, 2]))
+    print(l.forward([[1, 2], [1, 2]]))
+    
+if __name__ == "__main__":
+    main()
