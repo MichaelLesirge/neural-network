@@ -27,8 +27,6 @@ class Activation(ABC):
     def gradient(self, output_gradient: np.ndarray) -> np.ndarray:
         ...
 
-# https://www.v7labs.com/blog/neural-networks-activation-functions
-
 
 class BinaryStep(Activation):
     """ 
@@ -112,7 +110,7 @@ class Affine(Activation):
     Affine.
     Just y = mx + b
     """
-    _verbose_name = "Affine"
+    _verbose_name = "affine"
 
     def __init__(self, slope=1, intercept=0):
         super().__init__()
@@ -126,7 +124,7 @@ class Affine(Activation):
         return np.ones_like(output_gradient, dtype=float) * self.slope
 
 
-class Linear(Affine):
+class Linear(Activation):
     """ 
     Linear / Identity / No activation.
     Cons: All layers will just become basically one layer, bad for back prop because gradient is always 1.
@@ -134,11 +132,18 @@ class Linear(Affine):
     _verbose_name = "linear"
 
     def __init__(self):
-        super().__init__(slope=1, intercept=0)
-        
+        super().__init__()
+
+    def func(self, inputs):
+        return inputs
+
+    def gradient(self, output_gradient):
+        return np.ones_like(output_gradient, dtype=float)
+
+
 class Exponential(Activation):
     _verbose_name = "Exponential"
-    
+
     def __init__(self):
         super().__init__()
 
@@ -147,6 +152,7 @@ class Exponential(Activation):
 
     def gradient(self, output_gradient):
         return np.exp(output_gradient)
+
 
 class ReLU(Activation):
     """
@@ -175,7 +181,7 @@ class LeakyReLU(Activation):
     """
     _verbose_name = "leaky rectified linear unit"
 
-    def __init__(self, alpha=0.3):
+    def __init__(self, alpha=0.1):
         super().__init__()
         self.alpha = alpha
 
@@ -202,11 +208,88 @@ class ELU(Activation):
         return np.where(inputs > 0, inputs, self.alpha * (np.exp(inputs) - 1))
 
     def gradient(self, output_gradient):
-        np.where(output_gradient > 0, 1.0,
-                 self.alpha * np.exp(output_gradient))
+        return np.where(output_gradient > 0, 1.0, self.alpha * np.exp(output_gradient))
 
 
-# Todo: GELU (gaussian Error Linear Unit), SELU (scaled exponential linear unit), and SoftPlus
+class GELU(Activation):
+    """
+    Approximate Gaussian Error Linear Unit.
+
+    Pros: Like ReLU, buts weights inputs by their value instead of sign
+    """
+    _verbose_name = "gaussian error linear unit"
+
+    def __init__(self):
+        super().__init__()
+        # self.approximate = approximate
+
+    def func(self, inputs):
+        return 0.5 * inputs * (1 + np.tanh(np.sqrt(2 / np.pi) * (inputs + 0.044715 * inputs ** 3)))
+
+    def gradient(self, output_gradient):
+        # Ya I have no idea how/why this works, I just copied it down
+        erf_prime = (2 / np.sqrt(np.pi)) * np.exp(-((output_gradient / np.sqrt(2)) ** 2))
+        approx = np.tanh(np.sqrt(2 / np.pi) * output_gradient + 0.044715 * output_gradient ** 3)
+        return 0.5 + (0.5 * approx) + ((0.5 * output_gradient * erf_prime) / np.sqrt(2))
+
+
+class SELU(Activation):
+    """
+    Scaled Exponential Linear Unit.
+
+    Pros: Can be good when used with correct weight initialization and regularization 
+    Cons: Need special initialization and regularization 
+    """
+    _verbose_name = "scaled exponential linear unit"
+
+    def __init__(self):
+        super().__init__()
+        self.alpha = 1.6732632423543772848170429916717
+        self.scale = 1.0507009873554804934193349852946
+        self._elu = ELU(alpha=self.alpha)
+
+    def func(self, inputs):
+        return self.scale * self._elu.func(inputs)
+
+    def gradient(self, output_gradient):
+        return self.scale * np.where(output_gradient >= 0, 1.0, np.exp(output_gradient) * self.alpha)
+
+class Swish(Activation):
+    """
+    Swish.
+    Pros: smoother curve then ReLU, large negative numbers are zeroed out while smaller ones are kept
+    """
+    _verbose_name = "swish"
+    def __init__(self):
+        super().__init__()
+        # self.beta = beta
+        self._sigmoid = Sigmoid()
+    
+    def func(self, inputs):
+        return inputs * self._sigmoid.func(inputs)
+    
+    def gradient(self, output_gradient):
+        return output_gradient * self._sigmoid.gradient(output_gradient) + self._sigmoid.func(output_gradient)
+
+class Softplus(Activation):
+    """
+    Softplus.
+
+    Output is always positive
+    Pros: Like a smooth ReLU
+    Cons: Slowish to compute compared to ReLU
+    """
+    _verbose_name = "softplus"
+
+    def __init__(self):
+        super().__init__()
+
+    def func(self, inputs):
+        return np.log(np.exp(inputs) + 1)
+
+    def gradient(self, output_gradient):
+        exp_x = np.exp(output_gradient)
+        return exp_x / (exp_x + 1)
 
 
 class Softmax(Activation):
@@ -238,38 +321,7 @@ class Softmax(Activation):
         else:
             return self._gradient(output_gradient, self._output)
 
-
 def main() -> None:
-
-    def binary_cross_entropy(y_true, y_pred):
-        return np.mean((-y_true * np.log(y_pred)) - (1 - y_true) * np.log(1 - y_pred))
-
-    def binary_cross_entropy_prime(y_true, y_pred):
-        return (((1 - y_true) / (1 - y_pred)) - (y_true / y_pred)) / np.size(y_true, axis=-1)
-
-    y_pred = np.array(
-        [[0.4, 0.7, 0.2, 1.3], [0.4, 0.7, 0.2, 1.3]], dtype=float)
-    y_true = np.array(
-        [[0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0]], dtype=float)
-    # y_pred = np.array([0.4, 0.7, 0.2, 1.3], dtype=float)
-    # y_true = np.array([0.0, 1.0, 0.0, 0.0], dtype=float)
-    print(y_pred)
-    print(y_true)
-
-    softmax = Softmax()
-
-    y_pred = softmax(y_pred)
-    print()
-    print(y_pred)
-
-    gradient = binary_cross_entropy_prime(y_true, y_pred)
-    print()
-    print(gradient)
-
-    gradient = softmax.gradient(gradient)
-    print()
-
-    # --- Plots ---
     from matplotlib import pyplot as plt
 
     x_min, x_max = -5, 5
@@ -278,19 +330,73 @@ def main() -> None:
 
     x = np.array([i/precision for i in range(precision * x_min,
                  precision * x_max + 1)], dtype=np.float64)
+    
+    x = x.reshape(x.shape + (1,))
 
-    activation_funcs = [Linear(), BinaryStep(), Sigmoid(),
-                        HardSigmoid(), Tanh(), ReLU(), LeakyReLU(), ELU(), Swish()]
-
+    activation_funcs = [
+        Linear(), Affine(), BinaryStep(),
+        Sigmoid(), HardSigmoid(), Tanh(),
+        ReLU(), LeakyReLU(), ELU(), GELU(), SELU(), Swish(),
+        Softmax(), Softplus(),
+    ]
+    
     for activation in activation_funcs:
         y = activation(x)
 
-        plt.title(str(activation))
+        plt.title(repr(activation))
+        plt.axhline(0, color='dimgrey', linewidth=1)
+        plt.axvline(0, color='dimgrey', linewidth=1)
+        # plt.ylim(-1.2, 1.2)
+        
         plt.plot(x, y, label="func")
-        plt.plot(x, activation.gradient(y), label="grad")
-        plt.legend()
+        plt.plot(x, activation.gradient(x), label="grad")
+        
+        print(activation)
+        
+        plt.legend(loc="best")
+        plt.grid(True)
         plt.show()
 
+def softmax_example_main():   
+    def binary_cross_entropy(y_true, y_pred):
+        return np.mean((-y_true * np.log(y_pred)) - (1 - y_true) * np.log(1 - y_pred))
 
+    def binary_cross_entropy_prime(y_true, y_pred):
+        return (((1 - y_true) / (1 - y_pred)) - (y_true / y_pred)) / np.size(y_true, axis=-1)
+
+    # y_pred = np.array([[0.4, 0.7, 0.2, 1.3], [0.4, 0.7, 0.2, 1.3]], dtype=float)
+    y_pred = np.array([0.4, 0.7, 0.2, 1.3], dtype=float)
+    # y_pred = y_pred.reshape(y_pred.shape + (1,))
+    print("y_pred =")
+    print(y_pred)
+
+    softmax = Softmax()
+
+    y_pred = softmax(y_pred)
+    print("\nsoftmax(y_pred) =")
+    print(y_pred)
+    
+    # y_true = np.array([[0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0]], dtype=float)
+    y_true = np.array([0.0, 1.0, 0.0, 0.0], dtype=float)
+    # y_true = y_true.reshape(y_true.shape + (1,))
+    print("\ny_true =")
+    print(y_true)
+    
+    loss_prime = binary_cross_entropy(y_true, y_pred)
+    print("\nloss =")
+    print(loss_prime)
+
+    loss_prime = binary_cross_entropy_prime(y_true, y_pred)
+    print("\nloss_prime =")
+    print(loss_prime)  
+
+    gradient = softmax.gradient(loss_prime)
+    print("\nsoftmax.gradient(error_prime) =")
+    print(gradient)
+    
+    gradient = softmax.gradient2(loss_prime)
+    print("\nsoftmax.gradient2(error_prime) =")
+    print(gradient)
+    
 if __name__ == "__main__":
-    main()
+    softmax_example_main()
