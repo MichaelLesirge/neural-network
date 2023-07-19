@@ -12,8 +12,7 @@ class Activation(ABC):
         return f"<{self._verbose_name.title()}>"
 
     def __repr__(self) -> str:
-        dict_str = ", ".join(f"{key}={value}" for key,
-                             value in self.__dict__.items() if not key.startswith("_"))
+        dict_str = ", ".join(f"{key}={value}" for key, value in self.__dict__.items() if not key.startswith("_"))
         return f"{type(self).__name__}({dict_str})"
 
     def __call__(self, z: np.ndarray) -> np.ndarray:
@@ -316,10 +315,8 @@ class Softmax(Activation):
 
         is_batch = len(output_gradient.shape) == 2
 
-        if is_batch:
-            return np.array([self._gradient(grad, out) for grad, out in zip(output_gradient, self._output)])
-        else:
-            return self._gradient(output_gradient, self._output)
+        if is_batch: return np.array([self._gradient(grad, out) for grad, out in zip(output_gradient, self._output)])
+        else: return self._gradient(output_gradient, self._output)
 
 def main() -> None:
     from matplotlib import pyplot as plt
@@ -364,8 +361,8 @@ def softmax_example_main():
     def binary_cross_entropy_prime(y_true, y_pred):
         return (((1 - y_true) / (1 - y_pred)) - (y_true / y_pred)) / np.size(y_true, axis=-1)
 
-    # y_pred = np.array([[0.4, 0.7, 0.2, 1.3], [0.4, 0.7, 0.2, 1.3]], dtype=float)
-    y_pred = np.array([0.4, 0.7, 0.2, 1.3], dtype=float)
+    y_pred = np.array([[0.4, 0.7, 0.2, 1.3], [0.4, 0.7, 0.2, 1.3]], dtype=float)
+    # y_pred = np.array([0.4, 0.7, 0.2, 1.3], dtype=float)
     # y_pred = y_pred.reshape(y_pred.shape + (1,))
     print("y_pred =")
     print(y_pred)
@@ -394,9 +391,9 @@ def softmax_example_main():
     print("\nsoftmax.gradient(error_prime) =")
     print(gradient)
     
-    gradient = softmax.gradient2(loss_prime)
-    print("\nsoftmax.gradient2(error_prime) =")
-    print(gradient)
+    # gradient = softmax.gradient2(loss_prime)
+    # print("\nsoftmax.gradient2(error_prime) =")
+    # print(gradient)
     
 if __name__ == "__main__":
     softmax_example_main()

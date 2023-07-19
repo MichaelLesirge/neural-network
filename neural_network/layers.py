@@ -13,14 +13,14 @@ class Layer(ABC):
 
 class Dense(Layer):
     def __init__(self, input_size, output_size, activation):
-        self.weights = np.random.randn(output_size, input_size)
-        self.biases = np.ones((output_size, 1))
+        self.weights = np.random.random((input_size, output_size))
+        self.biases = np.zeros(output_size)
 
         self.activation = activation
 
     def forward(self, input):
         self.input = input
-        return np.dot(self.weights, self.input) + self.biases
+        return np.dot(self.input, self.weights) + self.biases
 
     def backward(self, output_gradient, learning_rate):
         weights_gradient = np.dot(output_gradient, self.input.T)
@@ -37,12 +37,9 @@ def main():
 
     l = Dense(2, 3, activation=ReLU())
     
-    # l.weights = np.array([[3, 4, 5],
-    #                       [6, 7, 8]])
-    # l.biases = np.array([9, 10, 11])
-    
-    print(l.forward([[1], [2]]))
-    print(l.forward([[[1], [2]], [[1], [2]]]))
+    print(l.forward([1, 2]))
+    print(l.forward([[1, 2], [1, 2]]))
+
     
 if __name__ == "__main__":
     main()
