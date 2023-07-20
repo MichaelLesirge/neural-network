@@ -19,10 +19,24 @@ def mse(true, actual): return np.mean(np.square(true - actual))
 def categorical_cross_entropy(y_true, y_pred): return np.mean(-np.sum(y_true * np.log(np.clip(y_pred, 1e-7, 1-1e-7))))
 error_function = mse
 
+
+"""
+each row of weights aligns with one input, each column with one output
+
+    3 
+[1] 4   [1*3 + 2*6] = [15]
+    5 
+        [1*4 + 2*7] = [18]
+    6
+[2] 7   [1*5 + 2*8] = [21]
+    8
+"""
+
 # [1, 2] * [[3, 4, 5], [6, 7, 8]]
 # [1*3 + 2*6, 1*4 + 2*7, 1*5 + 2*8]
 # [3 + 12, 4 + 14, 5 + 16]
 # [15, 18, 21]
+
 prediction_step_1 = np.dot(inputs, weights)
 print("inputs * weights =", prediction_step_1)
 print(f"{inputs.tolist()} * {weights.tolist()} =", prediction_step_1)
