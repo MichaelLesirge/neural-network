@@ -169,7 +169,8 @@ class ReLU(Activation):
         return np.maximum(inputs, 0.0)
 
     def gradient(self, output_gradient):
-        return (output_gradient > 0).astype(float)
+        return np.where(output_gradient > 0, 1.0, 0.0)
+    
 
 
 class LeakyReLU(Activation):
