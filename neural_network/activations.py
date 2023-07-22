@@ -169,7 +169,7 @@ class ReLU(Activation):
         return np.maximum(inputs, 0.0)
 
     def gradient(self, output_gradient):
-        return np.where(output_gradient > 0, 1.0, 0.0)
+        return (output_gradient > 0).astype(float)
     
 
 

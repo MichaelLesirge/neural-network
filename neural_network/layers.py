@@ -2,6 +2,8 @@ import numpy as np
 from activations import Activation
 from abc import ABC, abstractmethod
 
+# Activations network class has list of activations that each layer operates on. Activations are also layers.
+
 class Layer(ABC):
     @abstractmethod
     def forward(self, input: np.ndarray) -> np.ndarray:
