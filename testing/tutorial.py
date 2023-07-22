@@ -1,13 +1,71 @@
 import numpy as np
+from nnfs.datasets import vertical_data as dataset_maker
+from matplotlib import pyplot as plt
 
-# https://www.haio.ir/app/uploads/2021/12/Neural-Networks-from-Scratch-in-Python-by-Harrison-Kinsley-Daniel-Kukiela-z-lib.org_.pdf
+# 10/10 book would recommend: https://nnfs.io/
 
-inputs = np.array([[1, 2], [1, 2]])
+X, y = dataset_maker(samples=100, classes=3)
 
-weights = np.array([[3, 4, 5],
-                    [6, 7, 8]])
-bias = np.array([0, 0, 0])
+# plt.scatter(X[:,0], X[:,1], c = y, cmap="brg")
+# plt.show()
 
-output = np.dot(inputs, weights) + bias
+class LayerDense:
+    def __init__(self, n_inputs, n_outputs) -> None:
+        self.weights = np.random.randn(n_inputs, n_outputs) * 0.01
+        self.bias = np.zeros(n_outputs)
 
-print(output)
+    def forward(self, inputs):
+        self.output = np.dot(inputs, self.weights) + self.bias
+
+class ActivationReLU:
+    def forward(self, inputs):
+        self.output = np.maximum(inputs, 0)
+    
+class ActivationSoftmax:
+    def forward(self, inputs):
+        exp_values = np.exp(inputs - np.max(inputs, axis=1, keepdims=True))
+        self.output = exp_values / np.sum(exp_values, axis=1, keepdims=True)
+        
+class LossCategoricalCrossEntropy:
+    def calculate(self, output_y, y):
+        sample_losses = self.forward(output_y, y)
+        
+        data_loss = np.mean(sample_losses)
+        
+        return data_loss
+
+    def forward(self, y_pred, y_true):
+        y_pred = np.clip(y_pred, 1e-7, 1 - 1e-7)
+        
+        if len(y_true.shape) == 1:
+            correct_confidences = y_pred[range(len(y_pred)), y_true]
+        
+        elif len(y_true.shape) == 2:
+            correct_confidences = np.sum(y_pred * y_true, axis=1)
+        
+        return -np.log(correct_confidences)
+
+dense1 = LayerDense(2, 3)
+activation1 = ActivationReLU()
+
+dense2 = LayerDense(3, 3)
+activation2 = ActivationSoftmax()
+
+dense1.forward(X)
+activation1.forward(dense1.output)
+
+dense2.forward(activation1.output)
+activation2.forward(dense2.output)
+
+output = activation2.output
+
+loss_func = LossCategoricalCrossEntropy()
+
+loss = loss_func.calculate(output, y)
+
+predictions = np.argmax(output, axis=1)
+if len(y.shape) == 2: class_targets = np.argmax(y, axis=1)
+else: class_targets = y
+accuracy = np.mean(predictions==class_targets)
+
+print(f"loss = {loss}, accuracy = {accuracy:%}")
