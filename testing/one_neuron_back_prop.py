@@ -4,13 +4,16 @@ from matplotlib.animation import FuncAnimation
 
 # --- back propagation hyper parameters ---
 
-epochs = 3
-batch_size = 1
+epochs = 5
+batch_size = 4
 learning_rate = 0.1
+
+interval = 200
+show_true_at_last = 1
 
 # --- function parameters  ---
 
-noise_level = 0.02
+noise_level = 0.05
 m, b = 0.5, 0.2
 
 def f(x, *, m=1, b=0, variation=0):
@@ -27,7 +30,7 @@ input_size, output_size = 1, 1
 
 # each row of weights aligns with one input, each column with one output (view example_forward_pass.py)
 weights = np.random.randn(input_size, output_size)
-weights = np.array([[-0.7]])
+# weights = np.array([[-0.7]])
 
 # bias for each output neuron
 bias = np.zeros((1, output_size), np.float64)
@@ -123,7 +126,7 @@ def update(i):
     losses = losses_history[:i+1]
     loss_line.set_data(range(i+1), losses)
         
-    if i+10 >= runs:
+    if i+show_true_at_last >= runs:
         true_line.set_data(x_train, m * x_train + b)
         
     past_points_x, past_points_y = x_batches_history[:i], y_batches_history[:i]
@@ -138,7 +141,7 @@ def update(i):
     
     return animation_lines
 
-animation = FuncAnimation(figure, update, frames=runs, init_func=init, blit=True, interval=100, repeat=False)
+animation = FuncAnimation(figure, update, frames=runs, init_func=init, blit=True, interval=interval, repeat=False)
 plt.show()
 
 # save = input("Save (y/N): ").lower().strip() in ("y", "yes", "true")
