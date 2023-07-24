@@ -39,7 +39,7 @@ each row of weights aligns with one input, each column with one output
 
 prediction_step_1 = np.dot(inputs, weights)
 print("inputs * weights =", prediction_step_1)
-print(f"{inputs.tolist()} * {weights.tolist()} =", prediction_step_1)
+print(f"{inputs.tolist()} * {weights.tolist()} =", prediction_step_1.tolist())
 print()
 
 # [15, 18, 22] + [15, 18, 21]
