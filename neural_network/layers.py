@@ -10,7 +10,7 @@ class Layer(ABC):
         ...
 
     @abstractmethod
-    def backward(self, output_gradient: np.ndarray, learning_rate: float):
+    def backward(self, input: np.ndarray, output_gradient: np.ndarray, learning_rate: float):
         ...
 
 class Dense(Layer):
@@ -21,11 +21,10 @@ class Dense(Layer):
         self.activation = activation
 
     def forward(self, input):
-        self.input = input
-        return np.dot(self.input, self.weights) + self.biases
+        return np.dot(input, self.weights) + self.biases
 
-    def backward(self, output_gradient, learning_rate):
-        weights_gradient = np.dot(output_gradient, self.input.T)
+    def backward(self, input, output_gradient, learning_rate):
+        weights_gradient = np.dot(output_gradient, input.T)
         
         input_gradient = np.dot(self.weights.T, output_gradient)
         
