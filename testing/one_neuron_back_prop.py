@@ -4,16 +4,16 @@ from matplotlib.animation import FuncAnimation
 
 # --- back propagation hyper parameters ---
 
-epochs = 5
+epochs = 3
 batch_size = 4
-learning_rate = 0.1
+learning_rate = 0.01
 
-interval = 200
+interval = 100
 show_true_at_last = 1
 
 # --- function parameters  ---
 
-noise_level = 0.05
+noise_level = 0.1
 m, b = 0.5, 0.2
 
 def f(x, *, m=1, b=0, variation=0):
@@ -21,7 +21,7 @@ def f(x, *, m=1, b=0, variation=0):
 
 # --- create train and test data ---
 
-x_train = np.random.rand(128, 1)
+x_train = np.random.randn(2**9, 1)
 y_train = f(x_train, variation=noise_level, m=m, b=b)
 
 # --- initialize weights and biases ---
@@ -99,8 +99,8 @@ figure, (dot_axis, loss_axis) = plt.subplots(2, gridspec_kw={'height_ratios': (3
 figure.tight_layout(h_pad=1)
 
 dot_axis.set_title(f"Back propagation {epochs=} {batch_size=} {learning_rate=}")
-dot_axis.set_xlim(left=0, right=np.max(x_train))
-dot_axis.set_ylim(bottom=0, top=np.max(y_train))
+dot_axis.set_xlim(left=np.min(x_train), right=np.max(x_train))
+dot_axis.set_ylim(bottom=np.min(y_train), top=np.max(y_train))
 (past_dots,) = dot_axis.plot([], [], "o", color="grey",  markersize=2, label="past")
 (current_dots,) = dot_axis.plot([], [], "o", color="red",  markersize=4, label="batch")
 
@@ -113,8 +113,9 @@ loss_axis.set_xlim(left=0, right=runs)
 loss_axis.set_ylim(bottom=0, top=max(losses_history))
 (loss_line,) = loss_axis.plot([], [], label="loss")
 
-animation_axis = [dot_axis, loss_axis]
 animation_lines = [past_dots, current_dots, pred_line, true_line, loss_line]
+
+batch_samples_per_epoch = runs // batch_size
 
 def init():
     for line in animation_lines:
@@ -128,8 +129,11 @@ def update(i):
         
     if i+show_true_at_last >= runs:
         true_line.set_data(x_train, m * x_train + b)
-        
-    past_points_x, past_points_y = x_batches_history[:i], y_batches_history[:i]
+    
+    batch_num = i // batch_samples_per_epoch
+    batch_start = batch_num * batch_samples_per_epoch
+    
+    past_points_x, past_points_y = x_batches_history[batch_start:i], y_batches_history[batch_start:i]
     past_dots.set_data(past_points_x, past_points_y)
     
     current_batch_x, current_batch_y = x_batches_history[i:i+batch_size], y_batches_history[i:i+batch_size]
