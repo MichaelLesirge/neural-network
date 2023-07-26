@@ -14,11 +14,9 @@ class Layer(ABC):
         ...
 
 class Dense(Layer):
-    def __init__(self, input_size, output_size, activation):
+    def __init__(self, input_size, output_size):
         self.weights = np.random.random((input_size, output_size))
         self.biases = np.zeros(output_size)
-
-        self.activation = activation
 
     def forward(self, input):
         return np.dot(input, self.weights) + self.biases
