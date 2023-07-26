@@ -1,17 +1,7 @@
 import numpy as np
-from activations import Activation
-from abc import ABC, abstractmethod
+from layer_base import Layer
 
 # Activations network class has list of activations that each layer operates on. Activations are also layers.
-
-class Layer(ABC):
-    @abstractmethod
-    def forward(self, input: np.ndarray) -> np.ndarray:
-        ...
-
-    @abstractmethod
-    def backward(self, input: np.ndarray, output_gradient: np.ndarray, learning_rate: float):
-        ...
 
 class Dense(Layer):
     def __init__(self, input_size, output_size):
@@ -32,12 +22,8 @@ class Dense(Layer):
         return input_gradient
     
 def main():
-    from activations import Sigmoid, ReLU
+    from activations import ReLU, Sigmoid
 
-    l = Dense(2, 3, activation=ReLU())
-    
-    print(l.forward([1, 2]))
-    print(l.forward([[1, 2], [1, 2]]))
 
     
 if __name__ == "__main__":
