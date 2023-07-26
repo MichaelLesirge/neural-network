@@ -96,8 +96,8 @@ for i in range(iterations):
     bias_grad = relu_grad
     
     """multiply grad by learning_rate so it does not change to much and subtract that product since you want to go down the slope (try adding it to see how values run away from target)"""
-    weights -= learning_rate * -weights_grad
-    bias -= learning_rate * -bias_grad
+    weights -= learning_rate * weights_grad
+    bias -= learning_rate * bias_grad
 
 loss_fig, loss_axis = plt.subplots()
 loss_axis.plot(range(iterations), losses, label = "loss")
