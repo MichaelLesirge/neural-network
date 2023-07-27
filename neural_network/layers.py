@@ -1,14 +1,26 @@
 import numpy as np
-from layer_base import Layer
-
-# Activations network class has list of activations that each layer operates on. Activations are also layers.
+from base import Layer
 
 class Dense(Layer):
-    def __init__(self, input_size, output_size):
-        self.weights = np.random.random((input_size, output_size))
-        self.biases = np.zeros(output_size)
+    _verbose_name = "fully connected"
+    
+    def __init__(self, n_neurons: int):
+        self._is_initialized = False
+        
+        self.input_size = None
+        self.output_size = n_neurons
+    
+    def _init_params(self):
+        self.weights = np.random.randn(self.input_size, self.output_size)
+        self.biases = np.zeros((1, self.output_size), dtype=np.float64)
+
+        self._is_initialized = True
 
     def forward(self, input):
+        if not self._is_initialized:
+            self.n_in = input.shape[1]
+            self._init_params()
+        
         return np.dot(input, self.weights) + self.biases
 
     def backward(self, input, output_gradient, learning_rate):
@@ -20,11 +32,3 @@ class Dense(Layer):
         self.biases -= learning_rate * output_gradient
         
         return input_gradient
-    
-def main():
-    from activations import ReLU, Sigmoid
-
-
-    
-if __name__ == "__main__":
-    main()

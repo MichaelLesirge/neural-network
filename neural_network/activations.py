@@ -1,8 +1,7 @@
 from abc import ABC, abstractmethod
 
 import numpy as np
-from layer_base import Layer
-
+from base import Layer
 
 class Activation(Layer, ABC):
     _verbose_name = "activation"
@@ -10,15 +9,8 @@ class Activation(Layer, ABC):
     def __init__(self):
         super().__init__()
 
-    def __str__(self) -> str:
-        return f"<{self._verbose_name.title()}>"
-
-    def __repr__(self) -> str:
-        dict_str = ", ".join(f"{key}={value}" for key, value in self.__dict__.items() if not key.startswith("_"))
-        return f"{type(self).__name__}({dict_str})"
-
     def __call__(self, z: np.ndarray) -> np.ndarray:
-        return self.activation(z)
+        return self.forward(z)
 
     def forward(self, inputs):
         return self.activation(inputs)
@@ -268,6 +260,7 @@ class Swish(Activation):
     Pros: smoother curve then ReLU, large negative numbers are zeroed out while smaller ones are kept
     """
     _verbose_name = "swish"
+    
     def __init__(self):
         super().__init__()
         # self.beta = beta
@@ -303,7 +296,7 @@ class Softplus(Activation):
 class Softmax(Activation):
     """
     Softmax.
-    Good for output layer as it makes sum of 1.
+    Good for output layer as it makes sum of 1 with each value being sort of percent chance its that thing.
     """
     _verbose_name = "softmax"
 
@@ -315,13 +308,9 @@ class Softmax(Activation):
         return e_x / np.sum(e_x, axis=-1, keepdims=True)
 
     def backward(self, inputs, output_gradient, learning_rate = None):
-        # Create uninitialized array
         input_derivative = np.empty_like(output_gradient)
         output = self(inputs)
         
-        print(output, output_gradient)
-
-        # Enumerate outputs and gradients
         for index, (single_output, single_grad) in enumerate(zip(output, output_gradient)):
             single_output = single_output.reshape(-1, 1)
             jacobian_matrix = np.diagflat(single_output) - np.dot(single_output, single_output.T)
@@ -330,45 +319,41 @@ class Softmax(Activation):
         return input_derivative
     
     def activation_prime(self, x):
-        return NotImplementedError("Just use backward directly here instead")
+        return NotImplementedError("Non simple Activation, requires calling backward with inputs and output gradient")
+
+__all__ = [Linear, Affine, BinaryStep, Exponential, Sigmoid, HardSigmoid, Tanh, ReLU, LeakyReLU, ELU, GELU, SELU, Swish, Softmax, Softplus,]
+# NAME_MAPPER = {activation.__name__.lower(): activation for activation in __all__}
 
 def main() -> None:
     from matplotlib import pyplot as plt
 
-    x_min, x_max = -5, 5
-
-    precision = 100
-
-    x = np.array([i/precision for i in range(precision * x_min,
-                 precision * x_max + 1)], dtype=np.float64)
+    r = 5
+    x = np.arange(-r, r + 0.0001, 0.001)
+    x_whole = np.arange(-r, r+1, 1)
     
-    x = x.reshape(x.shape + (1,))
-
-    activation_funcs: list[Activation] = [
-        Linear(), Affine(), BinaryStep(),
-        Sigmoid(), HardSigmoid(), Tanh(),
-        ReLU(), LeakyReLU(), ELU(), GELU(), SELU(), Swish(),
-        Softmax(), Softplus(),
-    ]
+    activation_funcs: list[Activation] = [activation() for activation in __all__ if activation not in [Softmax]]
     
-    for activation in activation_funcs:
-        y = activation(x)
-
+    for activation in activation_funcs:        
         plt.title(repr(activation))
         plt.axhline(0, color='dimgrey', linewidth=1)
         plt.axvline(0, color='dimgrey', linewidth=1)
         # plt.ylim(-1.2, 1.2)
-        
-        plt.plot(x, y, label="activation")
+ 
+        plt.plot(x, activation.activation(x), label="activation")
         plt.plot(x, activation.activation_prime(x), label="activation prime")
-        
+                
         print(activation)
+        print("x:\t", ",\t".join(format(x, ".2f") for x in x_whole))
+        print("y:\t", ",\t".join(format(y, ".2f") for y in activation.activation(x_whole)))
+        print("grad:\t", ",\t".join(format(grad, ".2f") for grad in activation.activation_prime(x_whole)))
+        print()
         
         plt.legend(loc="best")
         plt.grid(True)
         plt.show()
 
-def softmax_example_main():   
+def softmax_example_main():
+    # softmax, why can't you just be simple
     def binary_cross_entropy(y_true, y_pred):
         return np.mean((-y_true * np.log(y_pred)) - (1 - y_true) * np.log(1 - y_pred))
 
