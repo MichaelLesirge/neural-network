@@ -14,7 +14,9 @@ iterations = 100
 outputs = []
 losses = []
 
-for i in range(iterations):
+print(f"Start: Weights={weights.tolist()}, Bias={bias}")
+
+for i in range(1, iterations + 1):
     # n() is full "network", l() is loss, a() is activation, f() is neuron stuff
     # x is input
     
@@ -35,6 +37,9 @@ for i in range(iterations):
     
     losses.append(loss)
     outputs.append(relu_output)
+    
+    if i == 1:
+        print(f"Iteration #0: Loss={loss}, Output={relu_output}, Target={target}")
     
     # --- Backward ---
     
@@ -79,7 +84,6 @@ for i in range(iterations):
     f'(w, x, b) = w
     """
     neuron_grad = relu_grad * weights
-    print(neuron_grad)
     
     """
     f'(w, x, b) = w*x + b
@@ -87,7 +91,7 @@ for i in range(iterations):
     prime for w parameter
     b can be treated as constant so its derivative is 0, and w is what x is multiped by so it is its gradient
     f'(w, x, b) = x
-    
+ 
     prime for w parameter
     w and x are constant so they can be ignore as their derivative is 0, while b is linear is its derivative is 1 (b = b * 1)
     f'(w, x, b) = 1
@@ -98,6 +102,13 @@ for i in range(iterations):
     """multiply grad by learning_rate so it does not change to much and subtract that product since you want to go down the slope (try adding it to see how values run away from target)"""
     weights -= learning_rate * weights_grad
     bias -= learning_rate * bias_grad
+    
+    if i % (iterations // 10) == 0:
+        print(f"Iteration #{i}: Loss={loss}, Output={relu_output}, Target={target}")
+
+print(f"End: Weights={weights.tolist()}, Bias={bias}")
+
+# --- plotting stuff ---
 
 loss_fig, loss_axis = plt.subplots()
 loss_axis.plot(range(iterations), losses, label = "loss")
