@@ -2,30 +2,27 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 
-
-class Activation(ABC):    
-    _verbose_name = None
+class Activation(ABC):
+    _verbose_name = ""
     
     def __str__(self) -> str:
-        return f"<{(self._verbose_name if self._verbose_name is None else type(self).__name__).title()} {super(self).__name__}>"
+        return f"<{(self._verbose_name or __class__.__name__).title()} {self.__class__.__base__.__name__.title()}>"
 
     def __repr__(self) -> str:
         dict_str = ", ".join(f"{key}={value}" for key, value in self.__dict__.items() if not key.startswith("_"))
         return f"{type(self).__name__}({dict_str})"
-
+    
     def __init__(self):
         super().__init__()
 
     def __call__(self, x: np.ndarray) -> np.ndarray:
-        return self.activation(x)
+        return self.func(x)
+    
+    @abstractmethod
+    def func(self, x: np.ndarray) -> np.ndarray: pass
 
     @abstractmethod
-    def activation(self, x: np.ndarray) -> np.ndarray:
-        ...
-
-    @abstractmethod
-    def activation_prime(self, x: np.ndarray) -> np.ndarray:
-        ...
+    def gradient(self, x: np.ndarray) -> np.ndarray: pass
 
 
 class BinaryStep(Activation):
@@ -39,10 +36,10 @@ class BinaryStep(Activation):
         super().__init__()
         self.threshold = threshold
 
-    def activation(self, x):
+    def func(self, x):
         return np.where(x < self.threshold, 0.0, 1.0)
 
-    def activation_prime(self, x):
+    def gradient(self, x):
         return np.zeros_like(x, dtype=float)
 
 
@@ -54,16 +51,16 @@ class Sigmoid(Activation):
     Pros: Smooth gradient so no jumping around, always between 0 and 1.
     Cons: Little change in output from values ~3 or more from zero.
     """
-    _verbose_name = "logistic activation function"
+    _verbose_name = "logistic"
 
     def __init__(self):
         super().__init__()
 
-    def activation(self, x):
+    def func(self, x):
         return 1.0 / (1.0 + np.exp(-x))
 
-    def activation_prime(self, output_gradient):
-        s = self(output_gradient)
+    def gradient(self, x):
+        s = self(x)
         return s * (1.0-s)
 
 
@@ -77,11 +74,11 @@ class HardSigmoid(Activation):
     def __init__(self):
         super().__init__()
 
-    def activation(self, x):
+    def func(self, x):
         x = 0.2 * x + 0.5
         return np.clip(x, 0.0, 1.0)
 
-    def activation_prime(self, x):
+    def gradient(self, x):
         return np.where((x >= -2.5) & (x <= 2.5), 0.2, 0.0)
 
 
@@ -98,10 +95,10 @@ class Tanh(Activation):
     def __init__(self):
         super().__init__()
 
-    def activation(self, x):
+    def func(self, x):
         return np.tanh(x)
 
-    def activation_prime(self, x):
+    def gradient(self, x):
         return 1 - np.tanh(x) ** 2
 
 
@@ -112,15 +109,15 @@ class Affine(Activation):
     """
     _verbose_name = "affine"
 
-    def __init__(self, slope=1, intercept=0):
+    def __init__(self, slope=1.0, intercept=0.0):
         super().__init__()
         self.slope = slope
         self.intercept = intercept
 
-    def activation(self, x):
+    def func(self, x):
         return self.slope * x + self.intercept
 
-    def activation_prime(self, x):
+    def gradient(self, x):
         return np.ones_like(x, dtype=float) * self.slope
 
 
@@ -134,23 +131,23 @@ class Linear(Activation):
     def __init__(self):
         super().__init__()
 
-    def activation(self, x):
+    def func(self, x):
         return x
-
-    def activation_prime(self, x):
+    
+    def gradient(self, x):
         return np.ones_like(x, dtype=float)
 
 
-class Exponential(Activation):
+class Exponential(Activation): 
     _verbose_name = "exponential"
 
     def __init__(self):
         super().__init__()
 
-    def activation(self, x):
+    def func(self, x):
         return np.exp(x)
 
-    def activation_prime(self, x):
+    def gradient(self, x):
         return np.exp(x)
 
 
@@ -166,10 +163,10 @@ class ReLU(Activation):
     def __init__(self):
         super().__init__()
 
-    def activation(self, x):
+    def func(self, x):
         return np.maximum(x, 0.0)
 
-    def activation_prime(self, x):
+    def gradient(self, x):
         return (x > 0).astype(float)
     
 
@@ -186,10 +183,10 @@ class LeakyReLU(Activation):
         super().__init__()
         self.alpha = alpha
 
-    def activation(self, x):
+    def func(self, x):
         return np.where(x > 0, x, x * self.alpha)
 
-    def activation_prime(self, x):
+    def gradient(self, x):
         return np.where(x > 0, 1.0, self.alpha)
 
 
@@ -205,10 +202,10 @@ class ELU(Activation):
         super().__init__()
         self.alpha = alpha
 
-    def activation(self, x):
+    def func(self, x):
         return np.where(x > 0, x, self.alpha * (np.exp(x) - 1))
 
-    def activation_prime(self, x):
+    def gradient(self, x):
         return np.where(x > 0, 1.0, self.alpha * np.exp(x))
 
 
@@ -218,16 +215,16 @@ class GELU(Activation):
 
     Pros: Like ReLU, buts weights inputs by their value instead of sign
     """
-    _verbose_name = "gaussian error linear unit"
+    _verbose_name = "approximate gaussian error linear unit"
 
     def __init__(self):
         super().__init__()
         # self.approximate = approximate
 
-    def activation(self, x):
+    def func(self, x):
         return 0.5 * x * (1 + np.tanh(np.sqrt(2 / np.pi) * (x + 0.044715 * x ** 3)))
 
-    def activation_prime(self, x):
+    def gradient(self, x):
         # Ya I have no idea how/why this works, I just copied it down
         erf_prime = (2 / np.sqrt(np.pi)) * np.exp(-((x / np.sqrt(2)) ** 2))
         approx = np.tanh(np.sqrt(2 / np.pi) * x + 0.044715 * x ** 3)
@@ -249,10 +246,10 @@ class SELU(Activation):
         self.scale = 1.0507009873554804934193349852946
         self._elu = ELU(alpha=self.alpha)
 
-    def activation(self, x):
+    def func(self, x):
         return self.scale * self._elu(x)
 
-    def activation_prime(self, x):
+    def gradient(self, x):
         return self.scale * np.where(x >= 0, 1.0, np.exp(x) * self.alpha)
 
 class Swish(Activation):
@@ -267,11 +264,11 @@ class Swish(Activation):
         # self.beta = beta
         self._sigmoid = Sigmoid()
     
-    def activation(self, x):
+    def func(self, x):
         return x * self._sigmoid(x)
     
-    def activation_prime(self, x):
-        return x * self._sigmoid.activation_prime(x) + self._sigmoid(x)
+    def gradient(self, x):
+        return x * self._sigmoid.gradient(x) + self._sigmoid(x)
 
 class Softplus(Activation):
     """
@@ -286,15 +283,43 @@ class Softplus(Activation):
     def __init__(self):
         super().__init__()
 
-    def activation(self, x):
+    def func(self, x):
         return np.log(np.exp(x) + 1)
 
-    def activation_prime(self, x):
+    def gradient(self, x):
         exp_x = np.exp(x)
         return exp_x / (exp_x + 1)
+    
+from layers import Layer
+class Softmax(Activation, Layer):
+    """Put with layers since it needs output gradient"""
+    _verbose_name = "softmax"
 
-__all__ = [Linear, Affine, BinaryStep, Exponential, Sigmoid, HardSigmoid, Tanh, ReLU, LeakyReLU, ELU, GELU, SELU, Swish, Softplus,]
-NAME_MAPPER = {activation.__name__.lower(): activation for activation in __all__}
+    def __init__(self):
+        super().__init__()
+
+    def backward(self, inputs, output_gradient, learning_rate):
+        return self.gradient(inputs, output_gradient)
+    
+    def forward(self, inputs):
+        self.func(inputs)
+
+    def func(self, x):
+        e_x = np.exp(x - np.max(x, axis=-1, keepdims=True))
+        return e_x / np.sum(e_x, axis=-1, keepdims=True)
+
+    def gradient(self, inputs, output_gradient):
+        input_derivative = np.empty_like(output_gradient)
+        output = self(inputs)
+        
+        for index, (single_output, single_grad) in enumerate(zip(output, output_gradient)):
+            single_output = single_output.reshape(-1, 1)
+            jacobian_matrix = np.diagflat(single_output) - np.dot(single_output, single_output.T)
+            input_derivative[index] = np.dot(jacobian_matrix, single_grad)
+            
+        return input_derivative
+        
+__all__ = [Linear, Affine, BinaryStep, Exponential, Sigmoid, HardSigmoid, Tanh, ReLU, LeakyReLU, ELU, GELU, SELU, Swish, Softplus, Softmax]
 
 def main() -> None:
     from matplotlib import pyplot as plt
@@ -303,7 +328,7 @@ def main() -> None:
     x = np.arange(-r, r + 0.0001, 0.001)
     x_whole = np.arange(-r, r+1, 1)
     
-    activation_funcs: list[Activation] = [activation() for activation in __all__ if activation not in []]
+    activation_funcs: list[Activation] = [activation() for activation in __all__ if activation not in [Softmax]]
     
     for activation in activation_funcs:        
         plt.title(repr(activation))
@@ -311,13 +336,13 @@ def main() -> None:
         plt.axvline(0, color='dimgrey', linewidth=1)
         # plt.ylim(-1.2, 1.2)
  
-        plt.plot(x, activation.activation(x), label="activation")
-        plt.plot(x, activation.activation_prime(x), label="activation prime")
+        plt.plot(x, activation.func(x), label="activation")
+        plt.plot(x, activation.gradient(x), label="activation prime")
                 
         print(activation)
         print("x:\t", ",\t".join(format(x, ".2f") for x in x_whole))
-        print("y:\t", ",\t".join(format(y, ".2f") for y in activation.activation(x_whole)))
-        print("grad:\t", ",\t".join(format(grad, ".2f") for grad in activation.activation_prime(x_whole)))
+        print("y:\t", ",\t".join(format(y, ".2f") for y in activation.func(x_whole)))
+        print("grad:\t", ",\t".join(format(grad, ".2f") for grad in activation.gradient(x_whole)))
         print()
         
         plt.legend(loc="best")

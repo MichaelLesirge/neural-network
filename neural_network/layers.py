@@ -1,26 +1,17 @@
-import numpy as np
 from abc import ABC, abstractmethod
 
+import numpy as np
+
 class Layer(ABC):
-    _verbose_name = None
-    
     def __str__(self) -> str:
-        return f"<{(self._verbose_name if self._verbose_name is None else type(self).__name__).title()} {super(self).__name__.title()}>"
+        return f"<{(self._verbose_name or __class__.__name__).title()} {self.__class__.__base__.__name__.title()}>"
 
     def __repr__(self) -> str:
         dict_str = ", ".join(f"{key}={value}" for key, value in self.__dict__.items() if not key.startswith("_"))
         return f"{type(self).__name__}({dict_str})"
-    
-    def __init__(self) -> None:
-        super().__init__()
-        
-    @abstractmethod
-    def forward(inputs: np.ndarray) -> np.ndarray:
-        ...
-    
-    @abstractmethod
-    def backward(inputs: np.ndarray, output_gradient: np.ndarray, learning_rate: np.float64) -> np.ndarray:
-        ...
+
+    def forward(self, inputs: np.ndarray) -> np.ndarray: pass
+    def backward(self, inputs: np.ndarray, output_gradient: np.ndarray, learning_rate: np.ndarray) -> np.ndarray: pass
 
 class Dense(Layer):
     _verbose_name = "fully connected"
@@ -54,26 +45,4 @@ class Dense(Layer):
         self.weights -= learning_rate * weights_gradient
         self.biases -= learning_rate * bias_gradient
         
-        return input_gradient
-    
-class Softmax(Layer):
-    """Put with layers since it needs output gradient"""
-    _verbose_name = "softmax"
-
-    def __init__(self):
-        super().__init__()
-
-    def activation(self, x):
-        e_x = np.exp(x - np.max(x, axis=-1, keepdims=True))
-        return e_x / np.sum(e_x, axis=-1, keepdims=True)
-
-    def backward(self, inputs, output_gradient):
-        input_derivative = np.empty_like(output_gradient)
-        output = self(inputs)
-        
-        for index, (single_output, single_grad) in enumerate(zip(output, output_gradient)):
-            single_output = single_output.reshape(-1, 1)
-            jacobian_matrix = np.diagflat(single_output) - np.dot(single_output, single_output.T)
-            input_derivative[index] = np.dot(jacobian_matrix, single_grad)
-            
-        return input_derivative
+        return input_gradient 
