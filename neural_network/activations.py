@@ -15,7 +15,7 @@ class Activation(BaseLayer, ABC):
     def forward(self, inputs):
         return self.activation(inputs)
 
-    def backward(self, inputs, output_gradient, learning_rate = None):
+    def backward(self, inputs, output_gradient, learning_rate=None):
         return output_gradient * self.activation_prime(inputs)
 
     @abstractmethod
@@ -25,7 +25,6 @@ class Activation(BaseLayer, ABC):
     @abstractmethod
     def activation_prime(self, x: np.ndarray) -> np.ndarray:
         ...
-
 
 
 class BinaryStep(Activation):
@@ -171,7 +170,6 @@ class ReLU(Activation):
 
     def activation_prime(self, x):
         return (x > 0).astype(float)
-    
 
 
 class LeakyReLU(Activation):
@@ -254,22 +252,25 @@ class SELU(Activation):
     def activation_prime(self, x):
         return self.scale * np.where(x >= 0, 1.0, np.exp(x) * self.alpha)
 
+
 class Swish(Activation):
     """
     Swish.
     Pros: smoother curve then ReLU, large negative numbers are zeroed out while smaller ones are kept
     """
     _verbose_name = "swish"
+
     def __init__(self):
         super().__init__()
         # self.beta = beta
         self._sigmoid = Sigmoid()
-    
+
     def activation(self, x):
         return x * self._sigmoid(x)
-    
+
     def activation_prime(self, x):
         return x * self._sigmoid.activation_prime(x) + self._sigmoid(x)
+
 
 class Softplus(Activation):
     """
@@ -306,23 +307,27 @@ class Softmax(Activation):
         e_x = np.exp(x - np.max(x, axis=-1, keepdims=True))
         return e_x / np.sum(e_x, axis=-1, keepdims=True)
 
-    def backward(self, inputs, output_gradient, learning_rate = None):
+    def backward(self, inputs, output_gradient, learning_rate=None):
         # Create uninitialized array
         input_derivative = np.empty_like(output_gradient)
         output = self(inputs)
-        
+
         # Enumerate outputs and gradients
         for index, (single_output, single_grad) in enumerate(zip(output, output_gradient)):
             single_output = single_output.reshape(-1, 1)
-            jacobian_matrix = np.diagflat(single_output) - np.dot(single_output, single_output.T)
+            jacobian_matrix = np.diagflat(
+                single_output) - np.dot(single_output, single_output.T)
             input_derivative[index] = np.dot(jacobian_matrix, single_grad)
-            
+
         return input_derivative
-    
+
     def activation_prime(self, x, output_gradient):
         return self.backward(x, output_gradient)
-    
-__all__ = [BinaryStep, Sigmoid, HardSigmoid, Tanh, Affine, Linear, Exponential, ReLU, LeakyReLU, ELU, GELU, SELU, Swish, Softplus, Softmax]
+
+
+__all__ = [BinaryStep, Sigmoid, HardSigmoid, Tanh, Affine, Linear,
+           Exponential, ReLU, LeakyReLU, ELU, GELU, SELU, Swish, Softplus, Softmax]
+
 
 def main() -> None:
     from matplotlib import pyplot as plt
@@ -333,11 +338,12 @@ def main() -> None:
 
     x = np.array([i/precision for i in range(precision * x_min,
                  precision * x_max + 1)], dtype=np.float64)
-    
+
     x = x.reshape(x.shape + (1,))
 
-    activation_funcs: list[Activation] = [activation() for activation in __all__ if activation not in [Softmax]]
-    
+    activation_funcs: list[Activation] = [
+        activation() for activation in __all__ if activation not in [Softmax]]
+
     for activation in activation_funcs:
         y = activation(x)
 
@@ -345,26 +351,26 @@ def main() -> None:
         plt.axhline(0, color='dimgrey', linewidth=1)
         plt.axvline(0, color='dimgrey', linewidth=1)
         # plt.ylim(-1.2, 1.2)
-        
+
         plt.plot(x, y, label="activation")
         plt.plot(x, activation.activation_prime(x), label="activation prime")
-        
+
         print(activation)
-        
+
         plt.legend(loc="best")
         plt.grid(True)
         plt.show()
 
 
-def softmax_example_main():   
+def softmax_example_main():
     def binary_cross_entropy(y_true, y_pred):
         return np.mean((-y_true * np.log(y_pred)) - (1 - y_true) * np.log(1 - y_pred))
 
     def binary_cross_entropy_prime(y_true, y_pred):
         return (((1 - y_true) / (1 - y_pred)) - (y_true / y_pred)) / np.size(y_true, axis=-1)
-    
 
-    y_pred_prev = np.array([[0.4, 0.7, 0.2, 1.3], [0.4, 0.7, 0.2, 1.3]], dtype=float)
+    y_pred_prev = np.array(
+        [[0.4, 0.7, 0.2, 1.3], [0.4, 0.7, 0.2, 1.3]], dtype=float)
     # y_pred = np.array([0.4, 0.7, 0.2, 1.3], dtype=float)
     # y_pred = y_pred.reshape(y_pred.shape + (1,))
     print("y_pred_prev =")
@@ -377,42 +383,44 @@ def softmax_example_main():
     print("\nsoftmax(y_pred_prev) =")
     print(y_pred)
     print(np.sum(y_pred, axis=1, keepdims=True))
-    
+
     # y_pred2 = softmax2.forward(y_pred_prev)
     # print("\nsoftmax2(y_pred_prev) =")
     # print(y_pred2)
     # print(np.sum(y_pred2, axis=1, keepdims=True))
-    
-    y_true = np.array([[0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0]], dtype=float)
+
+    y_true = np.array(
+        [[0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0]], dtype=float)
     # y_true = np.array([0.0, 1.0, 0.0, 0.0], dtype=float)
     # y_true = y_true.reshape(y_true.shape + (1,))
     print("\ny_true =")
     print(y_true)
-    
+
     loss_prime = binary_cross_entropy(y_true, y_pred)
     print("\nloss =")
     print(loss_prime)
-    
+
     # loss_prime2 = binary_cross_entropy(y_true, y_pred2)
     # print("\nloss2 =")
     # print(loss_prime2)
 
     loss_prime = binary_cross_entropy_prime(y_true, y_pred)
     print("\nloss_prime =")
-    print(loss_prime)  
+    print(loss_prime)
 
     loss_prime2 = loss_prime
     # loss_prime2 = binary_cross_entropy_prime(y_true, y_pred2)
     # print("\nloss_prime2 =")
-    # print(loss_prime)  
+    # print(loss_prime)
 
     print("\nsoftmax.backward(error_prime) =")
     gradient = softmax.backward(y_pred_prev, loss_prime)
     print(gradient)
-    
+
     print("\nsoftmax2.backward(error_prime) =")
     gradient2 = softmax2.backward(y_pred_prev, loss_prime2)
     print(gradient2)
-    
+
+
 if __name__ == "__main__":
     main()
