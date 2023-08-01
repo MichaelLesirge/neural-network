@@ -19,6 +19,7 @@ Dot product of two arrays. Specifically,
 Only works if the last dimension of `a` is the same size as the second-to-last dimension of `b`.
 """
 
+# for 2d only:
 # The width of `a` must be the same as the height `b`.
 # 'a' sets the height and 'b' sets the width
 
