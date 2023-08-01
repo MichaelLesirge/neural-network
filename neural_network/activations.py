@@ -369,15 +369,14 @@ def softmax_example_main():
     def binary_cross_entropy_prime(y_true, y_pred):
         return (((1 - y_true) / (1 - y_pred)) - (y_true / y_pred)) / np.size(y_true, axis=-1)
 
-    y_pred_prev = np.array(
-        [[0.4, 0.7, 0.2, 1.3], [0.4, 0.7, 0.2, 1.3]], dtype=float)
+    y_pred_prev = np.array([[0.4, 0.7, 0.2, 1.3], [0.4, 0.7, 0.2, 1.3]], dtype=float)
     # y_pred = np.array([0.4, 0.7, 0.2, 1.3], dtype=float)
     # y_pred = y_pred.reshape(y_pred.shape + (1,))
     print("y_pred_prev =")
     print(y_pred_prev)
 
     softmax = Softmax()
-    softmax2 = Softmax2()
+    # softmax2 = Softmax2()
 
     y_pred = softmax(y_pred_prev)
     print("\nsoftmax(y_pred_prev) =")
@@ -408,7 +407,6 @@ def softmax_example_main():
     print("\nloss_prime =")
     print(loss_prime)
 
-    loss_prime2 = loss_prime
     # loss_prime2 = binary_cross_entropy_prime(y_true, y_pred2)
     # print("\nloss_prime2 =")
     # print(loss_prime)
@@ -417,9 +415,9 @@ def softmax_example_main():
     gradient = softmax.backward(y_pred_prev, loss_prime)
     print(gradient)
 
-    print("\nsoftmax2.backward(error_prime) =")
-    gradient2 = softmax2.backward(y_pred_prev, loss_prime2)
-    print(gradient2)
+    # print("\nsoftmax2.backward(error_prime) =")
+    # gradient2 = softmax2.backward(y_pred_prev, loss_prime2)
+    # print(gradient2)
 
 
 if __name__ == "__main__":
