@@ -322,38 +322,6 @@ class Softmax(Activation):
     def activation_prime(self, x, output_gradient):
         return self.backward(x, output_gradient)
     
-    
-class Softmax2(Activation):
-    """
-    Softmax.
-    Good for output layer as it makes sum of 1.
-    """
-    _verbose_name = "softmax"
-
-    def __init__(self):
-        super().__init__()
-
-    def activation(self, x):
-        e_x = np.exp(x - np.max(x, axis=-1, keepdims=True))
-        return e_x / np.sum(e_x, axis=-1, keepdims=True)
-
-    def backward(self, inputs, output_gradient, learning_rate = None):
-        # Create uninitialized array
-        input_derivative = np.empty_like(output_gradient)
-        output = self(inputs)
-        
-        # Enumerate outputs and gradients
-        for index, (single_output, single_grad) in enumerate(zip(output, output_gradient)):
-            single_output = single_output.reshape(-1, 1)
-            jacobian_matrix = np.diagflat(single_output) - np.dot(single_output, single_output.T)
-            input_derivative[index] = np.dot(jacobian_matrix, single_grad)
-            
-        return input_derivative
-    
-    def activation_prime(self, x, output_gradient):
-        """only activation to require something more than output"""
-        return self.backward(x, output_gradient)
-
 __all__ = [BinaryStep, Sigmoid, HardSigmoid, Tanh, Affine, Linear, Exponential, ReLU, LeakyReLU, ELU, GELU, SELU, Swish, Softplus, Softmax]
 
 def main() -> None:
@@ -447,4 +415,4 @@ def softmax_example_main():
     print(gradient2)
     
 if __name__ == "__main__":
-    softmax_example_main()
+    main()
