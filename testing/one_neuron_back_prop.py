@@ -4,7 +4,7 @@ from matplotlib.animation import FuncAnimation
 
 # --- back propagation hyper parameters ---
 
-EPOCHS = 3
+EPOCHS = 2
 BATCH_SIZE = 4
 LEARNING_RATE = 0.01
 
@@ -18,10 +18,10 @@ def f(x, *, m=1, b=0, variation=0):
 
 # --- create train and test data ---
 
-x_train_size = 2**9
+train_size = 2**9
 
 # x_train = np.random.randn(x_train_size, 1)
-x_train = np.random.uniform(-2, 2, (x_train_size, 1))
+x_train = np.random.uniform(-2, 2, (train_size, 1))
 y_train = f(x_train, variation=noise_level, m=m, b=b)
 
 # --- initialize weights and biases ---
@@ -92,9 +92,9 @@ total_runs = len(params_history)
 
 # --- graph parameters ---
 
-TITLE = "one neuron back propagation"
+TITLE = "one neuron"
 STYLE = "dark_background"
-GRAPH_HEIGHT_RATIO = (3, 1)
+GRAPH_HEIGHT_RATIO = (4, 1)
 
 # --- animation parameters ---
 
@@ -105,7 +105,7 @@ SHOW_TRUE_LINE_AT = -1
 plt.style.use(STYLE)
 
 figure, (dot_axis, loss_axis) = plt.subplots(2, gridspec_kw={"height_ratios": GRAPH_HEIGHT_RATIO})
-figure.tight_layout(h_pad=1)
+figure.tight_layout()
 
 dot_axis.set_title(f"{TITLE.title()} {EPOCHS=} {BATCH_SIZE=} {LEARNING_RATE=}")
 dot_axis.set_xlim(left=np.min(x_train), right=np.max(x_train))
@@ -124,7 +124,7 @@ loss_axis.set_ylim(bottom=0, top=max(losses_history))
 
 animation_lines = [past_dots, current_dots, pred_line, true_line, loss_line]
 
-batch_samples_per_epoch = total_runs // BATCH_SIZE
+batches_per_epoch = train_size // BATCH_SIZE
 
 def init():
     for line in animation_lines:
@@ -139,10 +139,9 @@ def update(i):
     if i >= total_runs + SHOW_TRUE_LINE_AT:
         true_line.set_data(x_train, m * x_train + b)
     
-    batch_num = i // batch_samples_per_epoch
-    batch_start = batch_num * batch_samples_per_epoch
+    epoch_start = (i // batches_per_epoch) * batches_per_epoch
     
-    past_points_x, past_points_y = x_batches_history[batch_start:i], y_batches_history[batch_start:i]
+    past_points_x, past_points_y = x_batches_history[epoch_start:i], y_batches_history[epoch_start:i]
     past_dots.set_data(past_points_x, past_points_y)
     
     current_batch_x, current_batch_y = x_batches_history[i:i+BATCH_SIZE], y_batches_history[i:i+BATCH_SIZE]
@@ -155,6 +154,7 @@ def update(i):
     return animation_lines
 
 animation = FuncAnimation(figure, update, frames=total_runs, init_func=init, blit=True, interval=ANIMATION_FRAMES_PER_MS, repeat=False)
+figure_manager = plt.get_current_fig_manager()
 plt.show()
 
 # save = input("Save (y/N): ").lower().strip() in ("y", "yes", "true")
