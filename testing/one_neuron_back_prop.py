@@ -4,12 +4,9 @@ from matplotlib.animation import FuncAnimation
 
 # --- back propagation hyper parameters ---
 
-epochs = 3
-batch_size = 4
-learning_rate = 0.01
-
-interval = 100
-show_true_at_last = 1
+EPOCHS = 3
+BATCH_SIZE = 4
+LEARNING_RATE = 0.01
 
 # --- function parameters  ---
 
@@ -21,7 +18,10 @@ def f(x, *, m=1, b=0, variation=0):
 
 # --- create train and test data ---
 
-x_train = np.random.randn(2**9, 1)
+x_train_size = 2**9
+
+# x_train = np.random.randn(x_train_size, 1)
+x_train = np.random.uniform(-2, 2, (x_train_size, 1))
 y_train = f(x_train, variation=noise_level, m=m, b=b)
 
 # --- initialize weights and biases ---
@@ -41,20 +41,21 @@ def mse(y_true, y_pred):
     return np.mean(np.square(y_true - y_pred))
 
 def mse_prime(y_true, y_pred):
-    return 2 * (y_pred - y_true) / y_true.shape[0]
+    return 2 * (y_pred - y_true) / np.size(y_true, 0)
 
 # --- training ---
 
 def n_split_array(arr, n_size, *, keep_extra=True):
     """split arr into chunks of size n with extra added on end if keep_extra is true"""
     if n_size is None: return arr
-    div, extra = divmod(arr.shape[0], n_size)
+    div, extra = divmod(np.size(arr, 0), n_size)
     a, b = np.split(arr, [extra]) if extra else arr, None
     return np.array_split(a, div) + ([b] if (b and keep_extra) else [])
 
 
 def same_shuffle(arrays):
-    order = np.arange(arrays[0].shape[0])
+    """shuffle 2 arrays """
+    order = np.arange(np.size(arrays[0], 0))
     np.random.shuffle(order)
     return tuple(array[order] for array in arrays)
 
@@ -62,9 +63,9 @@ losses_history = []
 params_history = []
 x_batches_history, y_batches_history = [], []
 
-for epoch in range(epochs):
+for epoch in range(EPOCHS):
     x_train, y_train = same_shuffle((x_train, y_train))
-    for x_batch, y_batch in zip(n_split_array(x_train, batch_size, keep_extra=False), n_split_array(y_train, batch_size, keep_extra=False)):
+    for x_batch, y_batch in zip(n_split_array(x_train, BATCH_SIZE, keep_extra=False), n_split_array(y_train, BATCH_SIZE, keep_extra=False)):
         # --- forward pass of our one layer on batch ---
         output = np.dot(x_batch, weights) + bias
         loss = mse(y_batch, output)
@@ -73,10 +74,10 @@ for epoch in range(epochs):
         loss_gradient = mse_prime(y_batch, output)
         
         weights_gradient = np.dot(x_batch.T, loss_gradient)
-        weights += learning_rate * -weights_gradient
+        weights += LEARNING_RATE * -weights_gradient
 
         bias_gradient = np.sum(loss_gradient, axis=0, keepdims=True)
-        bias += learning_rate * -bias_gradient
+        bias += LEARNING_RATE * -bias_gradient
 
         # output_gradient = np.dot(weights, batch_x.T)
 
@@ -87,18 +88,26 @@ for epoch in range(epochs):
         x_batches_history.extend(x_batch.flatten().tolist())
         y_batches_history.extend(y_batch.flatten().tolist())
 
-runs = len(params_history)
+total_runs = len(params_history)
 
-# --- animation ---
-plt.style.use('dark_background')
+# --- graph parameters ---
 
-dot_axis: plt.Axes
-loss_axis: plt.Axes
-size = 3
-figure, (dot_axis, loss_axis) = plt.subplots(2, gridspec_kw={'height_ratios': (3, 1)})
+TITLE = "one neuron back propagation"
+STYLE = "dark_background"
+GRAPH_HEIGHT_RATIO = (3, 1)
+
+# --- animation parameters ---
+
+ANIMATION_FRAMES_PER_MS = 100
+SHOW_TRUE_LINE_AT = -1
+
+# --- animation / graphing ---
+plt.style.use(STYLE)
+
+figure, (dot_axis, loss_axis) = plt.subplots(2, gridspec_kw={"height_ratios": GRAPH_HEIGHT_RATIO})
 figure.tight_layout(h_pad=1)
 
-dot_axis.set_title(f"Back propagation {epochs=} {batch_size=} {learning_rate=}")
+dot_axis.set_title(f"{TITLE.title()} {EPOCHS=} {BATCH_SIZE=} {LEARNING_RATE=}")
 dot_axis.set_xlim(left=np.min(x_train), right=np.max(x_train))
 dot_axis.set_ylim(bottom=np.min(y_train), top=np.max(y_train))
 (past_dots,) = dot_axis.plot([], [], "o", color="grey",  markersize=2, label="past")
@@ -109,13 +118,13 @@ dot_axis.set_ylim(bottom=np.min(y_train), top=np.max(y_train))
 dot_axis.legend(loc="lower right")
 
 loss_axis.set_title("Loss")
-loss_axis.set_xlim(left=0, right=runs)
+loss_axis.set_xlim(left=0, right=total_runs)
 loss_axis.set_ylim(bottom=0, top=max(losses_history))
 (loss_line,) = loss_axis.plot([], [], label="loss")
 
 animation_lines = [past_dots, current_dots, pred_line, true_line, loss_line]
 
-batch_samples_per_epoch = runs // batch_size
+batch_samples_per_epoch = total_runs // BATCH_SIZE
 
 def init():
     for line in animation_lines:
@@ -127,7 +136,7 @@ def update(i):
     losses = losses_history[:i+1]
     loss_line.set_data(range(i+1), losses)
         
-    if i+show_true_at_last >= runs:
+    if i >= total_runs + SHOW_TRUE_LINE_AT:
         true_line.set_data(x_train, m * x_train + b)
     
     batch_num = i // batch_samples_per_epoch
@@ -136,7 +145,7 @@ def update(i):
     past_points_x, past_points_y = x_batches_history[batch_start:i], y_batches_history[batch_start:i]
     past_dots.set_data(past_points_x, past_points_y)
     
-    current_batch_x, current_batch_y = x_batches_history[i:i+batch_size], y_batches_history[i:i+batch_size]
+    current_batch_x, current_batch_y = x_batches_history[i:i+BATCH_SIZE], y_batches_history[i:i+BATCH_SIZE]
     current_dots.set_data(current_batch_x, current_batch_y)
     
     weights, biases = params_history[i] 
@@ -145,7 +154,7 @@ def update(i):
     
     return animation_lines
 
-animation = FuncAnimation(figure, update, frames=runs, init_func=init, blit=True, interval=interval, repeat=False)
+animation = FuncAnimation(figure, update, frames=total_runs, init_func=init, blit=True, interval=ANIMATION_FRAMES_PER_MS, repeat=False)
 plt.show()
 
 # save = input("Save (y/N): ").lower().strip() in ("y", "yes", "true")
