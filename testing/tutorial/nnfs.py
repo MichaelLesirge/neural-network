@@ -28,7 +28,7 @@ class LayerDense:
         # each bias aligns with an output
         self.bias = np.zeros((1, n_outputs), dtype=float)
 
-    def forward(self, inputs):
+    def forward(self, input):
         """
         f(inputs, weights, biases) = inputs * weights + biases
         
@@ -52,7 +52,7 @@ class LayerDense:
         output     24      28        32
         """
         
-        self.inputs = inputs
+        self.inputs = input
         self.output = np.dot(self.inputs, self.weights) + self.bias
 
     def backward(self, output_grad):
@@ -119,19 +119,19 @@ class LayerDense:
         self.input_grad = np.dot(output_grad, self.weights.T)
         
 class ActivationReLU:
-    def forward(self, inputs):
-        self.inputs = inputs
+    def forward(self, input):
+        self.inputs = input
         """
         ReLU is 0 for all numbers bellow 0 and linear for numbers greater than zero
         """
-        self.output = np.maximum(inputs, 0)
+        self.output = np.maximum(input, 0)
     
     def backward(self, output_grad):
         """
         0 is constant so it has a gradient of 0, if its greater than zero it is linear giving it a gradient of 1
         """
-        output_grad = (self.inputs > 0).astype(float)
-        self.inputs_grad = np.multiply(output_grad, output_grad)
+        input_grad = (self.inputs > 0).astype(float)
+        self.input_grad = np.multiply(input_grad, output_grad)
 
 class ActivationSoftmax:
     def forward(self, inputs):
@@ -146,14 +146,151 @@ class ActivationSoftmax:
         
         sum([[0.07769558, 0.34820743, 0.57409699]]) = 1.0
         
-
-        the highest value of each row is subtracted to prevent exponential from overflowing, this has no effect on the final output though
+        S(Z_i) = exp(Z_i) / sum(exp(Z))
         """
+        
+        # exp makes all values positive with the more negative a number is the closer to 0 it is
+        # the highest value of each row is subtracted to prevent exponential from overflowing, this has no effect on the final output though
         exp_values = np.exp(inputs - np.max(inputs, axis=1, keepdims=True))
+        # since all values are now positive you can get what percent chance they are likely by
         self.output = exp_values / np.sum(exp_values, axis=1, keepdims=True)
     
-    def backward(self, output_grad):
-        pass
+    def backward(self, output_grad):      
+        """
+        thanks https://youtu.be/09c7bkxpv9I
+        
+        Z = [Z_1, Z_2, Z_3]
+
+        --- Softmax ---
+        S(Z_i) = exp(Z_i) / (exp(Z_1) + exp(Z_2) + exp(Z_3))
+        S(Z_i) = exp(Z_i) / sum(exp(Z))
+
+        --- Grad for Z_1 if i == j ---
+        S(Z_1) = exp(Z_1) / (exp(Z_1) + exp(Z_2) + exp(Z_3))
+
+        gradient rule for division:
+        f(x) = g(x) / h(x)
+        f'(x) = (g'(x) * h(x) - g(x) * h'(x)) / h(x)^2
+
+        S(Z_1) = (exp(Z_1) * (exp(Z_1) + exp(Z_2) + exp(Z3)) - exp(Z_1) * (exp(Z_1) + exp(Z_2) + exp(Z_3))) / (exp(Z_1) + exp(Z_2) + exp(Z_3))^2
+
+        other variables are treated as constants and the derivative of a added constant is 0
+        S'(Z_1) = (exp(Z_1) * (exp(Z_1) + exp(Z_2) + exp(Z3)) - exp(Z_1) * (exp(Z_1) + 0 + 0)) / (exp(Z_1) + exp(Z_2) + exp(Z3))^2
+
+        replace with sums for readability
+        S'(Z_1) = (exp(Z_1) * sum(exp(Z)) - exp(Z_1) * exp(Z_1)) / sum(exp(Z))^2
+
+        reorganize
+        instead of x*y - x*x subtract the x x times before so it is x*(y-x)
+        (10 * 7 - 10 * 2) = 50
+        (10 * (7 - 2) = 50
+
+        S'(Z_1) = exp(Z_1) * (sum(exp(Z)) - exp(Z_1)) / sum(exp(Z))^2
+
+        split
+        S'(Z_1) = exp(Z_1) * (sum(exp(Z)) - exp(Z_1)) / sum(exp(Z)) * sum(exp(Z))
+
+        S'(Z_1) = (exp(Z_1) / sum(exp(Z))) * ((sum(exp(Z)) - exp(Z_1))) / sum(exp(Z))) 
+        
+        divide by denominator for second part  
+        (10 - 3) / 4 = 1.75
+        10 / 4 - 3 / 4 = 1.75
+        
+        (4 - 2) / 4 = 0.5
+        1 - (2 / 4) = 0.5
+        
+        S'(Z_1) = (exp(Z_1) / sum(exp(Z))) * (1 - exp(Z_1) / sum(exp(Z)))
+         
+        replace
+        S'(Z_1) = S(Z_1) * (1 - S(Z_1))
+        
+        --- Grad for Z_1 if i != j ---
+        S(Z_2) = exp(Z_2) / (exp(Z_1) + exp(Z_2) + exp(Z_3))
+        
+        S'(Z_2) = (0 * sum(exp(Z)) - exp(Z_2) * (exp(Z_1) + 0 + 0)) / (exp(Z_1) + exp(Z_2) + exp(Z_3))**2
+        
+        get rid of zeros and replace with sum
+        S'(Z_2) = (-exp(Z_2) * exp(Z_1)) / sum(exp(Z))**2
+        
+        split
+        S'(Z_2) = (-exp(Z_2) * exp(Z_1)) / (sum(exp(Z)) * sum(exp(Z)))
+        S'(Z_2) = (-exp(Z_2) / sum(exp(Z))) * (exp(Z_1) / sum(exp(Z)))
+        
+        replace with S
+        
+        --- Final ---
+        
+        for Z_1
+        if i==j: S'(Z_1) = S(Z_1) * (1 - S(Z_1))
+        else S'(Z_2) = -S(Z_2) * S(Z_1)
+        
+        combine
+        S'(Z_i) = S(Z_1) * (int(i==j) - S(Z_j))
+        """
+     
+        # create blank array for final grad
+        self.input_grad = np.empty_like(output_grad)
+        
+        for index, (single_output, single_grad) in enumerate(zip(self.output, output_grad)):
+            # output = [1, 2, 3, 4]
+            # grad = [1, 1, 1, 1]
+            
+            # convert single_output to 2d
+            # output = [[1, 2, 3]]
+            single_output = single_output.reshape(1, -1)
+            
+            """
+            i is number softmax is being used on, j is for gradient of that number when i
+            
+            S'(Z_i) = S(Z_i) * (int(i==j) - S(Z_j))
+            
+            --- i * j ---
+            
+            get S(Z_i) * S(Z_j)
+            pick any i and j from output and there product is at those indices in this matrix
+            np.dot(x.T, x)
+            [[ 1,  2,  3,  4],
+             [ 2,  4,  6,  8],
+             [ 3,  6,  9, 12],
+             [ 4,  8, 12, 16]]
+             
+            --- x - (i * j) ---
+            
+            get the (i == j) section. 
+            Since here it is subtracted from first instead of it being subtracted from S(Z_j) the 
+            4 * (1-2) = -4
+            4 - (4 * 2) = -4
+            
+            4 * (0-2) = -8
+            0 - (4 * 2) = -8
+            
+            np.diagflat(x)
+            [[1, 0, 0, 0],
+             [0, 2, 0, 0],
+             [0, 0, 3, 0],
+             [0, 0, 0, 4]]
+             
+            #  --- final ---
+            
+            pick any i and j to test. pick to indexes from output
+            
+            derivative for i
+            if i==j: S'(Z_i) = S(Z_i) * (1 - S(Z_j))
+            if i!=j: S'(Z_j) = -S(Z_j) * S(Z_i)
+            np.diagflat(x) - np.dot(x.T, x)
+            [[  0,  -2,  -3,  -4],
+             [ -2,  -2,  -6,  -8],
+             [ -3,  -6,  -6, -12],
+             [ -4,  -8, -12, -12]])
+            """
+            
+            jacobian_matrix = np.diagflat(single_output) - np.dot(single_output.T, single_output)
+            
+            # np.dot(np.diagflat(x) - np.dot(x.T, x), [1, 1, 1, 1])
+            # [ -9, -18, -27, -36]
+            
+            self.input_grad[index] = np.dot(jacobian_matrix, single_grad)
+            
 
 class LossCategoricalCrossEntropy:
     def calculate(self, output_y, y):
@@ -217,30 +354,30 @@ class LossCategoricalCrossEntropy:
         # -y_true / y_pred = [[0, -2.5, 0], [0, -2, 0], [0, -5, 0]]
         self.inputs_grad = (-y_true / y_pred) / n_samples
 
-dense1 = LayerDense(2, 3)
-activation1 = ActivationReLU()
+# dense1 = LayerDense(2, 3)
+# activation1 = ActivationReLU()
 
-dense2 = LayerDense(3, 3)
-activation2 = ActivationSoftmax()
+# dense2 = LayerDense(3, 3)
+# activation2 = ActivationSoftmax()
 
-loss_func = LossCategoricalCrossEntropy()
+# loss_func = LossCategoricalCrossEntropy()
 
-dense1.forward(X)
-activation1.forward(dense1.output)
+# dense1.forward(X)
+# activation1.forward(dense1.output)
 
-dense2.forward(activation1.output)
-activation2.forward(dense2.output)
+# dense2.forward(activation1.output)
+# activation2.forward(dense2.output)
 
-output = activation2.output
+# output = activation2.output
 
-loss = loss_func.calculate(output, y)
+# loss = loss_func.calculate(output, y)
 
-predictions = np.argmax(output, axis=1)
-if len(y.shape) == 2: class_targets = np.argmax(y, axis=1)
-else: class_targets = y
-accuracy = np.mean(predictions==class_targets)
+# predictions = np.argmax(output, axis=1)
+# if len(y.shape) == 2: class_targets = np.argmax(y, axis=1)
+# else: class_targets = y
+# accuracy = np.mean(predictions==class_targets)
 
-print(f"loss = {loss}, accuracy = {accuracy:%}")
+# print(f"loss = {loss}, accuracy = {accuracy:%}")
 
-loss_func.backward(output, y)
-print(loss_func.inputs_grad)
+# loss_func.backward(output, y)
+# print(loss_func.inputs_grad)
