@@ -124,7 +124,7 @@ loss_axis.set_ylim(bottom=0, top=max(losses_history))
 
 animation_lines = [past_dots, current_dots, pred_line, true_line, loss_line]
 
-batches_per_epoch = train_size // BATCH_SIZE
+num_of_batches = train_size // BATCH_SIZE
 
 def init():
     for line in animation_lines:
@@ -139,7 +139,7 @@ def update(i):
     if i >= total_runs + SHOW_TRUE_LINE_AT:
         true_line.set_data(x_train, m * x_train + b)
     
-    epoch_start = (i // batches_per_epoch) * batches_per_epoch
+    epoch_start = i - (i % num_of_batches)
     
     past_points_x, past_points_y = x_batches_history[epoch_start:i], y_batches_history[epoch_start:i]
     past_dots.set_data(past_points_x, past_points_y)
