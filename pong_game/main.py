@@ -77,13 +77,13 @@ def main() -> None:
         left_player_score_font = font.render(str(left_player.score), True, GameConstants.MAP_ITEM_COLOR)
         screen.blit(
             left_player_score_font,
-            RelativeRectPoint(screen, GameConstants.SCORE_LOCATION, reverse_x=False).point_centerd_for(left_player_score_font)
+            RelativeRectPoint(screen, GameConstants.SCORE_LOCATION, reverse_x=False).point_centered_for(left_player_score_font)
         )
         
         right_player_score_font = font.render(str(right_player.score), True, GameConstants.MAP_ITEM_COLOR)
         screen.blit(
             right_player_score_font,
-            RelativeRectPoint(screen, GameConstants.SCORE_LOCATION, reverse_x=True).point_centerd_for(right_player_score_font)
+            RelativeRectPoint(screen, GameConstants.SCORE_LOCATION, reverse_x=True).point_centered_for(right_player_score_font)
         )
     
     while not pygame.event.get(pygame.QUIT):

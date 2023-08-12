@@ -23,5 +23,5 @@ class RelativeRectPoint:
     def flip(self, flip_x = False, flip_y = False) -> "RelativeRectPoint":
         return self.__class__(self._base_surface, (self._x, self._y), reverse_x=flip_x, reverse_y=flip_y)
     
-    def point_centerd_for(self, surface: pygame.Surface) -> tuple[int, int]:
+    def point_centered_for(self, surface: pygame.Surface) -> tuple[int, int]:
         return (self.x - (surface.get_width() // 2), self.y - (surface.get_height() // 2))
