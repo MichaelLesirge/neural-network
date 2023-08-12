@@ -1,13 +1,13 @@
 import pygame
 import ball
-from utils import RelitiveRectPoint
+from utils import RelativeRectPoint
 
 class Contants:
     SPEED = 5
     COLOR = "white"
 
 class PaddleBase(pygame.sprite.Sprite):
-    def __init__(self, start_position: RelitiveRectPoint, size: RelitiveRectPoint) -> None:
+    def __init__(self, start_position: RelativeRectPoint, size: RelativeRectPoint) -> None:
         super().__init__()
         
         self.score = 0
@@ -34,7 +34,7 @@ class PaddleBase(pygame.sprite.Sprite):
         self.rect.x = self.start_position.x
 
 class HumanPaddle(PaddleBase):
-    def __init__(self, start_position: RelitiveRectPoint, size: RelitiveRectPoint, up_key, down_key) -> None:
+    def __init__(self, start_position: RelativeRectPoint, size: RelativeRectPoint, up_key, down_key) -> None:
         super().__init__(start_position, size)
             
         self.up_key = up_key
@@ -51,7 +51,7 @@ class HumanPaddle(PaddleBase):
         
 
 class AiPaddle(PaddleBase):
-    def __init__(self, start_position: RelitiveRectPoint, size: RelitiveRectPoint, network) -> None:
+    def __init__(self, start_position: RelativeRectPoint, size: RelativeRectPoint, network) -> None:
         super().__init__(start_position, size)
         
         self.network = network

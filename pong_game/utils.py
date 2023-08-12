@@ -1,6 +1,6 @@
 import pygame
 
-class RelitiveRectPoint:
+class RelativeRectPoint:
     __slots__ = ("_base_surface", "_x", "_y")
     
     def __init__(self, base: pygame.Surface, point: tuple[float, float], *, reverse_x = False, reverse_y = False) -> None:
@@ -20,7 +20,7 @@ class RelitiveRectPoint:
     
     def __getitem__(self, index) -> int: return self.point[index]
 
-    def flip(self, flip_x = False, flip_y = False) -> "RelitiveRectPoint":
+    def flip(self, flip_x = False, flip_y = False) -> "RelativeRectPoint":
         return self.__class__(self._base_surface, (self._x, self._y), reverse_x=flip_x, reverse_y=flip_y)
     
     def point_centerd_for(self, surface: pygame.Surface) -> tuple[int, int]:

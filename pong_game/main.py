@@ -1,7 +1,7 @@
 import pygame
 from ball import Ball
 from player import AiPaddle, HumanPaddle, WallPaddle
-from utils import RelitiveRectPoint
+from utils import RelativeRectPoint
 
 def make_screen_size(size_px: int, aspect_ration: float, horizontal: bool = True) -> tuple[int, int]:
     return int(size_px * ((aspect_ration * (horizontal)) or 1)), int(size_px * ((aspect_ration * (not horizontal)) or 1))
@@ -53,19 +53,19 @@ def main() -> None:
     font = pygame.font.Font('freesansbold.ttf', 32)
 
     ball = Ball(
-        BallConstants.SIZE, RelitiveRectPoint(screen, BallConstants.START_LOCATION),
+        BallConstants.SIZE, RelativeRectPoint(screen, BallConstants.START_LOCATION),
         BallConstants.START_SLOPE, BallConstants.START_VELOCITY,  BallConstants.MAX_VELOCITY
     )
 
     left_player = HumanPaddle(
-        RelitiveRectPoint(screen, PaddleConstants.START_LOCATION, reverse_x=False),
-        RelitiveRectPoint(screen, PaddleConstants.PADDLE_SIZE),
+        RelativeRectPoint(screen, PaddleConstants.START_LOCATION, reverse_x=False),
+        RelativeRectPoint(screen, PaddleConstants.PADDLE_SIZE),
         pygame.K_q, pygame.K_a
     )
 
     right_player = HumanPaddle(
-        RelitiveRectPoint(screen, PaddleConstants.START_LOCATION, reverse_x=True),
-        RelitiveRectPoint(screen, PaddleConstants.PADDLE_SIZE),
+        RelativeRectPoint(screen, PaddleConstants.START_LOCATION, reverse_x=True),
+        RelativeRectPoint(screen, PaddleConstants.PADDLE_SIZE),
         pygame.K_p, pygame.K_l
     )
     
@@ -77,20 +77,20 @@ def main() -> None:
         left_player_score_font = font.render(str(left_player.score), True, GameConstants.MAP_ITEM_COLOR)
         screen.blit(
             left_player_score_font,
-            RelitiveRectPoint(screen, GameConstants.SCORE_LOCATION, reverse_x=False).point_centerd_for(left_player_score_font)
+            RelativeRectPoint(screen, GameConstants.SCORE_LOCATION, reverse_x=False).point_centerd_for(left_player_score_font)
         )
         
         right_player_score_font = font.render(str(right_player.score), True, GameConstants.MAP_ITEM_COLOR)
         screen.blit(
             right_player_score_font,
-            RelitiveRectPoint(screen, GameConstants.SCORE_LOCATION, reverse_x=True).point_centerd_for(right_player_score_font)
+            RelativeRectPoint(screen, GameConstants.SCORE_LOCATION, reverse_x=True).point_centerd_for(right_player_score_font)
         )
     
     while not pygame.event.get(pygame.QUIT):
         screen.fill(GameConstants.BACKGROUND_COLOR)
         pygame.draw.line(screen, GameConstants.MAP_ITEM_COLOR,
-                RelitiveRectPoint(screen, GameConstants.LINE_LOCATION, reverse_y=False).point,
-                RelitiveRectPoint(screen, GameConstants.LINE_LOCATION, reverse_y=True).point)
+                RelativeRectPoint(screen, GameConstants.LINE_LOCATION, reverse_y=False).point,
+                RelativeRectPoint(screen, GameConstants.LINE_LOCATION, reverse_y=True).point)
         
 
         all_sprites.update()
