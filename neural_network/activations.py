@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 
-from base import BaseLayer
+from .base import BaseLayer
 
 
 class Activation(BaseLayer, ABC):

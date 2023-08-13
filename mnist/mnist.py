@@ -1,9 +1,15 @@
+import sys
 import tkinter as tk
 
 import numpy as np
+# from keras.datasets import mnist
 from matplotlib import pyplot as plt
 
-# from keras.datasets import mnist
+sys.path.insert(0, '')
+import neural_network
+
+
+
 # (X_train, y_train), (X_test, y_test) = mnist.load_data()
 
 root = tk.Tk()
