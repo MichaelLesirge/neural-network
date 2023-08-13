@@ -9,6 +9,10 @@ class Layer(BaseLayer, ABC):
     pass
 
 
+# every class should only take how many outputs and then the next layer will use that for n_inputs when model.compile()
+# class Reshape(Layer):
+# class Input(Layer)
+
 class Dense(Layer):
     def __init__(self, n_inputs, n_outputs) -> None:
         self.weights = np.random.randn(n_inputs, n_outputs)

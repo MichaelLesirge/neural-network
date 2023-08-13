@@ -327,7 +327,6 @@ class Softmax(Activation):
 __all__ = [BinaryStep, Sigmoid, HardSigmoid, Tanh, Affine, Linear,
            Exponential, ReLU, LeakyReLU, ELU, GELU, SELU, Swish, Softplus, Softmax]
 
-
 def main() -> None:
     from matplotlib import pyplot as plt
 
