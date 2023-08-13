@@ -57,7 +57,7 @@ def draw_line(array: np.ndarray, row1: int, col1: int, row2: int, col2: int):
 
 
 class DrawingBoard:
-    def __init__(self, canvas: tk.Canvas, save_size: tuple[int, int], on_update=lambda pixels: None) -> None:
+    def __init__(self, canvas: tk.Canvas, save_size: tuple[int, int], on_update=lambda pixels: None, on_reset=lambda: None) -> None:
         self.canvas = canvas
         self.canvas.config(cursor="crosshair")
         self.canvas_width, self.canvas_height = self.canvas.winfo_reqheight(
@@ -69,6 +69,7 @@ class DrawingBoard:
         self.canvas.bind("<Button-1>", self.start_draw)
 
         self.on_update = on_update
+        self.on_reset = on_reset
 
         self.previous_draw_point = (None, None)
 
@@ -114,6 +115,7 @@ class DrawingBoard:
     def clear_canvas(self) -> None:
         self.pixel_array = np.zeros_like(self.pixel_array)
         self.canvas.delete("line")
+        self.on_reset()
 
     def show_graph(self) -> None:
         # print("\n | " + "--" * (np.size(self.pixel_array, 1)) + " | ")
@@ -152,9 +154,9 @@ class OutputsDisplay:
         for index, (output, neuron_canvas, percent_canvas) in enumerate(zip(outputs, self.neuron_canvases, self.percent_canvases)):
 
             brightness = int((1-output) * 255)
-            neuron_canvas.create_oval(3, 3, self.sub_canvas_size, self.sub_canvas_size, outline="black", offset="n", fill='#%02x%02x%02x' % (brightness, brightness, brightness))
+            neuron_canvas.create_oval(3, 3, self.sub_canvas_size, self.sub_canvas_size, outline="black", offset="n", fill="#%02x%02x%02x" % (brightness, brightness, brightness))
             neuron_canvas.create_text(self.sub_canvas_size/1.9, self.sub_canvas_size/1.9, text=str(index), justify="center", font=("Arial", int(self.sub_canvas_size * 0.25)))
-            percent_canvas.delete('all')
+            percent_canvas.delete("all")
             percent_canvas.create_text(self.sub_canvas_size/1.9, self.sub_canvas_size/1.9, text=format(output, ".1%"), justify="center", font=("Arial", int(self.sub_canvas_size * 0.25)))
 
 
@@ -176,19 +178,23 @@ output_canvas = tk.Canvas(root, background="white", highlightbackground="grey",
 output_canvas.grid(row=0, column=2, padx=10, pady=10)
 
 
+def reset():
+    network_info.update_neurons(np.zeros(10))
+    output_canvas.delete("all")
+
 def update(pixels: np.ndarray):
     # do neural network stuff here
     output = [[0.1, 0.1, 0, 0, 0, 0, 0.2, 0.6, 0, 0]][0]
     guess = np.argmax(output)
 
-    output_canvas.create_text(large_drawing_width/2, large_drawing_height/2, justify='center',
+    output_canvas.create_text(large_drawing_width/2, large_drawing_height/2, justify="center",
                               text=str(guess), font=("Arial", int(large_drawing_height * 0.5)))
     network_info.update_neurons(output)
 
 
-drawing_board = DrawingBoard(
-    drawing_canvas, (small_drawing_width, small_drawing_height), update)
+drawing_board = DrawingBoard(drawing_canvas, (small_drawing_width, small_drawing_height), update, reset)
 drawing_board.place_buttons()
-network_info.update_neurons(np.zeros(10))
+
+reset()
 
 root.mainloop()
