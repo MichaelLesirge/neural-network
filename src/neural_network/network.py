@@ -1,7 +1,7 @@
 import numpy as np
 
-from losses import Loss
-from base import BaseLayer
+from neural_network.losses import Loss
+from neural_network.base import BaseLayer
 
 # at some point add compile step where optimizations could be made and Dense Layers could find how many inputs they have  
 
