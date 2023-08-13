@@ -1,16 +1,34 @@
-import sys
 import tkinter as tk
 
 import numpy as np
-# from keras.datasets import mnist
+from keras.datasets import mnist
 from matplotlib import pyplot as plt
 
-sys.path.insert(0, '')
-import neural_network
+import neural_network as nn
 
+(X_train, y_train), (X_test, y_test) = mnist.load_data()
 
+small_drawing_width, small_drawing_height = X_train[0].shape
+large_drawing_width, large_drawing_height = (300, 300)
 
-# (X_train, y_train), (X_test, y_test) = mnist.load_data()
+n_inputs, n_outputs = small_drawing_width * small_drawing_height, 10
+
+network = nn.network.Network([
+    nn.layers.Reshape((small_drawing_width, small_drawing_height), (n_inputs,)),
+    nn.layers.Dense(n_inputs, 20),
+    nn.layers.Dense(20, 20),
+    nn.layers.Dense(20, 20),
+    nn.layers.Dense(20, n_outputs),
+], loss=nn.losses.CategoricalCrossEntropy())
+
+network.train(X_train, y_train, epochs=2, is_categorical_labels=True)
+
+test_output = network.compute(X_test)
+predictions = test_output.argmax(1)
+
+accuracy = np.mean(predictions == y_test)
+
+print(f"{accuracy:%} accurate on test data")
 
 root = tk.Tk()
 root.title("MNIST Drawing Test")
@@ -166,10 +184,6 @@ class OutputsDisplay:
             percent_canvas.create_text(self.sub_canvas_size/1.9, self.sub_canvas_size/1.9, text=format(output, ".1%"), justify="center", font=("Arial", int(self.sub_canvas_size * 0.25)))
 
 
-# small_drawing_size = X_train[0].shape
-small_drawing_width, small_drawing_height = (28, 28)
-large_drawing_width, large_drawing_height = (300, 300)
-
 drawing_canvas = tk.Canvas(root, background="white", highlightbackground="grey",
                            width=large_drawing_width, height=large_drawing_height)
 drawing_canvas.grid(row=0, column=0, padx=10, pady=10)
@@ -177,7 +191,7 @@ drawing_canvas.grid(row=0, column=0, padx=10, pady=10)
 info_canvas = tk.Canvas(root, width=20, height=large_drawing_height)
 info_canvas.grid(row=0, column=1, padx=10, pady=10)
 
-network_info = OutputsDisplay(info_canvas, 10)
+network_info = OutputsDisplay(info_canvas, n_outputs)
 
 output_canvas = tk.Canvas(root, background="white", highlightbackground="grey",
                           width=large_drawing_width, height=large_drawing_height)
@@ -190,7 +204,7 @@ def reset():
 
 def update(pixels: np.ndarray):
     # do neural network stuff here
-    output = [[0.1, 0.1, 0, 0, 0, 0, 0.2, 0.6, 0, 0]][0]
+    output = network.compute(np.array([pixels]))[0]
     guess = np.argmax(output)
 
     output_canvas.create_text(large_drawing_width/2, large_drawing_height/2, justify="center",

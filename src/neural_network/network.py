@@ -1,7 +1,7 @@
 import numpy as np
 
-from .losses import Loss
-from .base import BaseLayer
+from losses import Loss
+from base import BaseLayer
 
 # at some point add compile step where optimizations could be made and Dense Layers could find how many inputs they have  
 
@@ -13,7 +13,7 @@ def n_split_array(arr, n_size, *, keep_extra=True):
     return np.array_split(a, div) + ([b] if (b and keep_extra) else [])
 
 
-def same_shuffle(arrays):
+def same_shuffle(*arrays):
     """shuffle 2 arrays """
     order = np.arange(np.size(arrays[0], 0))
     np.random.shuffle(order)
@@ -30,21 +30,23 @@ class Network:
         return inputs
     
     
-    def train(self, x, y, learning_rate = 0.001, batch_size=32, epochs=1, shuffle = True, is_categorical_labels = False):
-        for epoch in epochs:
+    def train(self, x: np.ndarray, y: np.ndarray, learning_rate: float = 0.001, batch_size: int = 32, epochs: int = 1, shuffle: bool = True, is_categorical_labels: bool = False):
+        for epoch in range(epochs):
             if shuffle:
                 x, y = same_shuffle(x, y)
             for batch, (x_batch, y_batch) in enumerate(zip(n_split_array(x, batch_size, keep_extra=False), n_split_array(y, batch_size, keep_extra=False))):
-                
-                activations = [x_batch]
+                zs = [x_batch]
                 for layer in self.layers:
-                    activation = layer.forward(activations[-1])
-                    activations.append(activations)
+                    activation = layer.forward(zs[-1])
+                    zs.append(activation)
+                    
+                output = zs.pop()
+                print(output)
                 
-                loss = self.loss.forward(x_batch, y_batch, is_categorical_labels = is_categorical_labels)
+                loss = self.loss.forward(y_batch, output, is_categorical_labels = is_categorical_labels)
                 print(f"{epoch=}, {batch=}, {loss=}")
                    
-                grad = self.loss.backward(x_batch, y_batch, is_categorical_labels = is_categorical_labels)
+                grad = self.loss.backward(y_batch, output, is_categorical_labels = is_categorical_labels)
                 
-                for layer, activation in zip(reversed(self.layers), reversed(activations)):
+                for layer, activation in zip(reversed(self.layers), reversed(zs)):
                     grad = layer.backward(activation, grad, learning_rate)

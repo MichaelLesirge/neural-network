@@ -2,32 +2,33 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 
-from .base import BaseLayer
+from base import BaseLayer
 
 
 class Loss(BaseLayer, ABC):
     def __init__(self) -> None:
         super().__init__()
  
-    def _labels_to_one_hot(y_true: np.ndarray, y_pred: np.ndarray) -> np.ndarray:
+    def _labels_to_one_hot(self, y_true: np.ndarray, y_pred: np.ndarray) -> np.ndarray:
         classes = np.size(y_pred, 1)
-        y_true = np.eye(classes)[range(classes), y_true]
+        y_true = np.eye(classes)[y_true]
         return y_true
     
     def forward(self, y_true: np.ndarray, y_pred: np.ndarray, *, is_categorical_labels = None) -> float:
         if is_categorical_labels or (is_categorical_labels is None and y_true.ndim == 1):
-            y_true = self._labels_to_one_hot(y_pred, y_true)
+            y_true = self._labels_to_one_hot(y_true, y_pred)
         
         loss = self.loss(y_true, y_pred)
         return np.mean(loss)
     
-    def backward(self, y_true: np.ndarray, y_pred: np.ndarray, *, is_one_hot = None) -> np.ndarray:
-        if is_one_hot or (is_one_hot is None and y_true.ndim == 1):
-            y_true = self._labels_to_one_hot(y_pred, y_true)
+    def backward(self, y_true: np.ndarray, y_pred: np.ndarray, *, is_categorical_labels = None) -> np.ndarray:
+        if is_categorical_labels or (is_categorical_labels is None and y_true.ndim == 1):
+            y_true = self._labels_to_one_hot(y_true, y_pred)
             
         samples = np.size(y_true, 0)
+        loss_prime = self.loss_prime(y_true, y_pred)
         
-        return 
+        return loss_prime / samples
     
     @abstractmethod
     def loss(self, y_true: np.ndarray, y_pred: np.ndarray) -> np.ndarray:
@@ -72,4 +73,4 @@ class CategoricalCrossEntropy(Loss):
          
     
     def loss_prime(self, y_true, y_pred):
-        return -y_true / np.size(y_pred, 1)
+        return -y_true
