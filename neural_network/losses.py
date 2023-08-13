@@ -60,7 +60,7 @@ class BinaryCrossEntropy(Loss):
     def loss_prime(self, y_true, y_pred):
         return (1 - y_true) / (1 - y_pred) - y_true / y_pred
     
-class BinaryCrossEntropy(Loss):
+class CategoricalCrossEntropy(Loss):
     _verbose_name = "Categorical cross entropy"
     
     def __init__(self) -> None:
