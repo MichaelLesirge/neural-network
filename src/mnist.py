@@ -9,24 +9,38 @@ import neural_network as nn
 (X_train, y_train), (X_test, y_test) = mnist.load_data()
 
 small_drawing_width, small_drawing_height = X_train[0].shape
-large_drawing_width, large_drawing_height = (300, 300)
+large_drawing_width, large_drawing_height = (400, 400)
 
 n_inputs, n_outputs = small_drawing_width * small_drawing_height, 10
 
 network = nn.network.Network([
     nn.layers.Reshape((small_drawing_width, small_drawing_height), (n_inputs,)),
     nn.layers.Dense(n_inputs, 20),
+    nn.activations.ReLU(),
     nn.layers.Dense(20, 20),
+    nn.activations.ReLU(),
     nn.layers.Dense(20, 20),
+    nn.activations.ReLU(),
     nn.layers.Dense(20, n_outputs),
+    nn.activations.Softmax(),
 ], loss=nn.losses.CategoricalCrossEntropy())
 
-network.train(X_train, y_train, epochs=2, is_categorical_labels=True)
+network.train(X_train, y_train, batch_size=16, epochs=1, learning_rate=0.01, is_categorical_labels=True)
 
 test_output = network.compute(X_test)
 predictions = test_output.argmax(1)
 
 accuracy = np.mean(predictions == y_test)
+
+number_of_demos = 5
+
+for index in np.random.randint(0, 9, size=number_of_demos):
+    output = test_output[index]
+    guess = output.argmax()
+    answer = y_test[index]
+    plt.title(f"{guess=}, confidence={output[guess]:.2%}, {answer=}, correct={guess==answer}")
+    plt.imshow(X_test[index], cmap="Greys")
+    plt.show()
 
 print(f"{accuracy:%} accurate on test data")
 
@@ -34,8 +48,17 @@ root = tk.Tk()
 root.title("MNIST Drawing Test")
 root.resizable(width=False, height=False)
 
+def draw_blob(array, row, col, value):
+    draw_dot(array, row, col, value)
+    
+    value_edge = 1 - (1-value) / 10
+    print(value, value_edge)
+    draw_dot(array, row+1, col, value_edge)
+    draw_dot(array, row, col+1, value_edge)
+    draw_dot(array, row-1, col, value_edge)
+    draw_dot(array, row, col-1, value_edge)
 
-def draw_dot(array: np.ndarray, row: int, col: int, value: float) -> bool:
+def draw_dot(array: np.ndarray, row: int, col: int, value: float) -> None:
     if -1 < row < np.size(array, 1) and -1 < col < np.size(array, 0):
         array[row, col] = min(array[row, col] + ((1 - value) * 255), 255)
 
@@ -55,7 +78,7 @@ def draw_line(array: np.ndarray, row1: int, col1: int, row2: int, col2: int):
 
     current_col, current_row = col1, row1
     while True:
-        draw_dot(array, current_row, current_col, np.fabs(
+        draw_blob(array, current_row, current_col, np.fabs(
             error - col_distance + row_distance) / distance_change)
 
         last_error = error
@@ -65,7 +88,7 @@ def draw_line(array: np.ndarray, row1: int, col1: int, row2: int, col2: int):
             if current_col == col2:
                 break
             if (last_error + row_distance) < distance_change:
-                draw_dot(array, current_row + row_change, current_col,
+                draw_blob(array, current_row + row_change, current_col,
                          np.fabs(last_error + row_distance) / distance_change)
             error -= row_distance
             current_col += col_change
@@ -74,7 +97,7 @@ def draw_line(array: np.ndarray, row1: int, col1: int, row2: int, col2: int):
             if current_row == row2:
                 break
             if (col_distance - last_error) < distance_change:
-                draw_dot(array, current_row, last_col + col_change,
+                draw_blob(array, current_row, last_col + col_change,
                          np.fabs(col_distance - last_error) / distance_change)
             error += col_distance
             current_row += row_change
@@ -113,7 +136,7 @@ class DrawingBoard:
             event.x+size, event.y+size, event.x-size, event.y-size, fill="black", tags="line")
 
         row, col = self.scale_for_save(event.x, event.y)
-        draw_dot(self.pixel_array, row, col, 0)
+        draw_blob(self.pixel_array, row, col, 0)
 
         self.on_update(self.pixel_array)
 
@@ -176,7 +199,6 @@ class OutputsDisplay:
 
     def update_neurons(self, outputs: np.ndarray):
         for index, (output, neuron_canvas, percent_canvas) in enumerate(zip(outputs, self.neuron_canvases, self.percent_canvases)):
-
             brightness = int((1-output) * 255)
             neuron_canvas.create_oval(3, 3, self.sub_canvas_size, self.sub_canvas_size, outline="black", offset="n", fill="#%02x%02x%02x" % (brightness, brightness, brightness))
             neuron_canvas.create_text(self.sub_canvas_size/1.9, self.sub_canvas_size/1.9, text=str(index), justify="center", font=("Arial", int(self.sub_canvas_size * 0.25)))
@@ -199,14 +221,15 @@ output_canvas.grid(row=0, column=2, padx=10, pady=10)
 
 
 def reset():
-    network_info.update_neurons(np.zeros(10))
     output_canvas.delete("all")
+    network_info.update_neurons(np.zeros(10))
 
 def update(pixels: np.ndarray):
     # do neural network stuff here
     output = network.compute(np.array([pixels]))[0]
     guess = np.argmax(output)
-
+    
+    output_canvas.delete("all")
     output_canvas.create_text(large_drawing_width/2, large_drawing_height/2, justify="center",
                               text=str(guess), font=("Arial", int(large_drawing_height * 0.5)))
     network_info.update_neurons(output)

@@ -32,7 +32,7 @@ class Dense(Layer):
     _verbose_name = "fully connected layer"
     
     def __init__(self, n_inputs, n_outputs) -> None:
-        self.weights = np.random.randn(n_inputs, n_outputs)
+        self.weights = np.random.randn(n_inputs, n_outputs) * 0.01
         self.bias = np.zeros((1, n_outputs), dtype=float)
 
     def forward(self, inputs):

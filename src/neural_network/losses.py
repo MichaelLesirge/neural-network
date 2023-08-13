@@ -73,4 +73,4 @@ class CategoricalCrossEntropy(Loss):
          
     
     def loss_prime(self, y_true, y_pred):
-        return -y_true
+        return -y_true / y_pred

@@ -41,11 +41,10 @@ class Network:
                     zs.append(activation)
                     
                 output = zs.pop()
-                print(output)
-                
+                                
                 loss = self.loss.forward(y_batch, output, is_categorical_labels = is_categorical_labels)
-                print(f"{epoch=}, {batch=}, {loss=}")
-                   
+                if batch % 100 == 0: print(f"{epoch=}, {batch=}, {loss=}")
+                                   
                 grad = self.loss.backward(y_batch, output, is_categorical_labels = is_categorical_labels)
                 
                 for layer, activation in zip(reversed(self.layers), reversed(zs)):
