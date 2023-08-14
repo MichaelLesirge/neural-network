@@ -59,7 +59,8 @@ class Sigmoid(Activation):
         super().__init__()
 
     def activation(self, x):
-        return 1.0 / (1.0 + np.exp(-x))
+        # return 1.0 / (1.0 + np.exp(-x))
+        return np.where(x < 0, np.exp(x) / (1.0 + np.exp(x)), 1.0 / (1.0 + np.exp(-x)))
 
     def activation_prime(self, output_gradient):
         s = self(output_gradient)

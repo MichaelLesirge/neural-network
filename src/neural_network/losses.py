@@ -73,4 +73,5 @@ class CategoricalCrossEntropy(Loss):
          
     
     def loss_prime(self, y_true, y_pred):
+        y_pred = np.clip(y_pred, 1e-7, 1 - 1e-7)
         return -y_true / y_pred
