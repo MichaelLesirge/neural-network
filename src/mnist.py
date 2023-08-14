@@ -12,21 +12,28 @@ small_drawing_width, small_drawing_height = X_train[0].shape
 large_drawing_width, large_drawing_height = (400, 400)
 
 n_inputs, n_outputs = small_drawing_width * small_drawing_height, 10
-print(n_inputs, n_outputs)
 
-network = nn.network.Network([
+def preprocess(inputs):
+    return inputs.astype(float) / 255
+
+network = nn.network.Network([    
     nn.layers.Reshape((small_drawing_width, small_drawing_height), (n_inputs,)),
-    nn.layers.Dense(n_inputs, 512),
+    
+    nn.layers.Dense(n_inputs, 128),
     nn.activations.ReLU(),
-    nn.layers.Dense(512, 512),
+    
+    nn.layers.Dense(128, 128),
     nn.activations.ReLU(),
-    nn.layers.Dense(512, 512),
+    
+    nn.layers.Dense(128, 128),
     nn.activations.ReLU(),
-    nn.layers.Dense(512, n_outputs),
+    
+    nn.layers.Dense(128, n_outputs),
     nn.activations.Softmax(),
-], loss=nn.losses.CategoricalCrossEntropy())
+    
+], loss=nn.losses.CategoricalCrossEntropy(), preprocess=[preprocess])
 
-network.train(X_train, y_train, batch_size=32, epochs=1, learning_rate=0.01, is_categorical_labels=True)
+network.train(X_train, y_train, batch_size=4, epochs=2, learning_rate=0.1, is_categorical_labels=True)
 
 test_output = network.compute(X_test)
 predictions = test_output.argmax(1)
@@ -281,7 +288,7 @@ def update(pixels: np.ndarray):
     output = network.compute(np.array([pixels]))[0]
     network_info.update(output)
     guess_info.update(output)
-
+    
 
 drawing_board = DrawingDisplay(drawing_canvas, (small_drawing_width, small_drawing_height), update, reset)
 drawing_board.place_buttons()
