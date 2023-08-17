@@ -39,12 +39,12 @@ class Network:
 
         for proc in self.reprocesses:
             x = proc(x)
-        
+         
         for epoch in range(epochs):
             if shuffle:
                 x, y = same_shuffle(x, y)
             x_split, y_split = n_split_array(x, batch_size, keep_extra=False), n_split_array(y, batch_size, keep_extra=False)
-            for batch, (x_batch, y_batch) in enumerate(zip(x_split, y_split)):
+            for batch, (x_batch, y_batch) in enumerate(zip(x_split, y_split)):                      
                 zs = [x_batch]
                 for layer in self.layers:
                     activation = layer.forward(zs[-1])
@@ -57,13 +57,14 @@ class Network:
                 loss = self.loss.forward(y_batch, output, is_categorical_labels = is_categorical_labels)
                 
                 percent_complete = (batch + len(x_split) * epoch) / (len(x_split) * epochs) * 100
-                if percent_complete % 1 == 0: print(f"{int(percent_complete)}% complete. {epoch=}, {batch=}, {loss=}".ljust(30), end="\r")
+                if percent_complete % 1 == 0: print(f"{int(percent_complete)}% complete. {epoch=}, {batch=}, {loss=}".ljust(30), end="\n" if batch == 0 else "\r")
                                    
                 grad = self.loss.backward(y_batch, output, is_categorical_labels = is_categorical_labels)
                 
                 for layer, activation in zip(reversed(self.layers), reversed(zs)):
                     grad = layer.backward(activation, grad, learning_rate)
             
-            print(f"{int(percent_complete)}% complete. {epoch=}, {batch=}, {loss=}".ljust(20), end="\n")
-            
-        print(f"100% complete. {loss=}")
+        output = self.compute(x)
+        loss = self.loss.forward(y, output)
+        
+        print(f"100% complete. finished, {loss=}".ljust(30), end="\n")
