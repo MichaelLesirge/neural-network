@@ -1,3 +1,5 @@
+print("Loading MINST Dataset (and other modules)...")
+
 import tkinter as tk
 
 import numpy as np
@@ -33,21 +35,20 @@ network = nn.network.Network([
     
 ], loss=nn.losses.CategoricalCrossEntropy(), preprocess=[preprocess])
 
+print("Starting Training...")
 network.train(X_train, y_train, batch_size=4, epochs=2, learning_rate=0.1, is_categorical_labels=True)
 
 test_output = network.compute(X_test)
-predictions = test_output.argmax(1)
 
+predictions = test_output.argmax(1)
 accuracy = np.mean(predictions == y_test)
 
-number_of_demos = 5
-# number_of_demos = 0
-
-for index in np.random.randint(0, 9, size=number_of_demos):
+print("Displaying tests...")
+for num in range(0, 10):
+    index = np.random.choice(np.where(y_test == num)[0])
     output = test_output[index]
     guess = output.argmax()
-    answer = y_test[index]
-    plt.title(f"Test Data Example:\n{guess=}, confidence={output[guess]:.2%}, {answer=}, correct={guess==answer}")
+    plt.title(f"Test Data Example {num}:\n{guess=}, confidence={output[guess]:.2%}, correct={guess==num}")
     plt.imshow(X_test[index], cmap="Greys")
     plt.show()
 
@@ -295,4 +296,5 @@ drawing_board.place_buttons()
 
 reset()
 
+print("Displaying drawing demo.")
 root.mainloop()

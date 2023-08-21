@@ -39,6 +39,10 @@ class Network:
 
         for proc in self.reprocesses:
             x = proc(x)
+            
+        max_str_len = 0
+        
+        loss = None
          
         for epoch in range(epochs):
             if shuffle:
@@ -57,14 +61,14 @@ class Network:
                 loss = self.loss.forward(y_batch, output, is_categorical_labels = is_categorical_labels)
                 
                 percent_complete = (batch + len(x_split) * epoch) / (len(x_split) * epochs) * 100
-                if percent_complete % 1 == 0: print(f"{int(percent_complete)}% complete. {epoch=}, {batch=}, {loss=}".ljust(30), end="\n" if batch == 0 else "\r")
+                if percent_complete % 1 == 0:
+                    message = f"{int(percent_complete)}% complete. {epoch=}, {batch=}, {loss=}"
+                    max_str_len = max(max_str_len, len(message))
+                    print(message.ljust(max_str_len), end="\n" if batch == 0 else "\r")
                                    
                 grad = self.loss.backward(y_batch, output, is_categorical_labels = is_categorical_labels)
                 
                 for layer, activation in zip(reversed(self.layers), reversed(zs)):
                     grad = layer.backward(activation, grad, learning_rate)
             
-        output = self.compute(x)
-        loss = self.loss.forward(y, output)
-        
-        print(f"100% complete. finished, {loss=}".ljust(30), end="\n")
+        print(f"100% complete. finished, {loss=}".ljust(max_str_len))
