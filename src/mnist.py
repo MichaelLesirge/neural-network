@@ -1,5 +1,3 @@
-print("Loading MINST Dataset (and other modules)...")
-
 import tkinter as tk
 
 import numpy as np
@@ -8,47 +6,60 @@ from matplotlib import pyplot as plt
 
 import neural_network as nn
 
+print("Loading MINST Dataset (and other modules)...")
+
+
 (X_train, y_train), (X_test, y_test) = mnist.load_data()
 
 small_drawing_width, small_drawing_height = X_train[0].shape
 large_drawing_width, large_drawing_height = (400, 400)
 
-n_inputs, n_outputs = small_drawing_width * small_drawing_height, 10
+n_inputs, n_outputs = small_drawing_width * \
+    small_drawing_height, max(y_train.max(), y_train.max()) + 1
+layer_size = 2**7
+
 
 def preprocess(inputs):
     return inputs.astype(float) / 255
 
-network = nn.network.Network([    
-    nn.layers.Reshape((small_drawing_width, small_drawing_height), (n_inputs,)),
-    
-    nn.layers.Dense(n_inputs, 128),
+
+network = nn.network.Network([
+    nn.layers.Reshape(
+        (small_drawing_width, small_drawing_height), (n_inputs,)),
+
+    nn.layers.Dense(n_inputs, layer_size),
     nn.activations.ReLU(),
-    
-    nn.layers.Dense(128, 128),
+
+    nn.layers.Dense(layer_size, layer_size),
     nn.activations.ReLU(),
-    
-    nn.layers.Dense(128, 128),
+
+    nn.layers.Dense(layer_size, layer_size),
     nn.activations.ReLU(),
-    
-    nn.layers.Dense(128, n_outputs),
+
+    nn.layers.Dense(layer_size, n_outputs),
     nn.activations.Softmax(),
-    
+
 ], loss=nn.losses.CategoricalCrossEntropy(), preprocess=[preprocess])
 
-print("Starting Training...")
-network.train(X_train, y_train, batch_size=4, epochs=2, learning_rate=0.1, is_categorical_labels=True)
+print("\nStarting Training...")
+network.train(X_train, y_train, batch_size=16, epochs=3,
+              learning_rate=0.1, is_categorical_labels=True)
 
 test_output = network.compute(X_test)
 
 predictions = test_output.argmax(1)
 accuracy = np.mean(predictions == y_test)
 
-print("Displaying tests...")
-for num in range(0, 10):
+print("\nDisplaying tests...")
+for num in range(0, n_outputs):
     index = np.random.choice(np.where(y_test == num)[0])
     output = test_output[index]
     guess = output.argmax()
-    plt.title(f"Test Data Example {num}:\n{guess=}, confidence={output[guess]:.2%}, correct={guess==num}")
+
+    print(f"y_pred={output.tolist()}, y_true={np.eye(n_outputs)[guess]}")
+
+    plt.title(
+        f"Test Data Example {num}:\n{guess=}, confidence={output[guess]:.2%}, correct={guess==num}")
     plt.imshow(X_test[index], cmap="Greys")
     plt.show()
 
@@ -58,24 +69,25 @@ root = tk.Tk()
 root.title("MNIST Drawing Test")
 root.resizable(width=False, height=False)
 
+def draw_dot(array: np.ndarray, row: int, col: int, value: float) -> None:
+    if -1 < row < np.size(array, 1) and -1 < col < np.size(array, 0):
+        array[row, col] = min(array[row, col] + ((1 - value) * 255), 255)
+
+
 def draw_blob(array, row, col, value):
     draw_dot(array, row, col, value)
-    
+
     value_edge = 1 - (1-value) / 5
     draw_dot(array, row+1, col, value_edge)
     draw_dot(array, row, col+1, value_edge)
     draw_dot(array, row-1, col, value_edge)
     draw_dot(array, row, col-1, value_edge)
-    
+
     value_corner = 1 - (1-value) / 10
     draw_dot(array, row+1, col+1, value_corner)
     draw_dot(array, row-1, col+1, value_edge)
     draw_dot(array, row+1, col-1, value_edge)
     draw_dot(array, row-1, col-1, value_edge)
-
-def draw_dot(array: np.ndarray, row: int, col: int, value: float) -> None:
-    if -1 < row < np.size(array, 1) and -1 < col < np.size(array, 0):
-        array[row, col] = min(array[row, col] + ((1 - value) * 255), 255)
 
 
 def draw_line(array: np.ndarray, row1: int, col1: int, row2: int, col2: int):
@@ -88,13 +100,13 @@ def draw_line(array: np.ndarray, row1: int, col1: int, row2: int, col2: int):
     col_change = 1 if col1 < col2 else -1
     row_change = 1 if row1 < row2 else -1
 
-    distance_change = 1 if col_distance + \
-        row_distance == 0 else np.sqrt(col_distance*col_distance + row_distance*row_distance)
+    distance_change = 1 if col_distance + row_distance == 0 else \
+        np.sqrt(col_distance*col_distance + row_distance*row_distance)
 
     current_col, current_row = col1, row1
     while True:
-        draw_blob(array, current_row, current_col, np.fabs(
-            error - col_distance + row_distance) / distance_change)
+        draw_blob(array, current_row, current_col,
+                  np.abs(error - col_distance + row_distance) / distance_change)
 
         last_error = error
         last_col = current_col
@@ -104,7 +116,7 @@ def draw_line(array: np.ndarray, row1: int, col1: int, row2: int, col2: int):
                 break
             if (last_error + row_distance) < distance_change:
                 draw_blob(array, current_row + row_change, current_col,
-                         np.fabs(last_error + row_distance) / distance_change)
+                          np.abs(last_error + row_distance) / distance_change)
             error -= row_distance
             current_col += col_change
 
@@ -113,7 +125,7 @@ def draw_line(array: np.ndarray, row1: int, col1: int, row2: int, col2: int):
                 break
             if (col_distance - last_error) < distance_change:
                 draw_blob(array, current_row, last_col + col_change,
-                         np.fabs(col_distance - last_error) / distance_change)
+                          np.abs(col_distance - last_error) / distance_change)
             error += col_distance
             current_row += row_change
 
@@ -122,8 +134,7 @@ class DrawingDisplay:
     def __init__(self, canvas: tk.Canvas, save_size: tuple[int, int], on_update=lambda pixels: None, on_reset=lambda: None) -> None:
         self.canvas = canvas
         self.canvas.config(cursor="crosshair")
-        self.canvas_width, self.canvas_height = self.canvas.winfo_reqheight(
-        ), self.canvas.winfo_reqwidth()
+        self.canvas_width, self.canvas_height = self.canvas.winfo_reqheight(), self.canvas.winfo_reqwidth()
 
         self.pixel_array = np.zeros(save_size, dtype=int)
 
@@ -186,7 +197,8 @@ class DrawingDisplay:
         # print(" | " + "--" * (np.size(self.pixel_array, 1)) + " | \n")
 
         plt.imshow(self.pixel_array, cmap="Greys")
-        print(self.pixel_array)
+        print("\n".join((" ".join(str(pixel).ljust(3) for pixel in row))
+              for row in self.pixel_array))
         plt.show()
 
     def place_buttons(self) -> None:
@@ -203,10 +215,12 @@ class NetworkInfoDisplay:
 
         self.sub_canvas_size = 40
 
+        self.n_neurons = n_neurons
+
         self.neuron_canvases = [tk.Canvas(
-            self.canvas, width=self.sub_canvas_size, height=self.sub_canvas_size) for n in range(n_neurons)]
+            self.canvas, width=self.sub_canvas_size, height=self.sub_canvas_size) for n in range(self.n_neurons)]
         self.percent_canvases = [tk.Canvas(
-            self.canvas, width=self.sub_canvas_size*1.5, height=self.sub_canvas_size) for n in range(n_neurons)]
+            self.canvas, width=self.sub_canvas_size*1.5, height=self.sub_canvas_size) for n in range(self.n_neurons)]
 
         for index, item in enumerate(self.neuron_canvases):
             item.grid(column=0, row=index, pady=3)
@@ -216,22 +230,28 @@ class NetworkInfoDisplay:
     def update(self, outputs: np.ndarray):
         for index, (output, neuron_canvas, percent_canvas) in enumerate(zip(outputs, self.neuron_canvases, self.percent_canvases)):
             brightness = int((1-output) * 255)
-            
-            neuron_canvas.create_oval(3, 3, self.sub_canvas_size, self.sub_canvas_size, outline="black", offset="n", fill="#%02x%02x%02x" % (brightness, brightness, brightness))
-            neuron_canvas.create_text(self.sub_canvas_size/1.9, self.sub_canvas_size/1.9, fill=("white" if brightness < 200 else "black"), text=str(index), justify="center", font=("Arial", int(self.sub_canvas_size * 0.25)))
-            
+
+            neuron_canvas.create_oval(3, 3, self.sub_canvas_size, self.sub_canvas_size, outline="black",
+                                      offset="n", fill="#%02x%02x%02x" % (brightness, brightness, brightness))
+            neuron_canvas.create_text(self.sub_canvas_size/1.9, self.sub_canvas_size/1.9,
+                                      fill=("white" if brightness < 200 else "black"), text=str(index), justify="center", font=("Arial", int(self.sub_canvas_size * 0.25)))
+
             percent_canvas.delete("all")
-            percent_canvas.create_text(self.sub_canvas_size/1.9, self.sub_canvas_size/1.9, text=format(output, ".0%"), justify="center", font=("Arial", int(self.sub_canvas_size * 0.25)))
+            percent_canvas.create_text(self.sub_canvas_size/1.9, self.sub_canvas_size/1.9,
+                                       text=format(output, ".0%"), justify="center", font=("Arial", int(self.sub_canvas_size * 0.25)))
+
+    def reset(self):
+        self.update(np.zeros(self.n_neurons))
 
 
 class GuessDisplay:
     def __init__(self, canvas: tk.Canvas) -> None:
         self.canvas = canvas
-    
+
     def update(self, outputs: np.ndarray):
         guess = outputs.argmax()
         confidence = outputs[guess]
-        
+
         # made by ChatGPT
         confidence_levels = [
             "I'm completely clueless about this, maybe it's a",
@@ -256,15 +276,19 @@ class GuessDisplay:
             "I'm nearly 100% sure, it must be a",
             "That's obviously a",
         ]
-        
+
         self.canvas.delete("all")
         self.canvas.create_text(large_drawing_width/2, large_drawing_height/10, justify="center",
-                                text=confidence_levels[int(confidence * len(confidence_levels))],
+                                text=confidence_levels[int(confidence * (len(confidence_levels) - 1))],
                                 font=("Arial", int(large_drawing_height * 0.03)))
         self.canvas.create_text(large_drawing_width/2, large_drawing_height/2, justify="center",
                                 text=str(guess), font=("Arial", int(large_drawing_height * 0.5)))
         # self.canvas.create_text(large_drawing_width/2, large_drawing_height - large_drawing_height/10, justify="center",
         #                         text=format(confidence, "%"))
+
+    def reset(self):
+        self.canvas.delete("all")
+
 
 drawing_canvas = tk.Canvas(root, background="white", highlightbackground="grey",
                            width=large_drawing_width, height=large_drawing_height)
@@ -276,25 +300,28 @@ network_info_canvas.grid(row=0, column=1, padx=10, pady=10)
 network_info = NetworkInfoDisplay(network_info_canvas, n_outputs)
 
 guess_canvas = tk.Canvas(root, background="white", highlightbackground="grey",
-                          width=large_drawing_width, height=large_drawing_height)
+                         width=large_drawing_width, height=large_drawing_height)
 guess_canvas.grid(row=0, column=2, padx=10, pady=10)
 guess_info = GuessDisplay(guess_canvas)
 
+
 def reset():
-    guess_canvas.delete("all")
-    network_info.update(np.zeros(10))
+    guess_info.reset()
+    network_info.reset()
+
 
 def update(pixels: np.ndarray):
     # do neural network stuff here
     output = network.compute(np.array([pixels]))[0]
     network_info.update(output)
     guess_info.update(output)
-    
 
-drawing_board = DrawingDisplay(drawing_canvas, (small_drawing_width, small_drawing_height), update, reset)
+
+drawing_board = DrawingDisplay(
+    drawing_canvas, (small_drawing_width, small_drawing_height), update, reset)
 drawing_board.place_buttons()
 
 reset()
 
-print("Displaying drawing demo.")
+print("\nDisplaying drawing demo.")
 root.mainloop()
