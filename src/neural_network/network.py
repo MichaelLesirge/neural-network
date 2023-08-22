@@ -61,10 +61,10 @@ class Network:
                 loss = self.loss.forward(y_batch, output, is_categorical_labels = is_categorical_labels)
                 
                 percent_complete = (batch + len(x_split) * epoch) / (len(x_split) * epochs) * 100
-                if percent_complete % 1 == 0:
+                if percent_complete % 1 == 0 or batch == 0:
                     message = f"{int(percent_complete)}% complete. {epoch=}, {batch=}, {loss=}"
                     max_str_len = max(max_str_len, len(message))
-                    print(message.ljust(max_str_len), end="\n" if batch == 0 else "\r")
+                    print(message.ljust(max_str_len), end=("\n" if batch == 0 else "\r"))
                                    
                 grad = self.loss.backward(y_batch, output, is_categorical_labels = is_categorical_labels)
                 
