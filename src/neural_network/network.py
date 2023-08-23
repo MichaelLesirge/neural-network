@@ -43,6 +43,8 @@ class Network:
         max_str_len = 0
         
         loss = None
+        
+        last_percent_complete = -1
          
         for epoch in range(epochs):
             if shuffle:
@@ -60,9 +62,10 @@ class Network:
                                 
                 loss = self.loss.forward(y_batch, output, is_categorical_labels = is_categorical_labels)
                 
-                percent_complete = (batch + len(x_split) * epoch) / (len(x_split) * epochs) * 100
-                if percent_complete % 1 == 0 or batch == 0:
-                    message = f"{int(percent_complete)}% complete. {epoch=}, {batch=}, {loss=}"
+                percent_complete = int((batch + len(x_split) * epoch) / (len(x_split) * epochs) * 100)
+                if percent_complete > last_percent_complete or batch == 0:
+                    last_percent_complete = percent_complete
+                    message = f"{percent_complete}% complete. {epoch=}, {batch=}, {loss=}"
                     max_str_len = max(max_str_len, len(message))
                     print(message.ljust(max_str_len), end=("\n" if batch == 0 else "\r"))
                                    
