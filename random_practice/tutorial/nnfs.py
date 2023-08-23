@@ -53,9 +53,9 @@ class LayerDense:
         """
         
         self.inputs = input
-        self.output = np.dot(self.inputs, self.weights) + self.bias
+        self.outputs = np.dot(self.inputs, self.weights) + self.bias
 
-    def backward(self, output_grad):
+    def backward(self, outputs_grad):
         """
         f(inputs, weights, biases) = inputs * weights + biases
         
@@ -83,7 +83,7 @@ class LayerDense:
         solution: use inputs.T as first since it has correct height in wrong place, and its width will match the height of b.
         b has correct width so leave it as is, and the height will match the width of inputs.T
         """
-        self.weights_grad = np.dot(self.inputs.T, output_grad)
+        self.weights_grad = np.dot(self.inputs.T, outputs_grad)
         
         """
         for biases
@@ -99,7 +99,7 @@ class LayerDense:
         
         solution: sum down the columns, don't mean since with batches the goal is to do the work of many passes in one
         """
-        self.bias_grad = np.sum(output_grad, axis=1, keepdims=True)
+        self.bias_grad = np.sum(outputs_grad, axis=1, keepdims=True)
 
         """
         The width of `a` must be the same as the height `b`.
@@ -116,22 +116,22 @@ class LayerDense:
 
         inputs = [[1, 2]]           shape = (b, 2) <-- target
         """
-        self.input_grad = np.dot(output_grad, self.weights.T)
+        self.inputs_grad = np.dot(outputs_grad, self.weights.T)
         
 class ActivationReLU:
-    def forward(self, input):
-        self.inputs = input
+    def forward(self, inputs):
+        self.inputs = inputs
         """
         ReLU is 0 for all numbers bellow 0 and linear for numbers greater than zero
         """
-        self.output = np.maximum(input, 0)
+        self.outputs = np.maximum(inputs, 0)
     
-    def backward(self, output_grad):
+    def backward(self, outputs_grad):
         """
         0 is constant so it has a gradient of 0, if its greater than zero it is linear giving it a gradient of 1
         """
-        input_grad = (self.inputs > 0).astype(float)
-        self.input_grad = np.multiply(input_grad, output_grad)
+        inputs_grad = (self.inputs > 0).astype(float)
+        self.inputs_grad = np.multiply(inputs_grad, outputs_grad)
 
 class ActivationSoftmax:
     def forward(self, inputs):
@@ -142,7 +142,7 @@ class ActivationSoftmax:
         
         softmax(x) = [[0.07769558, 0.34820743, 0.57409699]]
         
-        # 7.76%, 34.82%, 57.40%
+        7.76%, 34.82%, 57.40%
         
         sum([[0.07769558, 0.34820743, 0.57409699]]) = 1.0
         
@@ -153,9 +153,9 @@ class ActivationSoftmax:
         # the highest value of each row is subtracted to prevent exponential from overflowing, this has no effect on the final output though
         exp_values = np.exp(inputs - np.max(inputs, axis=1, keepdims=True))
         # since all values are now positive you can get what percent chance they are likely by
-        self.output = exp_values / np.sum(exp_values, axis=1, keepdims=True)
+        self.outputs = exp_values / np.sum(exp_values, axis=1, keepdims=True)
     
-    def backward(self, output_grad):      
+    def backward(self, outputs_grad):      
         """
         thanks https://youtu.be/09c7bkxpv9I
         
@@ -229,20 +229,24 @@ class ActivationSoftmax:
         """
      
         # create blank array for final grad
-        self.input_grad = np.empty_like(output_grad)
+        self.inputs_grad = np.empty_like(outputs_grad)
         
-        for index, (single_output, single_grad) in enumerate(zip(self.output, output_grad)):
+        for index, (single_output, single_grad) in enumerate(zip(self.outputs, outputs_grad)):
             # output = [1, 2, 3, 4]
             # grad = [1, 1, 1, 1]
             
             # convert single_output to 2d
-            # output = [[1, 2, 3]]
             single_output = single_output.reshape(1, -1)
+            # output = [[1, 2, 3, 4]]
             
             """
-            i is number softmax is being used on, j is for gradient of that number when i
+            i is number softmax is being used on, j number we are getting the gradient of 
             
-            S'(Z_i) = S(Z_i) * (int(i==j) - S(Z_j))
+            S(Z_i) = exp(Z_i) / sum(exp(Z))
+            S'(Z_j) = S(Z_i) * (int(i==j) - S(Z_j))
+            
+            reformat to:
+            S'(Z_i) = (i if i==j else 0) - S(Z_i) * S(Z_j)
             
             --- i * j ---
             
@@ -270,6 +274,12 @@ class ActivationSoftmax:
              [0, 0, 3, 0],
              [0, 0, 0, 4]]
              
+            np.diagflat(x) - np.dot(x.T, x)
+            [[  0,  -2,  -3,  -4],
+             [ -2,  -2,  -6,  -8],
+             [ -3,  -6,  -6, -12],
+             [ -4,  -8, -12, -12]]
+             
             #  --- final ---
             
             pick any i and j to test. pick to indexes from output
@@ -277,27 +287,27 @@ class ActivationSoftmax:
             derivative for i
             if i==j: S'(Z_i) = S(Z_i) * (1 - S(Z_j))
             if i!=j: S'(Z_j) = -S(Z_j) * S(Z_i)
-            np.diagflat(x) - np.dot(x.T, x)
-            [[  0,  -2,  -3,  -4],
-             [ -2,  -2,  -6,  -8],
-             [ -3,  -6,  -6, -12],
-             [ -4,  -8, -12, -12]])
+              
+            S'(Z_i)= S(Z_i) * (int(i==j) - S(Z_j))
             """
             
-            jacobian_matrix = np.diagflat(single_output) - np.dot(single_output.T, single_output)
+            jacobian_matrix = np.diagflat(single_output) - np.dot(single_output.T, single_output) 
             
-            # np.dot(np.diagflat(x) - np.dot(x.T, x), [1, 1, 1, 1])
-            # [ -9, -18, -27, -36]
+            """
+            multiply each column by corresponding grad value, then sum it across that row
+            np.dot(np.diagflat(x) - np.dot(x.T, x), [1, 1, 1, 1])
             
-            self.input_grad[index] = np.dot(jacobian_matrix, single_grad)
+            [ -9, -18, -27, -36]
+            """
+            self.inputs_grad[index] = np.dot(jacobian_matrix, single_grad)
             
 
 class LossCategoricalCrossEntropy:
-    def calculate(self, output_y, y):
+    def calculate(self, outputs_y, y):
         
-        self.forward(output_y, y)
+        self.forward(outputs_y, y)
         
-        return np.mean(self.output)
+        return np.mean(self.outputs)
 
     def forward(self, y_pred, y_true):
         # clip value so that there can't be any zeros which would not work with log. Also clip on upper bound to keep it balanced
@@ -339,7 +349,7 @@ class LossCategoricalCrossEntropy:
         -log(0.9) = 0.1
         -log(1.0) = 0.0
         """
-        self.output = -np.log(correct_confidences)
+        self.outputs = -np.log(correct_confidences)
 
     def backward(self, y_pred, y_true):
         n_samples = np.size(y_pred, 0)
@@ -354,6 +364,28 @@ class LossCategoricalCrossEntropy:
         # -y_true / y_pred = [[0, -2.5, 0], [0, -2, 0], [0, -5, 0]]
         self.inputs_grad = (-y_true / y_pred) / n_samples
 
+
+
+a = ActivationSoftmax()
+l = LossCategoricalCrossEntropy()
+
+input = np.array([[0.2, 1.8]])
+true = np.array([[0, 1]])
+
+print(input, true)
+
+a.forward(input)
+print(a.outputs)
+
+l.forward(a.outputs, true)
+print(l.outputs)
+
+l.backward(a.outputs, true)
+print(l.inputs_grad)
+
+a.backward(l.inputs_grad)
+print(a.inputs_grad)
+
 # dense1 = LayerDense(2, 3)
 # activation1 = ActivationReLU()
 
@@ -363,10 +395,10 @@ class LossCategoricalCrossEntropy:
 # loss_func = LossCategoricalCrossEntropy()
 
 # dense1.forward(X)
-# activation1.forward(dense1.output)
+# activation1.forward(dense1.outputs)
 
-# dense2.forward(activation1.output)
-# activation2.forward(dense2.output)
+# dense2.forward(activation1.outputs)
+# activation2.forward(dense2.outputs)
 
 # output = activation2.output
 
