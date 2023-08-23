@@ -1,3 +1,5 @@
+print("Loading MINST Dataset (and other modules)...")
+
 import tkinter as tk
 
 import numpy as np
@@ -6,9 +8,6 @@ from matplotlib import pyplot as plt
 
 import neural_network as nn
 
-print("Loading MINST Dataset (and other modules)...")
-
-
 (X_train, y_train), (X_test, y_test) = mnist.load_data()
 
 small_drawing_width, small_drawing_height = X_train[0].shape
@@ -16,21 +15,17 @@ large_drawing_width, large_drawing_height = (400, 400)
 
 n_inputs, n_outputs = small_drawing_width * \
     small_drawing_height, max(y_train.max(), y_train.max()) + 1
-layer_size = 2**7
+layer_size = 2**6
 
 
 def preprocess(inputs):
-    return inputs.astype(float) / 255
+    return inputs.astype(np.float64) / 255
 
 
 network = nn.network.Network([
-    nn.layers.Reshape(
-        (small_drawing_width, small_drawing_height), (n_inputs,)),
+    nn.layers.Reshape((small_drawing_width, small_drawing_height), (n_inputs,)),
 
     nn.layers.Dense(n_inputs, layer_size),
-    nn.activations.ReLU(),
-
-    nn.layers.Dense(layer_size, layer_size),
     nn.activations.ReLU(),
 
     nn.layers.Dense(layer_size, layer_size),
@@ -42,7 +37,7 @@ network = nn.network.Network([
 ], loss=nn.losses.CategoricalCrossEntropy(), preprocess=[preprocess])
 
 print("\nStarting Training...")
-network.train(X_train, y_train, batch_size=16, epochs=3,
+network.train(X_train, y_train, batch_size=16, epochs=2,
               learning_rate=0.1, is_categorical_labels=True)
 
 test_output = network.compute(X_test)
@@ -85,9 +80,9 @@ def draw_blob(array, row, col, value):
 
     value_corner = 1 - (1-value) / 10
     draw_dot(array, row+1, col+1, value_corner)
-    draw_dot(array, row-1, col+1, value_edge)
-    draw_dot(array, row+1, col-1, value_edge)
-    draw_dot(array, row-1, col-1, value_edge)
+    draw_dot(array, row-1, col+1, value_corner)
+    draw_dot(array, row+1, col-1, value_corner)
+    draw_dot(array, row-1, col-1, value_corner)
 
 
 def draw_line(array: np.ndarray, row1: int, col1: int, row2: int, col2: int):
@@ -274,6 +269,7 @@ class GuessDisplay:
             "I'm almost certain, it could be a",
             "I'm highly confident, it's very likely a",
             "I'm nearly 100% sure, it must be a",
+            "That's obviously a",
             "That's obviously a",
         ]
 
