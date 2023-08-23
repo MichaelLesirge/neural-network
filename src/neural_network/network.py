@@ -8,9 +8,15 @@ from neural_network.base import BaseLayer
 def n_split_array(arr, n_size, *, keep_extra=True):
     """split arr into chunks of size n with extra added on end if keep_extra is true"""
     if n_size is None: return arr
-    div, extra = divmod(np.size(arr, 0), n_size)
-    a, b = np.split(arr, [extra]) if extra else arr, None
-    return np.array_split(a, div) + ([b] if (b and keep_extra) else [])
+        
+    if len(arr) < n_size:
+        return [arr] if keep_extra else []
+    
+    div, extra = divmod(len(arr), n_size)
+    
+    a, b = np.split(arr, [len(arr) - extra])
+    
+    return np.array_split(a, div) + ([b] if (len(b) and keep_extra) else [])
 
 
 def same_shuffle(*arrays):
@@ -49,7 +55,7 @@ class Network:
         for epoch in range(epochs):
             if shuffle:
                 x, y = same_shuffle(x, y)
-            x_split, y_split = n_split_array(x, batch_size, keep_extra=False), n_split_array(y, batch_size, keep_extra=False)
+            x_split, y_split = n_split_array(x, batch_size), n_split_array(y, batch_size)
             for batch, (x_batch, y_batch) in enumerate(zip(x_split, y_split)):                      
                 zs = [x_batch]
                 for layer in self.layers:
