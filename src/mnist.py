@@ -13,8 +13,7 @@ import neural_network as nn
 small_drawing_width, small_drawing_height = X_train[0].shape
 large_drawing_width, large_drawing_height = (400, 400)
 
-n_inputs, n_outputs = small_drawing_width * \
-    small_drawing_height, max(y_train.max(), y_train.max()) + 1
+n_inputs, n_outputs = small_drawing_width * small_drawing_height, max(y_train.max(), y_train.max()) + 1
 layer_size = 2**6
 
 
@@ -166,7 +165,7 @@ class DrawingDisplay:
         self.previous_draw_point = (event.x, event.y)
 
         self.canvas.create_line(event.x, event.y, prev_x, prev_y,
-                                fill="black", smooth=True, width=self.pen_size, tags="line")
+                                fill="black", smooth=True, width=self.pen_size)
 
         row1, col1 = self.scale_for_save(event.x, event.y)
         row2, col2 = self.scale_for_save(prev_x, prev_y)
@@ -182,18 +181,12 @@ class DrawingDisplay:
 
     def clear_canvas(self) -> None:
         self.pixel_array = np.zeros_like(self.pixel_array)
-        self.canvas.delete("line")
+        self.canvas.delete(tk.ALL)
         self.on_reset()
 
     def show_graph(self) -> None:
-        # print("\n | " + "--" * (np.size(self.pixel_array, 1)) + " | ")
-        # greys = " .,*/(#%&@"
-        # print("\n".join(" | " + (" ".join(greys[int((pixel / 255) * (len(greys)-1))] for pixel in row)) + "  | " for row in self.pixel_array))
-        # print(" | " + "--" * (np.size(self.pixel_array, 1)) + " | \n")
-
         plt.imshow(self.pixel_array, cmap="Greys")
-        print("\n".join((" ".join(str(pixel).ljust(3) for pixel in row))
-              for row in self.pixel_array))
+        print("\n".join((" ".join(str(pixel).ljust(3) for pixel in row)) for row in self.pixel_array), "\n")
         plt.show()
 
     def place_buttons(self) -> None:
@@ -226,12 +219,13 @@ class NetworkInfoDisplay:
         for index, (output, neuron_canvas, percent_canvas) in enumerate(zip(outputs, self.neuron_canvases, self.percent_canvases)):
             brightness = int((1-output) * 255)
 
+            neuron_canvas.delete(tk.ALL)
             neuron_canvas.create_oval(3, 3, self.sub_canvas_size, self.sub_canvas_size, outline="black",
                                       offset="n", fill="#%02x%02x%02x" % (brightness, brightness, brightness))
             neuron_canvas.create_text(self.sub_canvas_size/1.9, self.sub_canvas_size/1.9,
                                       fill=("white" if brightness < 200 else "black"), text=str(index), justify="center", font=("Arial", int(self.sub_canvas_size * 0.25)))
 
-            percent_canvas.delete("all")
+            percent_canvas.delete(tk.ALL)
             percent_canvas.create_text(self.sub_canvas_size/1.9, self.sub_canvas_size/1.9,
                                        text=format(output, ".0%"), justify="center", font=("Arial", int(self.sub_canvas_size * 0.25)))
 
@@ -283,7 +277,7 @@ class GuessDisplay:
         #                         text=format(confidence, "%"))
 
     def reset(self):
-        self.canvas.delete("all")
+        self.canvas.delete(tk.ALL)
 
 
 drawing_canvas = tk.Canvas(root, background="white", highlightbackground="grey",
