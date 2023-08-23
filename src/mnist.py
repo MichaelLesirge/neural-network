@@ -14,8 +14,7 @@ small_drawing_width, small_drawing_height = X_train[0].shape
 large_drawing_width, large_drawing_height = (400, 400)
 
 n_inputs, n_outputs = small_drawing_width * small_drawing_height, max(y_train.max(), y_train.max()) + 1
-layer_size = 2**6
-
+layer_size = 2**5
 
 def preprocess(inputs):
     return inputs.astype(np.float64) / 255
@@ -25,9 +24,6 @@ network = nn.network.Network([
     nn.layers.Reshape((small_drawing_width, small_drawing_height), (n_inputs,)),
 
     nn.layers.Dense(n_inputs, layer_size),
-    nn.activations.ReLU(),
-
-    nn.layers.Dense(layer_size, layer_size),
     nn.activations.ReLU(),
 
     nn.layers.Dense(layer_size, n_outputs),
@@ -268,9 +264,12 @@ class GuessDisplay:
         ]
 
         self.canvas.delete(self.canvas.delete(tk.ALL))
+        
+        smallest_max = 1 / len(outputs)
         self.canvas.create_text(large_drawing_width/2, large_drawing_height/10, justify="center",
-                                text=confidence_levels[int(confidence * (len(confidence_levels) - 1))],
+                                text=confidence_levels[int((confidence - smallest_max) / (1 - smallest_max) * (len(confidence_levels) - 1))],
                                 font=("Arial", int(large_drawing_height * 0.03)))
+        
         self.canvas.create_text(large_drawing_width/2, large_drawing_height/2, justify="center",
                                 text=str(guess), font=("Arial", int(large_drawing_height * 0.5)))
         # self.canvas.create_text(large_drawing_width/2, large_drawing_height - large_drawing_height/10, justify="center",
