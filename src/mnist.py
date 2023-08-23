@@ -267,7 +267,7 @@ class GuessDisplay:
             "That's obviously a",
         ]
 
-        self.canvas.delete("all")
+        self.canvas.delete(self.canvas.delete(tk.ALL))
         self.canvas.create_text(large_drawing_width/2, large_drawing_height/10, justify="center",
                                 text=confidence_levels[int(confidence * (len(confidence_levels) - 1))],
                                 font=("Arial", int(large_drawing_height * 0.03)))
