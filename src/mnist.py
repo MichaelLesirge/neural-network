@@ -3,12 +3,12 @@ print("Loading MINST Dataset (and other modules)...")
 import tkinter as tk
 
 import numpy as np
-from keras.datasets import mnist
+from keras.datasets.mnist import load_data
 from matplotlib import pyplot as plt
 
 import neural_network as nn
 
-(X_train, y_train), (X_test, y_test) = mnist.load_data()
+(X_train, y_train), (X_test, y_test) = load_data()
 
 small_drawing_width, small_drawing_height = X_train[0].shape
 large_drawing_width, large_drawing_height = (400, 400)
