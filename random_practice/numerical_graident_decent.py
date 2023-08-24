@@ -4,8 +4,8 @@ from matplotlib.animation import FuncAnimation
 
 """Gradient descent with Linear Approximations"""
 
-# def y_func(x): return 0.1 * x ** 2
-def y_func(x): return (np.sin(0.5 * x) + 0.3 * np.sin(2 * x) + 0.2 * x) + 2.00930389075277116
+def y_func(x): return (0.1 * x ** 2)
+# def y_func(x): return (np.sin(0.5 * x) + 0.3 * np.sin(2 * x) + 0.2 * x) + 2.1
 
 x_min_max, step = 10, 0.001
 x_data = np.arange(-x_min_max, x_min_max + step, step)
@@ -14,14 +14,13 @@ y_data = y_func(x_data)
 
 y_target = 0
 
-learning_rate = 0.1
-# error_threshold = 0.00001
+learning_rate = 0.01
 
 positions_and_errors = []
 
 max_iterations = 5000 + 1
 
-x = np.random.choice(x_data)
+x = np.random.choice(x_data[x_data > x_data.mean()])
  
 def mean_squared_error(predicted, target):
     return np.mean(np.square(predicted - target))    
@@ -61,7 +60,11 @@ def init():
     return (dots,)
 
 print_step = 100
-def update(n_frame):         
+wait = 100
+
+def update(n_frame):
+    n_frame = max(n_frame - wait, 0)
+    
     (x, y), error = positions_and_errors[n_frame]
     
     dots.set_data([x], [y])
