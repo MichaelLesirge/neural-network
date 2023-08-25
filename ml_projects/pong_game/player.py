@@ -19,7 +19,6 @@ class PaddleBase(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
                 
         self.rect.centerx, self.rect.centery = start_position.point
-        self.start_position = start_position
         
     def add_score(self) -> None:
         self.score += 1
@@ -31,7 +30,7 @@ class PaddleBase(pygame.sprite.Sprite):
         self.rect.y += Constants.SPEED
     
     def update(self) -> None:
-        self.rect.x = self.start_position.x
+        pass
 
 class HumanPaddle(PaddleBase):
     def __init__(self, start_position: RelativeRectPoint, size: RelativeRectPoint, up_key, down_key) -> None:
@@ -59,8 +58,7 @@ class AiPaddle(PaddleBase):
     
     def update_network(self, ball: ball.Ball, screen, other_player) -> None:
         # data = [*self.rect.topleft, *self.rect.bottomright, *other_player.topleft, *other_player.topleft, *other_player.bottomright,
-        #         *ball.rect.center, ball.x_velocity, ball.y_velocity,
-        #         screen.]
+        #         *ball.rect.center, ball.x_velocity, ball.y_velocity]
         pass
         
         
@@ -71,4 +69,6 @@ class AiPaddle(PaddleBase):
 
 
 class WallPaddle(PaddleBase):
-    pass
+    def __init__(self, start_position: RelativeRectPoint, size: RelativeRectPoint) -> None:
+        size._y = 1
+        super().__init__(start_position, size)  
