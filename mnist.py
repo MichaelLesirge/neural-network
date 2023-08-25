@@ -27,11 +27,17 @@ network = nn.network.Network([
     nn.layers.Dense(layer_size, n_outputs),
     nn.activations.Softmax(),
 
-], loss=nn.losses.CategoricalCrossEntropy(), preprocess=[preprocess])
+], loss=nn.losses.CategoricalCrossEntropy(categorical_labels=True), preprocess=[preprocess])
 
-print("\nStarting Training...")
-network.train(X_train, y_train, batch_size=16, epochs=2,
-              learning_rate=0.1, is_categorical_labels=True)
+
+try:
+    network.load_params("mnist-network")
+    
+except FileNotFoundError:
+    print("\nStarting Training...")
+    
+    network.train(X_train, y_train, batch_size=16, epochs=2,learning_rate=0.1)
+    network.save_params("mnist-network")
 
 test_output = network.compute(X_test)
 

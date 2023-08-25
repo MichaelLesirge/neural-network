@@ -23,3 +23,11 @@ class BaseLayer(ABC):
     @abstractmethod
     def backward(self, inputs: np.ndarray, output_gradient: np.ndarray, learning_rate: np.ndarray) -> np.ndarray:
         pass
+
+    def save_params(self) -> tuple:
+        """Returns layers mutable data, not the entire layer"""
+        return ()
+    
+    def load_params(self, params: tuple) -> None:
+        """Load is an alternative to training, not for saving entire layer"""
+        return

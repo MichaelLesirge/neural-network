@@ -20,12 +20,11 @@ class Activation(BaseLayer, ABC):
 
     @abstractmethod
     def activation(self, x: np.ndarray) -> np.ndarray:
-        ...
+        pass
 
     @abstractmethod
     def activation_prime(self, x: np.ndarray) -> np.ndarray:
-        ...
-
+        pass
 
 class BinaryStep(Activation):
     """ 

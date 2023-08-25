@@ -1,9 +1,14 @@
+import pickle
+
 import numpy as np
 
 from neural_network.losses import Loss
 from neural_network.base import BaseLayer
 
-# at some point add compile step where optimizations could be made and Dense Layers could find how many inputs they have  
+
+# at some point add compile step where optimizations could be made and Dense Layers could find how many inputs they have
+#  _init_params should also return self and any other layers to add (for example Dense could return itself and an activation)
+# also save _init_params for model save / load
 
 def n_split_array(arr, n_size, *, keep_extra=True):
     """split arr into chunks of size n with extra added on end if keep_extra is true"""
@@ -41,7 +46,7 @@ class Network:
         return inputs
     
     
-    def train(self, x: np.ndarray, y: np.ndarray, learning_rate: float = 0.001, batch_size: int = 32, epochs: int = 1, shuffle: bool = True, is_categorical_labels: bool = False):
+    def train(self, x: np.ndarray, y: np.ndarray, learning_rate: float = 0.001, batch_size: int = 32, epochs: int = 1, shuffle: bool = True):
 
         for proc in self.reprocesses:
             x = proc(x)
@@ -66,7 +71,7 @@ class Network:
                     
                 output = zs.pop()
                                 
-                loss = self.loss.forward(y_batch, output, is_categorical_labels = is_categorical_labels)
+                loss = self.loss.forward(y_batch, output)
                 
                 percent_complete = int((batch + len(x_split) * epoch) / (len(x_split) * epochs) * 100)
                 if percent_complete > last_percent_complete or batch == 0:
@@ -75,9 +80,20 @@ class Network:
                     max_str_len = max(max_str_len, len(message))
                     print(message.ljust(max_str_len), end=("\n" if batch == 0 else "\r"))
                                    
-                grad = self.loss.backward(y_batch, output, is_categorical_labels = is_categorical_labels)
+                grad = self.loss.backward(y_batch, output)
                 
                 for layer, activation in zip(reversed(self.layers), reversed(zs)):
                     grad = layer.backward(activation, grad, learning_rate)
             
         print(f"100% complete. finished, {loss=}".ljust(max_str_len))
+    
+    def save_params(self, file):
+        saved_layers_data = tuple(layer.save_params() for layer in self.layers)
+        with open(file + ".pkl", "wb") as file:
+            pickle.dump(saved_layers_data, file)
+            
+    def load_params(self, file):
+        with open(file + ".pkl", "rb") as file:
+            saved_layers_data = pickle.load(file)
+        for layer, saved_layer_data in zip(self.layers, saved_layers_data):
+            layer.load_params(saved_layer_data)
