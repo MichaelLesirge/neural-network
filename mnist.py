@@ -1,5 +1,3 @@
-print("Loading MINST Dataset (and other modules)...")
-
 import tkinter as tk
 
 import numpy as np
