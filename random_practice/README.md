@@ -1,6 +1,6 @@
 # Random practice
 
-All the things in here are made to get a better understanding of how neural networks work. They all have plenty of comments that I made trying to wrap my head around it
+All the things I made to get a better understanding of how neural networks work. They all have plenty of comments that I made when I was trying to wrap my head around it
 
 ## [one_neuron_back_prop.py](https://github.com/michael-lesirge/neural-network/blob/main/random_practice/one_neuron_back_prop.py)
 <p>Animation of one neuron using backpropagation to find line</p>
