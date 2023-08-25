@@ -1,9 +1,11 @@
+from time import sleep
+
 import pygame
+
 from ball import Ball
 from player import AiPaddle, HumanPaddle, WallPaddle
 from utils import RelativeRectPoint
 
-from time import sleep
 
 def make_screen_size(size_px: int, aspect_ration: float, horizontal: bool = True) -> tuple[int, int]:
     return int(size_px * ((aspect_ration * (horizontal)) or 1)), int(size_px * ((aspect_ration * (not horizontal)) or 1))

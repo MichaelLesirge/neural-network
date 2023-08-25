@@ -1,6 +1,8 @@
 import pygame
+
 import ball
 from utils import RelativeRectPoint
+
 
 class Constants:
     SPEED = 5
