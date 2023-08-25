@@ -3,6 +3,8 @@ from ball import Ball
 from player import AiPaddle, HumanPaddle, WallPaddle
 from utils import RelativeRectPoint
 
+from time import sleep
+
 def make_screen_size(size_px: int, aspect_ration: float, horizontal: bool = True) -> tuple[int, int]:
     return int(size_px * ((aspect_ration * (horizontal)) or 1)), int(size_px * ((aspect_ration * (not horizontal)) or 1))
 
@@ -29,12 +31,12 @@ class BallConstants:
 
     START_LOCATION = 0.07, 0.1
     START_SLOPE = 1, 2
-    BOUNCE_VELOCITY_INCREACE = 0.1
+    BOUNCE_VELOCITY_INCREASE = 0.1
 
 
 class PaddleConstants:
     START_LOCATION = 0.06, 0.5
-    PADDLE_SIZE = 0.005, 0.5
+    PADDLE_SIZE = 0.005, 0.15
     
     TOP_AREA_SIZE = 1
 
@@ -112,7 +114,7 @@ def main() -> None:
             if abs(ball.rect.top - collision_paddle.bottom) < ball.max_velocity or abs(ball.rect.bottom - collision_paddle.top) < ball.max_velocity:
                 ball.bounce_y()
 
-            ball.add_velocity(BallConstants.BOUNCE_VELOCITY_INCREACE)
+            ball.add_velocity(BallConstants.BOUNCE_VELOCITY_INCREASE)
         
         if ball.rect.right < screen.get_rect().left:
             # ball went over left side of wall
@@ -125,7 +127,7 @@ def main() -> None:
             left_player.add_score()     
 
         if ball.rect.top < screen.get_rect().top or ball.rect.bottom > screen.get_rect().bottom:
-            # ball hit top or buttom
+            # ball hit top or bottom
             ball.bounce_y()
 
         draw_score()

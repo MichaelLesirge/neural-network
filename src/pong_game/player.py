@@ -2,7 +2,7 @@ import pygame
 import ball
 from utils import RelativeRectPoint
 
-class Contants:
+class Constants:
     SPEED = 5
     COLOR = "white"
 
@@ -14,7 +14,7 @@ class PaddleBase(pygame.sprite.Sprite):
         self.size = size
             
         self.image = pygame.Surface(self.size.point)
-        self.image.fill(Contants.COLOR)
+        self.image.fill(Constants.COLOR)
         
         self.rect = self.image.get_rect()
                 
@@ -25,10 +25,10 @@ class PaddleBase(pygame.sprite.Sprite):
         self.score += 1
                     
     def go_up(self) -> None:
-        self.rect.y -= Contants.SPEED
+        self.rect.y -= Constants.SPEED
     
     def go_down(self) -> None:
-        self.rect.y += Contants.SPEED
+        self.rect.y += Constants.SPEED
     
     def update(self) -> None:
         self.rect.x = self.start_position.x
