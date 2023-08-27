@@ -1,0 +1,3 @@
+
+- Reverse MNIST: takes input + noise and outputs image
+- Char GPN: Model trained on any text data and trained to predict next character 
