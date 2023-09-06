@@ -50,18 +50,18 @@ test_output = network.compute(X_test)
 predictions = test_output.argmax(1)
 accuracy = np.mean(predictions == y_test)
 
-print("\nDisplaying tests...")
-for num in range(0, n_outputs):
-    index = np.random.choice(np.where(y_test == num)[0])
-    output = test_output[index]
-    guess = output.argmax()
+# print("\nDisplaying tests...")
+# for num in range(0, n_outputs):
+#     index = np.random.choice(np.where(y_test == num)[0])
+#     output = test_output[index]
+#     guess = output.argmax()
 
-    print(f"y_pred={output.tolist()}, y_true={np.eye(n_outputs)[guess]}")
+#     print(f"y_pred={output.tolist()}, y_true={np.eye(n_outputs)[guess]}")
 
-    plt.title(
-        f"Test Data Example {num}:\n{guess=}, confidence={output[guess]:.2%}, correct={guess==num}")
-    plt.imshow(X_test[index], cmap="Greys")
-    plt.show()
+#     plt.title(
+#         f"Test Data Example {num}:\n{guess=}, confidence={output[guess]:.2%}, correct={guess==num}")
+#     plt.imshow(X_test[index], cmap="Greys")
+#     plt.show()
 
 print(f"{accuracy:%} accurate on test data")
 
