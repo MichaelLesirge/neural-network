@@ -2,7 +2,7 @@ import pickle
 
 import numpy as np
 
-from neural_network.losses import Loss
+from neural_network.losses.losses import Loss
 from neural_network.base import BaseLayer
 
 
