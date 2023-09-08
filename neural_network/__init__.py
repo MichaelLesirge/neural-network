@@ -1,4 +1,3 @@
-from neural_network import activations
-from neural_network import layers
-from neural_network import losses
-from neural_network import network
+from neural_network import activations, layers, losses, network
+
+__all__ = [activations, layers, losses, network]
