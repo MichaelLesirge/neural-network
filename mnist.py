@@ -67,11 +67,6 @@ print(f"{accuracy:%} accurate on test data")
 
 # --- create drawing GUI ---
 
-root = tk.Tk()
-root.title("MNIST Drawing Test")
-root.resizable(width=False, height=False)
-
-
 def draw_dot(array: np.ndarray, row: int, col: int, value: float) -> None:
     if -1 < row < np.size(array, 1) and -1 < col < np.size(array, 0):
         array[row, col] = min(array[row, col] + ((1 - value) * 255), 255)
@@ -150,10 +145,10 @@ class DrawingDisplay:
         self.previous_draw_point = (None, None)
 
         self.clear_button = tk.Button(
-            root, text="Clear Drawing", command=self.clear_canvas)
+            self.canvas.master, text="Clear Drawing", command=self.clear_canvas)
 
         self.show_button = tk.Button(
-            root, text="Display Drawing From Computers View", command=self.show_graph)
+            self.canvas.master, text="Display Drawing From Computers View", command=self.show_graph)
 
         self.pen_size = 5
 
@@ -291,39 +286,46 @@ class GuessDisplay:
     def reset(self):
         self.canvas.delete(tk.ALL)
 
+def main():
+    root = tk.Tk()
+    root.title("MNIST Drawing Test")
+    root.resizable(width=False, height=False)
+    
+    drawing_canvas = tk.Canvas(root, background="white", highlightbackground="grey",
+                            width=large_drawing_width, height=large_drawing_height)
+    drawing_canvas.grid(row=0, column=0, padx=10, pady=10)
 
-drawing_canvas = tk.Canvas(root, background="white", highlightbackground="grey",
-                           width=large_drawing_width, height=large_drawing_height)
-drawing_canvas.grid(row=0, column=0, padx=10, pady=10)
+    network_info_canvas = tk.Canvas(root, width=20, height=large_drawing_height)
+    network_info_canvas.grid(row=0, column=1, padx=10, pady=10)
 
-network_info_canvas = tk.Canvas(root, width=20, height=large_drawing_height)
-network_info_canvas.grid(row=0, column=1, padx=10, pady=10)
+    network_info = NetworkInfoDisplay(network_info_canvas, n_outputs)
 
-network_info = NetworkInfoDisplay(network_info_canvas, n_outputs)
-
-guess_canvas = tk.Canvas(root, background="white", highlightbackground="grey",
-                         width=large_drawing_width, height=large_drawing_height)
-guess_canvas.grid(row=0, column=2, padx=10, pady=10)
-guess_info = GuessDisplay(guess_canvas)
-
-
-def reset():
-    guess_info.reset()
-    network_info.reset()
-
-
-def update(pixels: np.ndarray):
-    # do neural network stuff here
-    output = network.compute(np.array([pixels]))[0]
-    network_info.update(output)
-    guess_info.update(output)
+    guess_canvas = tk.Canvas(root, background="white", highlightbackground="grey",
+                            width=large_drawing_width, height=large_drawing_height)
+    guess_canvas.grid(row=0, column=2, padx=10, pady=10)
+    guess_info = GuessDisplay(guess_canvas)
 
 
-drawing_board = DrawingDisplay(
-    drawing_canvas, (small_drawing_width, small_drawing_height), update, reset)
-drawing_board.place_buttons()
+    def reset():
+        guess_info.reset()
+        network_info.reset()
 
-reset()
 
-print("\nDisplaying drawing demo.")
-root.mainloop()
+    def update(pixels: np.ndarray):
+        # do neural network stuff here
+        output = network.compute(np.array([pixels]))[0]
+        network_info.update(output)
+        guess_info.update(output)
+
+
+    drawing_board = DrawingDisplay(
+        drawing_canvas, (small_drawing_width, small_drawing_height), update, reset)
+    drawing_board.place_buttons()
+
+    reset()
+
+    print("\nDisplaying drawing demo.")
+    root.mainloop()
+
+if __name__ == "__main__":
+    main()

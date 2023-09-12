@@ -12,11 +12,8 @@ def graph_all(x: np.ndarray = None) -> None:
 
 def graph_activation(activation: Activation, x: np.ndarray = None):
 
-    if x is None:
-        x = np.arange(-5, 5, 0.01)
-
-    if x.ndim == 1:
-        x = x.reshape((1, ) + x.shape)
+    if x is None: x = np.arange(-5, 5, 0.01)
+    if x.ndim == 1: x = x.reshape((1, ) + x.shape)
 
     y = activation(x)
 
