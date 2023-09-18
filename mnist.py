@@ -1,3 +1,5 @@
+print("Loading modules...")
+
 import tkinter as tk
 
 import numpy as np
@@ -7,6 +9,8 @@ from matplotlib import pyplot as plt
 import neural_network as nn
 
 # --- get data and set constants ---
+
+print("Loading data...")
 
 (X_train, y_train), (X_test, y_test) = load_data()
 
@@ -36,9 +40,10 @@ network = nn.network.Network([
 
 
 try:
+    print("Loading saved network...")
     network.load_params("mnist-network")
 except FileNotFoundError:
-    print("\nStarting Training...")
+    print("Starting Training...")
 
     network.train(X_train, y_train, batch_size=16, epochs=2, learning_rate=0.1)
     network.save_params("mnist-network")
@@ -314,6 +319,9 @@ def main():
     def update(pixels: np.ndarray):
         # do neural network stuff here
         output = network.compute(np.array([pixels]))[0]
+
+        print(", ".join(f"{num}: {chance:.5%}" for num, chance in enumerate(output)))
+        
         network_info.update(output)
         guess_info.update(output)
 
