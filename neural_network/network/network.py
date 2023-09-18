@@ -87,12 +87,12 @@ class Network:
             
         print(f"100% complete. finished, {loss=}".ljust(max_str_len))
     
-    def save_params(self, file):
+    def save_params(self, file: str):
         saved_layers_data = tuple(layer.save_params() for layer in self.layers)
-        with open(file + ".pkl", "wb") as file:
+        with open(file.lstrip(".pkl") + ".pkl", "wb") as file:
             pickle.dump(saved_layers_data, file)
             
-    def load_params(self, file):
+    def load_params(self, file: str):
         with open(file + ".pkl", "rb") as file:
             saved_layers_data = pickle.load(file)
         for layer, saved_layer_data in zip(self.layers, saved_layers_data):

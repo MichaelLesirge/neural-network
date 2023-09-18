@@ -8,11 +8,6 @@ from neural_network.base import BaseLayer
 class Layer(BaseLayer, ABC):
     def __init__(self) -> None:
         super().__init__()
-    
-    # @abstractmethod
-    # def __init_params(self, prev_layer: "Layer") -> list["Layer"]:
-    #     return [self]
-
 
 # every class should only take how many outputs and then the next layer will use that for n_inputs when model.compile()
 # class Flatten(Layer):
