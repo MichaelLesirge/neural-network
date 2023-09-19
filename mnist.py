@@ -18,7 +18,7 @@ small_drawing_width, small_drawing_height = X_train[0].shape
 large_drawing_width, large_drawing_height = (400, 400)
 
 n_inputs, n_outputs = small_drawing_width * small_drawing_height, max(y_train.max(), y_train.max()) + 1
-layer_size = 2**5
+layer_size = 2**8
 
 # --- Define neural network and get params for it ---
 
@@ -33,10 +33,17 @@ network = nn.network.Network([
     nn.layers.Dense(n_inputs, layer_size),
     nn.activations.ReLU(),
 
+    nn.layers.Dense(layer_size, layer_size),
+    nn.activations.ReLU(),
+    
+    nn.layers.Dense(layer_size, layer_size),
+    nn.activations.ReLU(),
+    
     nn.layers.Dense(layer_size, n_outputs),
     nn.activations.Softmax(),
 
 ], loss=nn.losses.CategoricalCrossEntropy(categorical_labels=True), preprocess=[preprocess])
+
 
 
 try:
@@ -44,7 +51,6 @@ try:
     network.load_params("mnist-network")
 except FileNotFoundError:
     print("Starting Training...")
-
     network.train(X_train, y_train, batch_size=16, epochs=2, learning_rate=0.1)
     network.save_params("mnist-network")
 
