@@ -1,7 +1,7 @@
 import pathlib
 import sys
 
-"""Result: unsurprising just always predicts E no matter what"""
+"""Result: unsurprising just always predicts the most common letter, e"""
 
 directory = pathlib.Path(__file__).parent.absolute()
 sys.path.append(str(directory.parent.parent))
