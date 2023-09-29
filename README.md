@@ -1,7 +1,9 @@
 # Neural Network from scratch in Python
 
-<img align="right" alt="Neural network code" src="https://github.com/michael-lesirge/neural-network/assets/100492377/99b8627a-3d5f-4632-9dce-04a1f559ac7e" width = 500>
-<p>Very basic neural network module that I made in Python using NumPy. It allows you to create neural networks and train them in a very easy way. It currently only has fully connected layers but I want to add convolutional, maxpool, and dropout layers for convolutional neural networks.</p>
+<img align="right" alt="Neural network code" src="https://github.com/michael-lesirge/neural-network/assets/100492377/58c37070-8f4c-42c3-a2b3-e8cb194607cd" width = 300>
+<p>Very basic neural network module that I made in Python using NumPy. It allows you to create neural networks and train them in a very easy way, similar to Tensorflow's Keras. 
+  
+It currently only has fully connected / dense layers and some other convenience layers reshape and flatten. In the future I would like to add convolutional, maxpool, and dropout layers for convolutional neural networks.</p>
 
 <br clear="right"/>
 
