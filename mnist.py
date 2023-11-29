@@ -23,9 +23,38 @@ layer_size = 2**8
 # --- Define neural network and get params for it ---
 
 
-def preprocess(inputs):
-    return inputs.astype(np.float64) / 255
+def shift_up(array: np.ndarray) -> np.ndarray:
+    indices = np.argwhere(array > 0)
+    
+    if len(indices) == 0:
+        return array
 
+    min_row, min_col = indices.min(axis=0)
+
+    row_shift = -min_row
+    col_shift = -min_col
+
+    shifted_array = np.roll(array, row_shift, axis=0)
+    shifted_array = np.roll(shifted_array, col_shift, axis=1)
+    
+    return shifted_array
+    
+    
+def shift_up_all(arrays: np.ndarray) -> np.ndarray:
+    if arrays.ndim < 3:
+        return shift_up(arrays)
+    
+    new = np.empty_like(arrays)
+    
+    for i, array in enumerate(arrays):
+        new[i] = shift_up(array)
+        
+    return new
+
+def preprocess(inputs):
+    correct_inputs = inputs.astype(np.float64) / 255
+    shifted_inputs = shift_up_all(correct_inputs)
+    return shifted_inputs
 
 network = nn.network.Network([
     nn.layers.Reshape((small_drawing_width, small_drawing_height), (n_inputs,)),
@@ -43,8 +72,6 @@ network = nn.network.Network([
     nn.activations.Softmax(),
 
 ], loss=nn.losses.CategoricalCrossEntropy(categorical_labels=True), preprocess=[preprocess])
-
-
 
 try:
     print("Loading saved network...")
@@ -155,11 +182,11 @@ class DrawingDisplay:
 
         self.previous_draw_point = (None, None)
 
-        self.clear_button = tk.Button(
-            self.canvas.master, text="Clear Drawing", command=self.clear_canvas)
-
-        self.show_button = tk.Button(
-            self.canvas.master, text="Display Drawing From Computers View", command=self.show_graph)
+        self.buttons = [
+            tk.Button(self.canvas.master, text="Clear Drawing", command=self.clear_canvas),
+            tk.Button(self.canvas.master, text="Display Raw Data", command=self.show_graph),
+            tk.Button(self.canvas.master, text="Display Processed Data", command=self.show_processed_graph),
+        ]
 
         self.pen_size = 5
 
@@ -200,16 +227,23 @@ class DrawingDisplay:
         self.on_reset()
 
     def show_graph(self) -> None:
-        plt.imshow(self.pixel_array, cmap="Greys")
+        pixels = self.pixel_array
+        plt.imshow(pixels, cmap="Greys")
         print("\n".join((" ".join(str(pixel).ljust(3) for pixel in row)) for row in self.pixel_array), "\n")
+        plt.show()
+        
+    def show_processed_graph(self) -> None:
+        pixels = preprocess(self.pixel_array)
+        plt.imshow(pixels, cmap="Greys")
+        print("\n".join((" ".join(str(round(pixel, 3)).ljust(5) for pixel in row)) for row in pixels), "\n")
         plt.show()
 
     def place_buttons(self) -> None:
         button_canvas = tk.Canvas(self.canvas)
         button_canvas.place(in_=self.canvas, relx=0.0, rely=1.0)
 
-        self.clear_button.pack(in_=button_canvas, side="left", padx=5, pady=5)
-        self.show_button.pack(in_=button_canvas, side="left", padx=5, pady=5)
+        for button in self.buttons:
+            button.pack(in_=button_canvas, side="left", padx=5, pady=5)
 
 
 class NetworkInfoDisplay:
