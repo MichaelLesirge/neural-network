@@ -3,7 +3,6 @@ print("Loading modules...")
 import tkinter as tk
 
 import numpy as np
-from keras.datasets.mnist import load_data
 from matplotlib import pyplot as plt
 
 import neural_network as nn
@@ -12,12 +11,14 @@ import neural_network as nn
 
 print("Loading data...")
 
-(X_train, y_train), (X_test, y_test) = load_data()
+# (X_train, y_train), (X_test, y_test) = load_data()
 
-small_drawing_width, small_drawing_height = X_train[0].shape
+# small_drawing_width, small_drawing_height = X_train[0].shape
+small_drawing_width, small_drawing_height = (28, 28) 
 large_drawing_width, large_drawing_height = (400, 400)
 
-n_inputs, n_outputs = small_drawing_width * small_drawing_height, max(y_train.max(), y_train.max()) + 1
+# n_inputs, n_outputs = small_drawing_width * small_drawing_height, y_train.max() + 1
+n_inputs, n_outputs = small_drawing_width * small_drawing_height, 10
 layer_size = 2**8
 
 # --- Define neural network and get params for it ---
@@ -38,23 +39,37 @@ def shift_up(array: np.ndarray) -> np.ndarray:
     shifted_array = np.roll(shifted_array, col_shift, axis=1)
     
     return shifted_array
+
+def zoom_square(image: np.ndarray) -> np.ndarray:
+
+    indices = np.argwhere(image > 0)
     
+    max_row, max_col = indices.max(axis=0)
+    width, height = image.shape
     
-def shift_up_all(arrays: np.ndarray) -> np.ndarray:
+    # scale = min(width // (max_row + 1), height // (max_col + 1))
+    scale = min(width // (max_row or width), height // (max_col or height))
+    
+    image = image.repeat(scale, axis=0).repeat(scale, axis=1)[:width, :height]
+                        
+    return image 
+    
+def apply_all(arrays: np.ndarray, func) -> np.ndarray:
     if arrays.ndim < 3:
-        return shift_up(arrays)
+        return func(arrays)
     
     new = np.empty_like(arrays)
     
     for i, array in enumerate(arrays):
-        new[i] = shift_up(array)
+        new[i] = func(array)
         
     return new
 
 def preprocess(inputs):
-    correct_inputs = inputs.astype(np.float64) / 255
-    shifted_inputs = shift_up_all(correct_inputs)
-    return shifted_inputs
+    inputs = inputs.astype(np.float64) / 255
+    inputs = apply_all(inputs, shift_up)
+    # inputs = apply_all(inputs, zoom_square)
+    return inputs
 
 network = nn.network.Network([
     nn.layers.Reshape((small_drawing_width, small_drawing_height), (n_inputs,)),
@@ -74,34 +89,38 @@ network = nn.network.Network([
 ], loss=nn.losses.CategoricalCrossEntropy(categorical_labels=True), preprocess=[preprocess])
 
 try:
-    print("Loading saved network...")
+    print("Attempting to load saved network...")
     network.load_params("mnist-network")
 except FileNotFoundError:
+    
+    from keras.datasets.mnist import load_data
+    (X_train, y_train), (X_test, y_test) = load_data()
+    
     print("Starting Training...")
     network.train(X_train, y_train, batch_size=16, epochs=2, learning_rate=0.1)
     network.save_params("mnist-network")
 
-# --- test model on test data ---
+    # --- test model on test data ---
 
-test_output = network.compute(X_test)
+    test_output = network.compute(X_test)
 
-predictions = test_output.argmax(1)
-accuracy = np.mean(predictions == y_test)
+    predictions = test_output.argmax(1)
+    accuracy = np.mean(predictions == y_test)
+    
+    print(f"{accuracy:%} accurate on test data")
 
-# print("\nDisplaying tests...")
-# for num in range(0, n_outputs):
-#     index = np.random.choice(np.where(y_test == num)[0])
-#     output = test_output[index]
-#     guess = output.argmax()
+    # print("\nDisplaying tests...")
+    # for num in range(0, n_outputs):
+    #     index = np.random.choice(np.where(y_test == num)[0])
+    #     output = test_output[index]
+    #     guess = output.argmax()
 
-#     print(f"y_pred={output.tolist()}, y_true={np.eye(n_outputs)[guess]}")
+    #     print(f"y_pred={output.tolist()}, y_true={np.eye(n_outputs)[guess]}")
 
-#     plt.title(
-#         f"Test Data Example {num}:\n{guess=}, confidence={output[guess]:.2%}, correct={guess==num}")
-#     plt.imshow(X_test[index], cmap="Greys")
-#     plt.show()
-
-print(f"{accuracy:%} accurate on test data")
+    #     plt.title(
+    #         f"Test Data Example {num}:\n{guess=}, confidence={output[guess]:.2%}, correct={guess==num}")
+    #     plt.imshow(X_test[index], cmap="Greys")
+    #     plt.show()
 
 # --- create drawing GUI ---
 
@@ -217,8 +236,7 @@ class DrawingDisplay:
 
     def scale_for_save(self, x: float, y: float) -> tuple[int, int]:
         row = round(y / self.canvas_width * (np.size(self.pixel_array, 0) - 1))
-        col = round(x / self.canvas_height *
-                    (np.size(self.pixel_array, 1) - 1))
+        col = round(x / self.canvas_height * (np.size(self.pixel_array, 1) - 1))
         return row, col
 
     def clear_canvas(self) -> None:
