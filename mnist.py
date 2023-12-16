@@ -39,21 +39,7 @@ def shift_up(array: np.ndarray) -> np.ndarray:
     shifted_array = np.roll(shifted_array, col_shift, axis=1)
     
     return shifted_array
-
-def zoom_square(image: np.ndarray) -> np.ndarray:
-
-    indices = np.argwhere(image > 0)
-    
-    max_row, max_col = indices.max(axis=0)
-    width, height = image.shape
-    
-    # scale = min(width // (max_row + 1), height // (max_col + 1))
-    scale = min(width // (max_row or width), height // (max_col or height))
-    
-    image = image.repeat(scale, axis=0).repeat(scale, axis=1)[:width, :height]
-                        
-    return image 
-    
+ 
 def apply_all(arrays: np.ndarray, func) -> np.ndarray:
     if arrays.ndim < 3:
         return func(arrays)
@@ -68,7 +54,7 @@ def apply_all(arrays: np.ndarray, func) -> np.ndarray:
 def preprocess(inputs):
     inputs = inputs.astype(np.float64) / 255
     inputs = apply_all(inputs, shift_up)
-    # inputs = apply_all(inputs, zoom_square)
+
     return inputs
 
 network = nn.network.Network([
@@ -92,6 +78,7 @@ try:
     print("Attempting to load saved network...")
     network.load_params("mnist-network")
 except FileNotFoundError:
+    print("No saved network found, getting training data")
     
     from keras.datasets.mnist import load_data
     (X_train, y_train), (X_test, y_test) = load_data()
