@@ -10,19 +10,19 @@ LEARNING_RATE = 0.01
 
 # --- function parameters  ---
 
-noise_level = 0.1
-m, b = 0.5, 0.2
+NOISE_LEVEL = 0.1
+TRAIN_LINE_M, TRAIN_LINE_B = 0.5, 0.2
 
 def f(x, *, m=1, b=0, variation=0):
     return (m * x + b) + (np.random.randn(*x.shape) * variation)
 
 # --- create train and test data ---
 
-train_size = 2**9
+TRAINING_DATA_SIZE = 2**9
 
 # x_train = np.random.randn(x_train_size, 1)
-x_train = np.random.uniform(-2, 2, (train_size, 1))
-y_train = f(x_train, variation=noise_level, m=m, b=b)
+x_train = np.random.uniform(-2, 2, (TRAINING_DATA_SIZE, 1))
+y_train = f(x_train, variation=NOISE_LEVEL, m=TRAIN_LINE_M, b=TRAIN_LINE_B)
 
 # --- initialize weights and biases ---
 
@@ -101,6 +101,8 @@ GRAPH_HEIGHT_RATIO = (4, 1)
 ANIMATION_FRAMES_PER_MS = 100
 SHOW_TRUE_LINE_AT = -1
 
+FIT_TO_TRAINING_DATA = False
+
 # --- animation / graphing ---
 plt.style.use(STYLE)
 
@@ -108,8 +110,15 @@ figure, (dot_axis, loss_axis) = plt.subplots(2, gridspec_kw={"height_ratios": GR
 figure.tight_layout()
 
 dot_axis.set_title(f"{TITLE.title()} {EPOCHS=} {BATCH_SIZE=} {LEARNING_RATE=}")
-dot_axis.set_xlim(left=np.min(x_train), right=np.max(x_train))
-dot_axis.set_ylim(bottom=np.min(y_train), top=np.max(y_train))
+
+if FIT_TO_TRAINING_DATA:
+    dot_axis.set_xlim(left=np.min(x_train), right=np.max(x_train))
+    dot_axis.set_ylim(bottom=np.min(y_train), top=np.max(y_train))
+else:
+    print(np.max(y_train), np.max(x_train))
+    dot_axis.set_xlim(left=0)
+    dot_axis.set_ylim(bottom=0)
+
 (past_dots,) = dot_axis.plot([], [], "o", color="grey",  markersize=2, label="past")
 (current_dots,) = dot_axis.plot([], [], "o", color="red",  markersize=4, label="batch")
 
@@ -124,7 +133,7 @@ loss_axis.set_ylim(bottom=0, top=max(losses_history))
 
 animation_lines = [past_dots, current_dots, pred_line, true_line, loss_line]
 
-num_of_batches = train_size // BATCH_SIZE
+num_of_batches = TRAINING_DATA_SIZE // BATCH_SIZE
 
 def init():
     for line in animation_lines:
@@ -137,7 +146,7 @@ def update(i):
     loss_line.set_data(range(i+1), losses)
         
     if i >= total_runs + SHOW_TRUE_LINE_AT:
-        true_line.set_data(x_train, m * x_train + b)
+        true_line.set_data(x_train, TRAIN_LINE_M * x_train + TRAIN_LINE_B)
     
     epoch_start = i - (i % num_of_batches)
     
