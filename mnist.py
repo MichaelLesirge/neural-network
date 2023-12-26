@@ -1,6 +1,7 @@
 print("Loading modules...")
 
 import tkinter as tk
+import pickle
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -80,9 +81,15 @@ try:
 except FileNotFoundError:
     print("No saved network found, getting training data")
     
-    from keras.datasets.mnist import load_data
-    (X_train, y_train), (X_test, y_test) = load_data()
-    
+    with open("ml_projects/mnist/mnist_train_test.pkl", "rb") as file:
+        ((train_len, X_train, y_train), (test_len, X_test, y_test)) = pickle.load(file)
+        
+        X_train = np.frombuffer(X_train, dtype=np.int8).reshape((train_len, small_drawing_height, small_drawing_width))
+        y_train = np.frombuffer(y_train, dtype=np.int8).reshape((train_len,))
+        
+        X_test = np.frombuffer(X_test, dtype=np.int8).reshape((test_len, small_drawing_height, small_drawing_width))
+        y_test = np.frombuffer(y_test, dtype=np.int8).reshape((test_len,))
+            
     print("Starting Training...")
     network.train(X_train, y_train, batch_size=16, epochs=2, learning_rate=0.1)
     network.save_params("mnist-network")
