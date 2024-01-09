@@ -28,11 +28,11 @@ class GameConstants:
 class BallConstants:
     SIZE = 10
     
-    START_VELOCITY = 2
-    MAX_VELOCITY = 6
+    START_VELOCITY = 4
+    MAX_VELOCITY = 12
 
     START_LOCATION = 0.07, 0.1
-    START_SLOPE = 1, 2
+    START_SLOPE = 0.5, 1
     BOUNCE_VELOCITY_INCREASE = 0.1
 
 
