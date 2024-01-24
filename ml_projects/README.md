@@ -1,5 +1,3 @@
 # Various projects using my Neural Network
 
-So far I have not made any major projects using my own nerual network but I hope to in the future.
-
-1. (First project goes here)
+Currently I just have mnist.py in the top of the repo so this folder is empty of real projects for now.
