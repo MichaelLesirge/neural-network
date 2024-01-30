@@ -21,7 +21,8 @@ outputs = [
 n_inputs = (
     (constants.BOARD_WIDTH * constants.BOARD_HEIGHT)  # flat board
     + len(tetromino.SHAPES)  # one hot current piece type
-    + 2  # current piece x and y
+    + constants.BOARD_WIDTH + constants.BOARD_HEIGHT # one hot X and Y location 
+    + tetromino.MAX_ROTATIONS # one hot piece rotation
 )
 
 n_outputs = len(outputs)
@@ -44,12 +45,18 @@ network = nn.network.Network([
 ], loss=nn.losses.CategoricalCrossEntropy(categorical_labels=True))
 
 
-_shapes_one_hot = np.eye(len(tetromino.SHAPES))
+_piece_to_index = dict(((b, a) for (a, b) in enumerate(tetromino.SHAPES)))
+_one_hot_shapes = np.eye(len(tetromino.SHAPES), dtype=np.float64)
+_one_hot_x = np.eye(constants.BOARD_WIDTH, dtype=np.float64)
+_one_hot_y = np.eye(constants.BOARD_HEIGHT, dtype=np.float64) 
+_one_hot_rotations = np.eye(tetromino.MAX_ROTATIONS, dtype=np.float64)
 def game_to_inputs(game: Game) -> np.ndarray:
     return np.concatenate([
-        np.array([value is not None for value, (row, col) in game._board], dtype=np.float64).flatten(),
-        _shapes_one_hot[tetromino.SHAPES.index(game._board.current_figure.type)],
-        np.array([game._board.current_figure.x, game._board.current_figure.y], dtype=np.float64),
+        np.array([value is not None for value, _ in game._board], dtype=np.float64).flatten(), #  board
+        _one_hot_shapes[_piece_to_index[game._board.current_figure.type]], # piece type
+        _one_hot_x[game._board.current_figure.x], # x
+        _one_hot_y[game._board.current_figure.y], # y
+        _one_hot_rotations[game._board.current_figure.rotation], # rotation
     ])
     
 def outputs_to_moves(output_array: np.ndarray) -> list[Moves]:
