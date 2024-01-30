@@ -24,7 +24,6 @@ layer_size = 2**8
 
 # --- Define neural network and get params for it ---
 
-
 def shift_up(array: np.ndarray) -> np.ndarray:
     indices = np.argwhere(array > 0)
     
@@ -42,14 +41,10 @@ def shift_up(array: np.ndarray) -> np.ndarray:
     return shifted_array
  
 def apply_all(arrays: np.ndarray, func) -> np.ndarray:
-    if arrays.ndim < 3:
-        return func(arrays)
+    if arrays.ndim < 3: return func(arrays)
     
     new = np.empty_like(arrays)
-    
-    for i, array in enumerate(arrays):
-        new[i] = func(array)
-        
+    for i, array in enumerate(arrays): new[i] = func(array)
     return new
 
 def preprocess(inputs):
@@ -77,7 +72,7 @@ network = nn.network.Network([
 
 try:
     print("Attempting to load saved network...")
-    network.load_params("mnist-network")
+    network.load_params("ml_projects/mnist/mnist-network")
 except FileNotFoundError:
     print("No saved network found, getting training data")
     
@@ -92,7 +87,7 @@ except FileNotFoundError:
             
     print("Starting Training...")
     network.train(X_train, y_train, batch_size=16, epochs=2, learning_rate=0.1)
-    network.save_params("mnist-network")
+    network.save_params("ml_projects/mnist/mnist-network")
 
     # --- test model on test data ---
 
