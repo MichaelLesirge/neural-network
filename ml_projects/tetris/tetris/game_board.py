@@ -50,7 +50,7 @@ class GameBoard:
         
         self.new_figure()
 
-    def get_current_figure(self) -> None:
+    def get_current_figure(self) -> tetromino.TetrominoBlockShape:
         return self.current_figure
 
     def new_figure(self) -> None:
