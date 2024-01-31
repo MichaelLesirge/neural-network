@@ -23,7 +23,7 @@ class Game(player_game.PlayerGame):
 def main() -> None:
     pygame.init()
     
-    ai.network.load_params("ml_projects/tetris/tetris-network")
+    ai.network.load("ml_projects/tetris/tetris-network")
     
     board = GameBoard(constants.BOARD_WIDTH, constants.BOARD_HEIGHT)
     game = Game(board)

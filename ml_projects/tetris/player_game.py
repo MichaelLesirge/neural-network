@@ -85,7 +85,7 @@ class PlayerGame(Game):
 def main() -> None:
     pygame.init()
     
-    try: ai.network.load_params("ml_projects/tetris/tetris-network")
+    try: ai.network.load("ml_projects/tetris/tetris-network")
     except FileNotFoundError: pass
     
     board = GameBoard(constants.BOARD_WIDTH, constants.BOARD_HEIGHT)
@@ -94,7 +94,7 @@ def main() -> None:
 
     pygame.quit()
     
-    ai.network.save_params("ml_projects/tetris/tetris-network")
+    ai.network.dump("ml_projects/tetris/tetris-network")
 
 if __name__ == "__main__":
     main()

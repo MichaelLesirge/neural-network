@@ -85,7 +85,7 @@ network = nn.network.Network([
 ], loss=nn.losses.CategoricalCrossEntropy())
 
 try:
-    network.load_params(str(directory / "mnist-network"))
+    network.load(str(directory / "mnist-network"))
 except FileNotFoundError:
     placers_per_message = 3
 
@@ -119,7 +119,7 @@ except FileNotFoundError:
     print("Training...")
 
     network.train(X_train, y_train, batch_size=16, epochs=1, learning_rate=0.01)
-    network.save_params(str(directory / "mnist-network"))
+    network.dump(str(directory / "mnist-network"))
 
 while True:
     message = input("CharGPN> ")

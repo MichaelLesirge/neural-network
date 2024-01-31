@@ -86,42 +86,20 @@ class Network:
                     grad = layer.backward(activation, grad, learning_rate)
             
         print(f"100% complete. finished, {loss=}".ljust(max_str_len))
-
-    def online_train(self, x: np.ndarray, y: np.ndarray, learning_rate: float = 0.001):
-        
-        x = np.expand_dims(x, axis=0)
-        
-        zs = [x]
-        for layer in self.layers:
-            activation = layer.forward(zs[-1])
-            zs.append(activation)
-            
-        # todo add more logging options and make it so it ends at 100 and batch at 50 by +1
-            
-        output = zs.pop()
-                        
-        loss = self.loss.forward(y, output)
-
-        print("Loss:", loss)
-                      
-        grad = self.loss.backward(y, output)
-        
-        for layer, activation in zip(reversed(self.layers), reversed(zs)):
-            grad = layer.backward(activation, grad, learning_rate)
-    
-    def save_params(self, file_path: str) -> None:
+ 
+    def dump(self, file_path: str) -> None:
         with open(file_path.lstrip(".pkl") + ".pkl", "wb") as file:
-            file.write(self.get_params())
+            file.write(self.dumps())
     
-    def get_params(self) -> bytes:
+    def dumps(self) -> bytes:
         return pickle.dumps(
             tuple(layer.save_params() for layer in self.layers)
         )
     
-    def load_params(self, file_pah: str) -> None:
+    def load(self, file_pah: str) -> None:
         with open(file_pah + ".pkl", "rb") as file:
-            self.set_params(file.read())
+            self.loads(file.read())
     
-    def set_params(self, params: bytes) -> None:
+    def loads(self, params: bytes) -> None:
         for layer, saved_layer_data in zip(self.layers, pickle.loads(params)):
             layer.load_params(saved_layer_data)

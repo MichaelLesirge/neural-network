@@ -72,7 +72,7 @@ network = nn.network.Network([
 
 try:
     print("Attempting to load saved network...")
-    network.load_params("ml_projects/mnist/mnist-network")
+    network.load("ml_projects/mnist/mnist-network")
 except FileNotFoundError:
     print("No saved network found, getting training data")
     
@@ -87,7 +87,7 @@ except FileNotFoundError:
             
     print("Starting Training...")
     network.train(X_train, y_train, batch_size=16, epochs=2, learning_rate=0.1)
-    network.save_params("ml_projects/mnist/mnist-network")
+    network.dump("ml_projects/mnist/mnist-network")
 
     # --- test model on test data ---
 
