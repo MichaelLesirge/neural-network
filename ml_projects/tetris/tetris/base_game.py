@@ -22,12 +22,17 @@ class Game(abc.ABC):
 
     @abc.abstractmethod
     def get_moves(self, frame: int, game: GameBoard) -> list[Moves]: pass
+
+    def on_drop(self, frame: int, game: GameBoard) -> None: pass
     
-    def run(self) -> None:
+    def reset(self) -> None: 
+        self._board.reset()
+    
+    def run(self) -> int:
         going = True
                 
         frame = 0
-        
+ 
         while going:
             
             frame += 1
@@ -54,8 +59,11 @@ class Game(abc.ABC):
             if (self._drop_delay < 1 or
                 frame % self._drop_delay == 0 or (soft_drop)):
                 self._board.soft_drop()
+                self.on_drop(frame, self._board)
                 
             if self._board.done:
                 going = False
                         
             self.display(frame, self._board)
+
+        return self._board.score

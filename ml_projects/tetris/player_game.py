@@ -2,6 +2,8 @@ import pygame
 from tetris import Game, GameBoard, Moves
 import constants
 
+import ai
+
 MAIN_COLOR = "white"
 BACKGROUND_COLOR = "black"
 LINE_COLOR = (50, 50, 50)
@@ -63,9 +65,6 @@ class PlayerGame(Game):
         
     def get_moves(self, frame: int, game: GameBoard) -> list[Moves]:
         moves = []
-        
-        # if frame % 20 == 0: moves.append(Moves.LEFT)
-        # if frame % 50 == 0: moves.append(Moves.SPIN)
                 
         for event in pygame.event.get():
             if event.type == pygame.QUIT: return [Moves.QUIT]
@@ -79,18 +78,23 @@ class PlayerGame(Game):
             elif event.type == pygame.KEYUP:
                 if event.key == pygame.K_DOWN:      self.pressing_down = False
         
-        if self.pressing_down: moves.append(Moves.SOFT_DROP)
+        if self.pressing_down: moves.append(Moves.SOFT_DROP)   
         
         return moves
  
 def main() -> None:
     pygame.init()
     
+    try: ai.network.load_params("ml_projects/tetris/tetris-network")
+    except FileNotFoundError: pass
+    
     board = GameBoard(constants.BOARD_WIDTH, constants.BOARD_HEIGHT)
     game = PlayerGame(board)
     game.run()
 
     pygame.quit()
+    
+    ai.network.save_params("ml_projects/tetris/tetris-network")
 
 if __name__ == "__main__":
     main()

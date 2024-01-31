@@ -42,7 +42,10 @@ class GameBoard:
     def __init__(self, width: int, height: int) -> None:
 
         self.width, self.height = width, height
+        
+        self.reset()
 
+    def reset(self) -> None:
         self.grid = [[None] * self.width for i in range(self.height)]
         
         self.score = 0
@@ -93,14 +96,16 @@ class GameBoard:
 
     def freeze(self) -> bool:
         for value, (row, col) in self.current_figure:
-            if value: self.grid[row + self.current_figure.y][col + self.current_figure.x] = self.current_figure.get_color()
+            if value:
+                self.grid[row + self.current_figure.y][col + self.current_figure.x] = self.current_figure.get_color()
+                self.score += (row + self.current_figure.y == self.height - 1)
 
         lines = self.find_full_lines()
         self.remove_full_lines(lines)
 
         self.new_figure()
 
-        self.score += len(lines) ** 2
+        self.score += (len(lines) ** 2) * 100
         self.done = self.intersects() 
         
     def change_x(self, dx: int) -> None:

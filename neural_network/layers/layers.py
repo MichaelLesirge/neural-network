@@ -36,7 +36,11 @@ class Dense(Layer):
     def __init__(self, n_inputs, n_outputs) -> None:
         self.weights = np.random.randn(n_inputs, n_outputs) * 0.01
         self.biases = np.zeros((1, n_outputs), dtype=np.float64)
-
+    
+    def rand_shift(self, weights_scale: float = 0.01, biases_scale: float = 0.01) -> None:
+        self.weights = self.weights + np.random.random(self.weights.shape) * biases_scale
+        self.biases = self.biases + np.random.random(self.biases.shape) * weights_scale
+    
     def forward(self, inputs):
         return np.dot(inputs, self.weights) + self.biases
 
@@ -47,8 +51,8 @@ class Dense(Layer):
 
         input_gradient = np.dot(output_gradient, self.weights.T)
         
-        self.weights -= learning_rate * weights_gradient
-        self.biases -= learning_rate * bias_gradient
+        self.weights = self.weights - learning_rate * weights_gradient
+        self.biases = self.biases - learning_rate * bias_gradient
         
         return input_gradient
     

@@ -42,7 +42,7 @@ network = nn.network.Network([
     nn.layers.Dense(layer_size, n_outputs),
     nn.activations.Softmax(),
 
-], loss=nn.losses.CategoricalCrossEntropy(categorical_labels=True))
+], loss=nn.losses.CategoricalCrossEntropy(categorical_labels=False))
 
 
 _piece_to_index = dict(((b, a) for (a, b) in enumerate(tetromino.SHAPES)))
@@ -63,3 +63,7 @@ def outputs_to_moves(output_array: np.ndarray) -> list[Moves]:
     return [
         outputs[output_array.argmax()]
     ]
+
+_one_hot_moves = np.eye(len(outputs), dtype=np.float64)
+def moves_to_outputs(moves: list[Moves]) -> np.ndarray:
+    return _one_hot_moves[outputs.index(moves[0])]
