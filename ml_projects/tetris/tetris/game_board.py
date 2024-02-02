@@ -96,9 +96,7 @@ class GameBoard:
 
     def freeze(self) -> bool:
         for value, (row, col) in self.current_figure:
-            if value:
-                self.grid[row + self.current_figure.y][col + self.current_figure.x] = self.current_figure.get_color()
-                self.score += (row + self.current_figure.y == self.height - 1)
+            if value: self.grid[row + self.current_figure.y][col + self.current_figure.x] = self.current_figure.get_color()
 
         lines = self.find_full_lines()
         self.remove_full_lines(lines)
