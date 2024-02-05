@@ -87,6 +87,8 @@ def main() -> None:
     
     try: ai.network.load("ml_projects/tetris/tetris-network")
     except FileNotFoundError: pass
+
+    pygame.key.set_repeat(1000 // 4, 1000 // 10)
     
     board = GameBoard(constants.BOARD_WIDTH, constants.BOARD_HEIGHT)
     game = PlayerGame(board)

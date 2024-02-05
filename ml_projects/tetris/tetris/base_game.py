@@ -55,7 +55,7 @@ class Game(abc.ABC):
                     soft_drop = True
                                 
             if (self._drop_delay < 1 or
-                frame % self._drop_delay == 0 or (soft_drop)):
+                frame % self._drop_delay == 0 or soft_drop):
                 self._board.soft_drop()
                 
             if self._board.done:
