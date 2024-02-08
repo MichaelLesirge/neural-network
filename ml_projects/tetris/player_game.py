@@ -2,8 +2,6 @@ import pygame
 from tetris import Game, GameBoard, Moves
 import constants
 
-import ai
-
 MAIN_COLOR = "white"
 BACKGROUND_COLOR = "black"
 LINE_COLOR = (50, 50, 50)
@@ -18,6 +16,41 @@ FPS = 30
 GAME_X, GAME_Y = (100, 60)
 BLOCK_SIZE = 20
 
+DATA_COLLECTION_MODE = True
+
+if DATA_COLLECTION_MODE:
+    import numpy as np
+    import pickle
+    import ai
+        
+    training_x = []
+    training_y = []
+
+def load_training_data(name: str) -> tuple[np.ndarray, np.ndarray]:
+    with open(name + "_x.pkl", "rb") as file:
+        x = np.frombuffer(pickle.load(file), dtype=np.int8)
+        x = x.reshape((x.size // ai.n_inputs, ai.n_inputs))
+    with open(name + "_y.pkl", "rb") as file:
+        y = np.frombuffer(pickle.load(file), dtype=np.int8)
+    return (x, y)
+
+def save_training_data(name: str) -> None:
+    
+    training_x_array = np.array(training_x, dtype=np.int8)
+    training_y_array = np.array(training_y, dtype=np.int8)
+    
+    try:
+        past_x, past_y = load_training_data(name)
+        training_x_array = np.concatenate([training_x_array, past_x])
+        training_y_array = np.concatenate([training_y_array, past_y])
+    except (FileNotFoundError, EOFError):
+        pass
+    
+    with open(name + "_x.pkl", "wb") as file:
+        pickle.dump(training_x_array.tobytes(), file)
+    with open(name + "_y.pkl", "wb") as file:
+        pickle.dump(training_y_array.tobytes(), file)
+
 class PlayerGame(Game):
     def __init__(self, board: GameBoard) -> None:
         super().__init__(board, drop_delay = FPS)
@@ -26,6 +59,8 @@ class PlayerGame(Game):
         pygame.display.set_caption(WINDOW_NAME)
         
         self.clock = pygame.time.Clock()
+        
+        self.all_moves = []
 
         self.pressing_down = False
 
@@ -80,23 +115,38 @@ class PlayerGame(Game):
         
         if self.pressing_down: moves.append(Moves.SOFT_DROP)   
         
+        if DATA_COLLECTION_MODE:
+            self.all_moves.extend(moves)
+        
         return moves
+    
+    def on_drop(self, frame: int, game: GameBoard, moves: list[Moves]):
+        if not DATA_COLLECTION_MODE: return
+        training_x.append(ai.game_to_inputs(game))
+        training_y.append(ai.moves_to_labels(self.all_moves))
+        self.all_moves = []
+        
  
 def main() -> None:
     pygame.init()
     
-    try: ai.network.load("ml_projects/tetris/tetris-network")
-    except FileNotFoundError: pass
-
     pygame.key.set_repeat(1000 // 4, 1000 // 10)
     
     board = GameBoard(constants.BOARD_WIDTH, constants.BOARD_HEIGHT)
     game = PlayerGame(board)
-    game.run()
+    
+    try:
+        game.run()
+    except KeyboardInterrupt:
+        print("Canceling...")
 
     pygame.quit()
     
-    ai.network.dump("ml_projects/tetris/tetris-network")
-
+    if DATA_COLLECTION_MODE:
+        save_name = input("Save training data: ")
+        if save_name: save_training_data("ml_projects/tetris/" + save_name)
+        print(len(training_x), "Items Saved")
+            
+        
 if __name__ == "__main__":
     main()

@@ -14,7 +14,7 @@ class AiTrainGame(Game):
     def get_moves(self, frame: int, game: GameBoard) -> list[Moves]:
         return ai.outputs_to_moves(
             ai.network.compute(
-                ai.game_to_inputs(self)
+                ai.game_to_inputs(game)
             )
         )
          

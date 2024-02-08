@@ -14,7 +14,7 @@ class Game(player_game.PlayerGame):
         
         moves = ai.outputs_to_moves(
             ai.network.compute(
-                ai.game_to_inputs(self)
+                ai.game_to_inputs(game)
             )
         )
         
