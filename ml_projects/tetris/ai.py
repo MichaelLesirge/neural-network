@@ -12,7 +12,7 @@ import numpy as np
 
 import constants
 import neural_network as nn
-from tetris import Moves, GameBoard, tetromino
+from tetris import Moves, Tetris, tetromino
 
 outputs = [
     Moves.LEFT, Moves.RIGHT, Moves.SPIN, None
@@ -50,7 +50,7 @@ _one_hot_shapes = np.eye(len(tetromino.SHAPES), dtype=np.float64)
 _one_hot_x = np.eye(constants.BOARD_WIDTH, dtype=np.float64)
 _one_hot_y = np.eye(constants.BOARD_HEIGHT, dtype=np.float64) 
 _one_hot_rotations = np.eye(tetromino.MAX_ROTATIONS, dtype=np.float64)
-def game_to_inputs(board: GameBoard) -> np.ndarray:
+def game_to_inputs(board: Tetris) -> np.ndarray:
     return np.concatenate([
         np.array([value is not None for value, _ in board], dtype=np.float64).flatten(), #  board
         _one_hot_shapes[_piece_to_index[board.current_figure.type]], # piece type

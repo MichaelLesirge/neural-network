@@ -1,5 +1,3 @@
-from .base_game import Game, Moves
-from .game_board import GameBoard
-from .tetromino import COLOR_MAP
+from .game_board import Tetris, Move, Render
 
-__all__ = [GameBoard, Game, Moves, COLOR_MAP]
+__all__ = [Tetris, Move, Render]
