@@ -1,5 +1,5 @@
 import pygame
-from tetris import Game, GameBoard, Moves
+from tetris import Game, GameBoard, Moves, COLOR_MAP
 import constants
 
 MAIN_COLOR = "white"
@@ -15,41 +15,6 @@ FPS = 30
 
 GAME_X, GAME_Y = (100, 60)
 BLOCK_SIZE = 20
-
-DATA_COLLECTION_MODE = True
-
-if DATA_COLLECTION_MODE:
-    import numpy as np
-    import pickle
-    import ai
-        
-    training_x = []
-    training_y = []
-
-def load_training_data(name: str) -> tuple[np.ndarray, np.ndarray]:
-    with open(name + "_x.pkl", "rb") as file:
-        x = np.frombuffer(pickle.load(file), dtype=np.int8)
-        x = x.reshape((x.size // ai.n_inputs, ai.n_inputs))
-    with open(name + "_y.pkl", "rb") as file:
-        y = np.frombuffer(pickle.load(file), dtype=np.int8)
-    return (x, y)
-
-def save_training_data(name: str) -> None:
-    
-    training_x_array = np.array(training_x, dtype=np.int8)
-    training_y_array = np.array(training_y, dtype=np.int8)
-    
-    try:
-        past_x, past_y = load_training_data(name)
-        training_x_array = np.concatenate([training_x_array, past_x])
-        training_y_array = np.concatenate([training_y_array, past_y])
-    except (FileNotFoundError, EOFError):
-        pass
-    
-    with open(name + "_x.pkl", "wb") as file:
-        pickle.dump(training_x_array.tobytes(), file)
-    with open(name + "_y.pkl", "wb") as file:
-        pickle.dump(training_y_array.tobytes(), file)
 
 class PlayerGame(Game):
     def __init__(self, board: GameBoard) -> None:
@@ -80,7 +45,7 @@ class PlayerGame(Game):
             pygame.draw.line(self.screen, LINE_COLOR, (GAME_X, GAME_Y + BLOCK_SIZE * row), (GAME_X + BLOCK_SIZE * board.width, GAME_Y + BLOCK_SIZE * row), width=1)
 
         for value, (row, col) in board:
-            if value: self.draw_box(row, col, color=value, margin=1, border_radius=2)
+            if value: self.draw_box(row, col, color=COLOR_MAP[value], margin=1, border_radius=2)
             self.draw_box(row, col, color=LINE_COLOR, width = 1)
                 
         for row, col in board.current_figure.type:
@@ -115,17 +80,7 @@ class PlayerGame(Game):
         
         if self.pressing_down: moves.append(Moves.SOFT_DROP)   
         
-        if DATA_COLLECTION_MODE:
-            self.all_moves.extend(moves)
-        
         return moves
-    
-    def on_drop(self, frame: int, game: GameBoard, moves: list[Moves]):
-        if not DATA_COLLECTION_MODE: return
-        training_x.append(ai.game_to_inputs(game))
-        training_y.append(ai.moves_to_labels(self.all_moves))
-        self.all_moves = []
-        
  
 def main() -> None:
     pygame.init()
@@ -135,18 +90,9 @@ def main() -> None:
     board = GameBoard(constants.BOARD_WIDTH, constants.BOARD_HEIGHT)
     game = PlayerGame(board)
     
-    try:
-        game.run()
-    except KeyboardInterrupt:
-        print("Canceling...")
-
+    game.run()
+        
     pygame.quit()
-    
-    if DATA_COLLECTION_MODE:
-        save_name = input("Save training data: ")
-        if save_name: save_training_data("ml_projects/tetris/" + save_name)
-        print(len(training_x), "Items Saved")
-            
         
 if __name__ == "__main__":
     main()

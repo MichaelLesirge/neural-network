@@ -15,7 +15,7 @@ import neural_network as nn
 from tetris import Moves, GameBoard, tetromino
 
 outputs = [
-    Moves.LEFT, Moves.RIGHT, Moves.SPIN, Moves.HARD_DROP, None
+    Moves.LEFT, Moves.RIGHT, Moves.SPIN, None
 ]
 
 n_inputs = (

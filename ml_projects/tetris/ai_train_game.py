@@ -8,7 +8,6 @@ class AiTrainGame(Game):
     def __init__(self, board: GameBoard) -> None:
         super().__init__(board, -1)
         
- 
     def display(self, frame: int, game: GameBoard) -> None: return
     
     def get_moves(self, frame: int, game: GameBoard) -> list[Moves]:

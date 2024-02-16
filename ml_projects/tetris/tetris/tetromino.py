@@ -1,39 +1,37 @@
+import numpy as np
+
 MAX_ROTATIONS = 4
 
+def drop(matrix: list[list[int]]) -> list[list[int]]:
+    i = 0
+    for row in reversed(matrix):
+        if any(row): break
+        i += 1
+    return np.roll(matrix, i, 0)
+
+COLOR_MAP = {}
 class TetrominoBlockShape:
     
     def __init__(self, name: str, color: tuple[int, int, int] | str, shape: list[list[int]], rotators: list = None) -> None:
         self.name = name
         self.color = color
         
-        self.height = len(shape)
-        self.width = len(shape[0])
+        self.id = ord("a") - ord(self.name) + 1
         
-        if rotators is None: rotators = [TetrominoBlockShape.rotate_counterclockwise]
+        COLOR_MAP[self.id] = color
+        
+        shape: np.ndarray = np.array(shape, dtype=np.uint8)
+        self.height, self.width = shape.shape
+        
+        if rotators is None: rotators = [np.rot90]
         
         self.shapes = []
         for i in range(MAX_ROTATIONS):
             self.shapes.append(shape)
             for rotator in rotators: shape = rotator(shape)
-            if shape == self.shapes[0]: break
-
-    @staticmethod
-    def rotate_clockwise(matrix: list[list[int]]) -> list[list[int]]:
-        return list(list(x) for x in zip(*matrix))[::-1]
-
-    @staticmethod
-    def rotate_counterclockwise(matrix: list[list[int]]) -> list[list[int]]:
-        return list(list(x)[::-1] for x in zip(*matrix))
-
-    @staticmethod
-    def drop(matrix: list[list[int]]) -> list[list[int]]:
-        i = 0
-        for row in reversed(matrix):
-            if any(row): break
-            i += 1
-        return matrix[-i:] + matrix[:-i]
+            if np.array_equal(shape, self.shapes[0]): break
     
-    def __iter__(self) -> tuple[int, int]:
+    def __iter__(self):
         for row in range(self.height):
             for col in range(self.width):
                 yield (row, col) 
@@ -69,12 +67,12 @@ SHAPES = [
         [0, 0, 0],
         [1, 1, 0],
         [0, 1, 1],
-    ], [TetrominoBlockShape.rotate_clockwise, TetrominoBlockShape.drop]),
+    ]),
     TetrominoBlockShape("S", (0,240,0), [
         [0, 0, 0],
         [0, 1, 1],
         [1, 1, 0],
-    ], [TetrominoBlockShape.rotate_clockwise, TetrominoBlockShape.drop]),
+    ]),
 ]
 
 def main() -> None:
@@ -83,7 +81,7 @@ def main() -> None:
     for shape in SHAPES:
         print(shape.name + ": ")
         for i, orientations in enumerate(shape.shapes):
-            print(i + 1)
+            print()
             print("\n".join(
                 "".join(states[value] for value in row) for row in orientations
             ))

@@ -1,5 +1,7 @@
 import random
 
+import numpy as np
+
 from . import tetromino
 
 class Tetromino:
@@ -19,20 +21,23 @@ class Tetromino:
     def get_x(self) -> int:
         return int(self.x)
 
-    def get_color(self) -> [tuple[int, int, int] | str]:
+    def get_color(self) -> tuple[int, int, int] | str:
         return self.type.color
     
     def get_name(self) -> str:
         return self.type.name
-
-    def image(self) -> list[list[int]]:
-        return self.type.shapes[self.rotation]
     
+    def get_id(self) -> int:
+        return self.type.id
+
+    def image(self) -> np.ndarray:
+        return self.type.shapes[self.rotation]
+     
     def rotate(self) -> None:
         self.rotation = (self.rotation + 1) % len(self.type.shapes)
         self.width, self.height = self.height, self.width
 
-    def __iter__(self) -> tuple[int, tuple[int, int]]:
+    def __iter__(self):
         for row in range(self.height):
             for col in range(self.width):
                 yield (self.image()[row][col], (row, col))
@@ -46,7 +51,7 @@ class GameBoard:
         self.reset()
 
     def reset(self) -> None:
-        self.grid = [[None] * self.width for i in range(self.height)]
+        self.grid = np.zeros((self.height, self.width), dtype=np.uint8)
         
         self.score = 0
         self.done = False
@@ -65,22 +70,18 @@ class GameBoard:
                 row + self.current_figure.y >= self.height or
                 col + self.current_figure.x >= self.width or
                 col + self.current_figure.x < 0 or
-                self.grid[row + self.current_figure.y][col + self.current_figure.x] is not None
+                self.grid[row + self.current_figure.y][col + self.current_figure.x] !=  0
             ):
                 return True
         return False
         
     def find_full_lines(self) -> list[int]:
-        lines = []
-        
-        for i, row in enumerate(self.grid):
-            if all(row): lines.append(i)
-                        
-        return lines
+        return [i for i, row in enumerate(self.grid) if all(row)]
 
     def remove_full_lines(self, lines: list[int]) -> None:
-        for line in sorted(lines, reverse=True): self.grid.pop(line)
-        for line in lines: self.grid.insert(0, [None] * self.width)
+        for line in lines:
+            self.grid[1:line + 1, :] = self.grid[:line, :]
+            self.grid[0, :] = 0
     
     def hard_drop(self) -> None:
         while not self.intersects():
@@ -96,7 +97,7 @@ class GameBoard:
 
     def freeze(self) -> bool:
         for value, (row, col) in self.current_figure:
-            if value: self.grid[row + self.current_figure.y][col + self.current_figure.x] = self.current_figure.get_color()
+            if value: self.grid[row + self.current_figure.y][col + self.current_figure.x] = self.current_figure.get_id()
 
         lines = self.find_full_lines()
         self.remove_full_lines(lines)
@@ -118,7 +119,7 @@ class GameBoard:
         if self.intersects():
             self.current_figure.rotation = old_rotation
     
-    def __iter__(self) -> tuple[str | tuple[int, int, int] | None, tuple[int, int]]:
+    def __iter__(self):
         for row in range(self.height):
             for col in range(self.width):
                 yield (self.grid[row][col], (row, col))
