@@ -12,11 +12,11 @@ WINDOW_NAME = "Tetris"
 SYS_FONT = "Arial"
 
 FPS = 30
-DEFAULT_DROP_PER_SECONDS = 4
-SOFT_DROP_PER_SECONDS = 30
 
+DEFAULT_DROP_PER_SECONDS = 4
 DROP_DELAY_FRAMES = FPS // DEFAULT_DROP_PER_SECONDS
-SOFT_DROP_DELAY_FRAMES = FPS // SOFT_DROP_PER_SECONDS
+
+SOFT_DROP_DELAY_FRAMES = 1
 
 GAME_X, GAME_Y = (100, 60)
 BLOCK_SIZE = 20
@@ -59,9 +59,11 @@ def main() -> None:
         
         if done: going = False
         
-        board.render_a_pygame(screen, BLOCK_SIZE,
+        board.render_as_pygame(screen, BLOCK_SIZE,
                               (GAME_X, GAME_Y),
                               BACKGROUND_COLOR, LINE_COLOR, MAIN_COLOR)
+
+        # print(board.render_as_str(full_block=True))
         
         text = pygame.font.SysFont(SYS_FONT, 25, True, False).render(f"Score: {info['score']}", True, MAIN_COLOR)
         screen.blit(text, [5, 5])

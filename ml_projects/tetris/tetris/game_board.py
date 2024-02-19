@@ -24,37 +24,28 @@ class Tetromino:
         self.x = x
         self.y = y
         
-        self.width, self.height = type.width, type.height
-
         self.type = type
         
-        self.rotation = rotation % len(self.type.shapes)
+        self.rotation = rotation % len(self.type.rotations)
+    
+    def get_height(self) -> int: return self.image().shape[1]
         
-    def get_y(self) -> int:
-        return int(self.y)
+    def get_height(self) -> int: return self.image().shape[0]
 
-    def get_x(self) -> int:
-        return int(self.x)
-
-    def get_color(self) -> tuple[int, int, int] | str:
-        return self.type.color
+    def get_color(self) -> tuple[int, int, int] | str: return self.type.get_color()
     
-    def get_name(self) -> str:
-        return self.type.name
+    def get_name(self) -> str: return self.type.get_name()
     
-    def get_id(self) -> int:
-        return self.type.id
+    def get_id(self) -> int: return self.type.get_id()
 
-    def image(self) -> np.ndarray:
-        return self.type.shapes[self.rotation]
+    def image(self) -> np.ndarray: return self.type.rotations[self.rotation]
      
-    def rotate(self) -> None:
-        self.rotation = (self.rotation + 1) % len(self.type.shapes)
-        self.width, self.height = self.height, self.width
+    def rotate(self) -> None: self.rotation = (self.rotation + 1) % len(self.type.rotations)
 
     def __iter__(self):
-        for row, col in self.type:
-            yield (self.image()[row][col], (self.y + row, self.x + col))
+        for row in range(self.get_height()):
+            for col in range(self.get_height()):
+                yield (self.image()[row][col], (self.y + row, self.x + col))
             
 SCORES = [0, 40, 100, 300, 1200]
 
@@ -72,6 +63,7 @@ class Tetris:
         self.grid = np.zeros((self.height, self.width), dtype=np.uint8)
         
         self.score = 0
+        self.lines = 0
         self.done = False
         
         self.frame = 0
@@ -82,11 +74,12 @@ class Tetris:
         return self.current_figure
 
     def new_figure(self) -> None:
-        shape = random.choice(tetromino.SHAPES)
+        shape = random.choice(tetromino.ALL_SHAPES)
         self.current_figure = Tetromino(
-            self.width // 2 - shape.width // 2, 0,
+            self.width // 2 - shape.get_largest_dimension() // 2, 0,
             shape,
-            rotation=random.randrange(len(shape.shapes)))
+            rotation=random.randrange(shape.get_num_of_rotations())
+        )
 
     def intersects(self) -> bool:
         for value, (row, col) in self.current_figure:
@@ -120,14 +113,16 @@ class Tetris:
     def freeze(self) -> bool:
         for value, (row, col) in self.current_figure:
             if value: self.grid[row][col] = self.current_figure.get_id()
-
-        lines = self.find_full_lines()
-        self.remove_full_lines(lines)
+        
+        full_line_indexes = self.find_full_lines()
+        self.remove_full_lines(full_line_indexes)
 
         self.new_figure()
 
-        # self.score += (len(lines) ** 2) * 100
-        self.score += SCORES[len(lines)]
+        num_of_lines = len(full_line_indexes)
+        
+        self.score += SCORES[num_of_lines]
+        self.lines += num_of_lines
         self.done = self.intersects() 
         
     def change_x(self, dx: int) -> None:
@@ -169,6 +164,7 @@ class Tetris:
         
         info = {
             "score": self.score,
+            "lines": self.lines,
             "frame": self.frame,
             "drop_frame": drop_frame
         }
@@ -182,8 +178,11 @@ class Tetris:
             case Render.PYGAME:
                 return self.render_as_pygame(*args, **kwargs)
         
-    def render_as_str(self, block_width = 2) -> str:
+    def render_as_str(self, block_width = 2, full_block = True) -> str:
+        
         full = "[" + " " * (block_width - 2) + "]"
+        
+        if full_block: full = "█" * block_width
 
         empty = " " * (block_width - 1) + "."
 
@@ -214,7 +213,7 @@ class Tetris:
 
         return "\n".join(lines)
 
-    def render_a_pygame(self, screen: pygame.Surface, block_size: int = 20, top_left_coordinate: tuple[int, int] = (0, 0), background_color: pygame.Color = "black", line_color: pygame.color = "white", main_color: pygame.color = "white"):
+    def render_as_pygame(self, screen: pygame.Surface, block_size: int = 20, top_left_coordinate: tuple[int, int] = (0, 0), background_color: pygame.Color = "black", line_color: pygame.color = "white", main_color: pygame.color = "white") -> None:
         
         game_x, game_y = top_left_coordinate
         
@@ -226,11 +225,11 @@ class Tetris:
 
         screen.fill(background_color)
         
-        for col in range(self.width + 1):
-            pygame.draw.line(screen, line_color, (game_x + block_size * col, game_y), (game_x + block_size * col, game_y + block_size * self.height), width=1)
+        # for col in range(self.width + 1):
+        #     pygame.draw.line(screen, line_color, (game_x + block_size * col, game_y), (game_x + block_size * col, game_y + block_size * self.height), width=1)
 
-        for row in range(self.height + 1):
-            pygame.draw.line(screen, line_color, (game_x, game_y + block_size * row), (game_x + block_size * self.width, game_y + block_size * row), width=1)
+        # for row in range(self.height + 1):
+        #     pygame.draw.line(screen, line_color, (game_x, game_y + block_size * row), (game_x + block_size * self.width, game_y + block_size * row), width=1)
 
         for value, (row, col) in self:
             if value: draw_box(row, col, color=tetromino.COLOR_MAP[value], margin=1, border_radius=2)
