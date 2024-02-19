@@ -59,10 +59,12 @@ class Tetromino:
 SCORES = [0, 40, 100, 300, 1200]
 
 class Tetris:
-    def __init__(self, width: int, height: int, drop_every = 1) -> None:
+    def __init__(self, width: int, height: int, drop_delay_frames: int = 1, soft_drop_delay_frames: int = 1) -> None:
 
         self.width, self.height = width, height
-        self.drop_every = drop_every
+        
+        self.drop_delay_frames = drop_delay_frames
+        self.soft_drop_delay_frames = soft_drop_delay_frames
         
         self.reset()
 
@@ -76,11 +78,15 @@ class Tetris:
         
         self.new_figure()
 
-    def get_current_figure(self) -> tetromino.TetrominoBlockShape:
+    def get_current_figure(self) -> Tetromino:
         return self.current_figure
 
     def new_figure(self) -> None:
-        self.current_figure = Tetromino(self.width // 2, 0, random.choice(tetromino.SHAPES), rotation=random.randrange(tetromino.MAX_ROTATIONS))
+        shape = random.choice(tetromino.SHAPES)
+        self.current_figure = Tetromino(
+            self.width // 2 - shape.width // 2, 0,
+            shape,
+            rotation=random.randrange(len(shape.shapes)))
 
     def intersects(self) -> bool:
         for value, (row, col) in self.current_figure:
@@ -151,8 +157,10 @@ class Tetris:
                 case Move.HARD_DROP: self.hard_drop()
                 case Move.SOFT_DROP: soft_drop = True
         
-        drop_frame = self.frame % self.drop_every == 0
-        if drop_frame or soft_drop:
+        drop_frame = self.frame % self.drop_delay_frames == 0
+        soft_drop_frame = soft_drop and self.frame % self.soft_drop_delay_frames == 0
+        
+        if drop_frame or soft_drop_frame:
             self.soft_drop()
         
         self.frame += 1

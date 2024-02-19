@@ -12,17 +12,21 @@ WINDOW_NAME = "Tetris"
 SYS_FONT = "Arial"
 
 FPS = 30
+DEFAULT_DROP_PER_SECONDS = 4
+SOFT_DROP_PER_SECONDS = 30
+
+DROP_DELAY_FRAMES = FPS // DEFAULT_DROP_PER_SECONDS
+SOFT_DROP_DELAY_FRAMES = FPS // SOFT_DROP_PER_SECONDS
 
 GAME_X, GAME_Y = (100, 60)
 BLOCK_SIZE = 20
-
     
 def main() -> None:
     pygame.init()
     
     pygame.key.set_repeat(1000 // 4, 1000 // 10)
     
-    board = Tetris(constants.BOARD_WIDTH, constants.BOARD_HEIGHT, 10)
+    board = Tetris(constants.BOARD_WIDTH, constants.BOARD_HEIGHT, DROP_DELAY_FRAMES, SOFT_DROP_DELAY_FRAMES)
     
     screen = pygame.display.set_mode(SCREEN_SIZE)
     pygame.display.set_caption(WINDOW_NAME)
@@ -32,7 +36,6 @@ def main() -> None:
     pressing_down = False
     
     going = True
-    
     
     while going:
         
