@@ -77,11 +77,11 @@ def main() -> None:
     
     clock = pygame.time.Clock()
         
-    title_font = pygame.font.SysFont("Monospace", TETRIS_SQUARE_SIZE * 2, True, False)
+    title_font = pygame.font.SysFont("Monospace", 50, True, False)
     title = title_font.render(WINDOW_NAME, True, MAIN_COLOR)
     paused_text = title_font.render("PAUSED", True, MAIN_COLOR)
     
-    font = pygame.font.SysFont("Berlin Sans FB", TETRIS_SQUARE_SIZE, False, False)
+    font = pygame.font.SysFont("Berlin Sans FB", 22, False, False)
         
     pressing_down_arrow = False
     left_down_clock = right_down_clock = None
