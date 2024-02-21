@@ -46,7 +46,7 @@ class Tetromino:
 
     def __iter__(self):
         for row in range(self.get_height()):
-            for col in range(self.get_height()):
+            for col in range(self.get_width()):
                 yield (self.image()[row][col], (self.y + row, self.x + col))
 
 class Tetris:
@@ -70,7 +70,7 @@ class Tetris:
     def reset(self) -> None:
         self.grid = np.zeros((self.height, self.width), dtype=np.uint8)
         
-        self.piece_queue = []
+        self.piece_queue: list[tetromino.TetrominoBlockShape] = []
         self.fill_piece_queue()
         
         self.frame = self.score = self.lines = self.level = 0
@@ -188,7 +188,7 @@ class Tetris:
             self.current_figure.y -= dy
             
     def step(self, moves: Move | list[Move]):
-        
+
         self.frame += 1
         
         if isinstance(moves, Move):
@@ -228,10 +228,9 @@ class Tetris:
         info = {
             "score": self.score,
             "lines": self.lines,
-            "lines": self.level,
+            "level": self.level,
             "piece_queue": self.piece_queue,
             "frame": self.frame,
-            "drop_frame": is_drop_frame
         }
         
         return self.grid, reward, self.done, info
@@ -278,26 +277,14 @@ class Tetris:
 
         return "\n".join(lines)
 
-    def render_as_pygame(self, block_size: int = 25, background_color: pygame.Color = "black", line_color: pygame.Color = "white", *, block_images = True, ghost_block = True, blank_surface = False) -> pygame.Surface:
-                
+    def render_as_pygame(self, block_size: int = 25, background_color: pygame.Color = "black", line_color: pygame.Color = "white", *, ghost_block = True) -> tuple[pygame.Surface, list[pygame.Surface]]:
         screen = pygame.Surface((self.width * block_size, self.height * block_size))
-        
-        if blank_surface: return screen
-        
-        def draw_box(row: int, col: int, color = "white", width = 0, border_radius = -1, margin = 0):
-            pygame.draw.rect(screen, color, pygame.Rect(
-                col * block_size + margin, row * block_size + margin,
-                block_size - margin, block_size - margin
-            ), width = width, border_radius = border_radius)            
-                        
-        def draw_tetromino_block(row: int, col: int, shape: tetromino.TetrominoBlockShape, ghost = False):
-            if block_images:
-                image = shape.image_ghost if ghost else shape.image
-                if image.get_width() != block_size: image = pygame.transform.scale(image, (block_size, block_size))
-                screen.blit(image, pygame.Rect(col * block_size, row * block_size, block_size, block_size))
-            else:
-                draw_box(row, col, color=shape.get_color(), margin=1, border_radius=2, width = ghost)
 
+        def draw_tetromino_block(row: int, col: int, shape: tetromino.TetrominoBlockShape, ghost = False):
+            image = shape.image_ghost if ghost else shape.image
+            if image.get_width() != block_size: image = pygame.transform.scale(image, (block_size, block_size))
+            screen.blit(image, pygame.Rect(col * block_size, row * block_size, block_size, block_size))
+                            
         screen.fill(background_color)
         
         for col in range(1, self.width):
