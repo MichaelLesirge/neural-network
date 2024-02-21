@@ -97,6 +97,7 @@ def main() -> None:
                 if event.key == pygame.K_q:         going = False
                 if event.key == pygame.K_UP:        moves.append(Move.SPIN)
                 if event.key == pygame.K_SPACE:     moves.append(Move.HARD_DROP)
+                if event.key == pygame.K_c:         moves.append(Move.HOLD)
                 if event.key == pygame.K_LEFT:
                     moves.append(Move.LEFT)
                     left_down_clock = KEY_REPEAT_DELAY
@@ -145,11 +146,19 @@ def main() -> None:
         blit_with_outline(screen, left_side_bar, (GAME_X - SIDE_PANEL_WIDTH - SIDE_BAR_GAP, GAME_Y))
 
         right_side_bar = render_info_panel(
-            {"next".upper(): render_queue(info["piece_queue"], TETRIS_SQUARE_SIZE)},
+            {"next".upper(): render_shapes(info["piece_queue"], TETRIS_SQUARE_SIZE)},
+            font=font, width=SIDE_PANEL_WIDTH, margin=SIDE_BAR_GAP
+        )
+
+        blit_with_outline(screen, right_side_bar, (GAME_X + GAME_WIDTH + SIDE_BAR_GAP, GAME_Y))
+        
+        bottom_left_side_bar = render_info_panel(
+            {"held".upper(): render_shapes([info["held"]], TETRIS_SQUARE_SIZE)},
             font=font, width=SIDE_PANEL_WIDTH, margin=SIDE_BAR_GAP
         )
         
-        blit_with_outline(screen, right_side_bar, (GAME_X + GAME_WIDTH + SIDE_BAR_GAP, GAME_Y))
+        blit_with_outline(screen, bottom_left_side_bar, (GAME_X - SIDE_PANEL_WIDTH - SIDE_BAR_GAP, GAME_Y + GAME_HEIGHT - bottom_left_side_bar.get_height()))
+        
             
         if paused: screen.blit(paused_text, (SCREEN_WIDTH // 2 - paused_text.get_width() // 2, SCREEN_HEIGHT // 2 - paused_text.get_height() // 2))
                     
@@ -178,24 +187,26 @@ def render_game(game: Tetris, block_size: int = 25, ghost_block = True) -> tuple
     for value, (row, col) in game:
         if value: draw_tetromino_block(screen, block_size, row, col, TetrominoShape.SHAPE_ID_MAP[value])
             
-    for value, (row, col) in game.current_figure:
-        if value: draw_tetromino_block(screen, block_size, row, col, game.current_figure.shape)
+    for value, (row, col) in game.current_tetromino:
+        if value: draw_tetromino_block(screen, block_size, row, col, game.current_tetromino.shape)
         
     if ghost_block:   
-        real_y = game.current_figure.y
+        real_y = game.current_tetromino.y
         
         while not game.intersects():
-            game.current_figure.y += 1
-        game.current_figure.y -= 1
+            game.current_tetromino.y += 1
+        game.current_tetromino.y -= 1
     
-        for value, (row, col) in game.current_figure:
-            if value: draw_tetromino_block(screen, block_size, row, col, game.current_figure.shape, ghost=True)
+        for value, (row, col) in game.current_tetromino:
+            if value: draw_tetromino_block(screen, block_size, row, col, game.current_tetromino.shape, ghost=True)
         
-        game.current_figure.y = real_y
+        game.current_tetromino.y = real_y
     
     return screen
 
 def render_shape(shape: TetrominoShape, block_size: int) -> pygame.Surface:
+    if shape is None: return pygame.Surface((0, 0))
+    
     grid = shape.get_trimmed_grid()
     height, width = grid.shape
         
@@ -208,7 +219,7 @@ def render_shape(shape: TetrominoShape, block_size: int) -> pygame.Surface:
     return shape_render
 
 _max_trimmed_height = max(shape.get_trimmed_grid().shape[0] for shape in TetrominoShape.ALL_SHAPES)
-def render_queue(shape_queue: list[TetrominoShape], block_size: int) -> pygame.Surface:
+def render_shapes(shape_queue: list[TetrominoShape], block_size: int) -> pygame.Surface:
     rendered_shapes = [render_shape(shape, block_size) for shape in shape_queue]
 
     max_trimmed_height = _max_trimmed_height * block_size

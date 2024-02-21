@@ -1,5 +1,5 @@
 from .game_board import Tetris, Move
-from .tetromino import TetrominoShape
+from .shapes import TetrominoShape
 
 __all__ = [Tetris, TetrominoShape, Move]
 

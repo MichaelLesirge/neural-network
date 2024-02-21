@@ -3,7 +3,7 @@ import enum
 
 import numpy as np
 
-from .tetromino import TetrominoShape
+from .shapes import TetrominoShape
 
 class Move(enum.Enum):
     SPIN = enum.auto()
@@ -11,6 +11,7 @@ class Move(enum.Enum):
     RIGHT = enum.auto()
     SOFT_DROP = enum.auto()
     HARD_DROP = enum.auto()
+    HOLD = enum.auto()
     
     QUIT = enum.auto()
 
@@ -65,35 +66,50 @@ class Tetris:
     def reset(self) -> None:
         self.grid = np.zeros((self.height, self.width), dtype=np.uint8)
         
-        self.piece_queue: list[TetrominoShape] = []
+        self.shape_queue: list[TetrominoShape] = []
         self.fill_piece_queue()
         
         self.frame = self.score = self.lines = self.level = 0
         self.done = False
+
+        self.held_shape: TetrominoShape = None
          
         self.new_figure()
         
     def fill_piece_queue(self):
-        while len(self.piece_queue) < self.piece_queue_size:
+        while len(self.shape_queue) < self.piece_queue_size:
             shape = random.choice(TetrominoShape.ALL_SHAPES)
-            self.piece_queue.append(shape)
+            self.shape_queue.append(shape)
 
     def get_current_figure(self) -> Tetromino:
-        return self.current_figure
+        return self.current_tetromino
 
     def new_figure(self) -> None:
-        if self.piece_queue_size == 0: shape = random.choice(TetrominoShape.ALL_SHAPES)
-        else: shape = self.piece_queue.pop(0)
+        self.can_swap = True
         
-        self.current_figure = Tetromino(
+        if self.piece_queue_size == 0: shape = random.choice(TetrominoShape.ALL_SHAPES)
+        else: shape = self.shape_queue.pop(0)
+        
+        self.current_tetromino = Tetromino(
             self.width // 2 - shape.get_width() // 2, 0,
             shape
         )
         
         self.fill_piece_queue()
+        
+    def hold(self) -> None:
+        if not self.can_swap: return
+        
+        starting_current = self.current_tetromino
+        if self.held_shape: self.shape_queue.insert(0, self.held_shape)
+        
+        self.new_figure()
+        
+        self.can_swap = False
+        self.held_shape = starting_current.shape
 
     def intersects(self) -> bool:
-        for value, (row, col) in self.current_figure:
+        for value, (row, col) in self.current_tetromino:
             if value and ( 
                 row >= self.height or row < 0 or col >= self.width or col < 0 or
                 self.grid[row][col] != 0
@@ -113,34 +129,34 @@ class Tetris:
         
         while not self.intersects():
             self.score += 2
-            self.current_figure.y += 1
+            self.current_tetromino.y += 1
             
-        self.current_figure.y -= 1
+        self.current_tetromino.y -= 1
         self.score -= 2
         
         self.freeze()
 
     def soft_drop(self):
         self.score += 1
-        self.current_figure.y += 1
+        self.current_tetromino.y += 1
         
         if self.intersects():
-            self.current_figure.y -= 1
+            self.current_tetromino.y -= 1
             self.score -= 1
             
             self.freeze()
 
     def gravity_drop(self) -> None:
-        self.current_figure.y += 1
+        self.current_tetromino.y += 1
         
         if self.intersects():
-            self.current_figure.y -= 1
+            self.current_tetromino.y -= 1
  
             self.freeze()
 
     def freeze(self) -> bool:
-        for value, (row, col) in self.current_figure:
-            if value: self.grid[row][col] = self.current_figure.get_id()
+        for value, (row, col) in self.current_tetromino:
+            if value: self.grid[row][col] = self.current_tetromino.get_id()
         
         full_line_indexes = self.find_full_lines()
         self.remove_full_lines(full_line_indexes)
@@ -158,10 +174,10 @@ class Tetris:
         self.done = self.intersects() 
         
     def change_x(self, dx: int) -> None:
-        old_x = self.current_figure.x
-        self.current_figure.x += dx
+        old_x = self.current_tetromino.x
+        self.current_tetromino.x += dx
         if self.intersects():
-            self.current_figure.x = old_x
+            self.current_tetromino.x = old_x
 
     def rotate(self) -> None:
 
@@ -171,16 +187,16 @@ class Tetris:
             positions_to_try.extend([(1, 0), (-1, 0)])
         
         for (dx, dy) in positions_to_try:
-            self.current_figure.x += dx
-            self.current_figure.y += dy
+            self.current_tetromino.x += dx
+            self.current_tetromino.y += dy
             
-            old_orientation = self.current_figure.orientation
-            self.current_figure.rotate()      
-            if self.intersects(): self.current_figure.orientation = old_orientation
+            old_orientation = self.current_tetromino.orientation
+            self.current_tetromino.rotate()      
+            if self.intersects(): self.current_tetromino.orientation = old_orientation
             else: return
                 
-            self.current_figure.x -= dx
-            self.current_figure.y -= dy
+            self.current_tetromino.x -= dx
+            self.current_tetromino.y -= dy
             
     def step(self, moves: Move | list[Move]):
 
@@ -196,6 +212,7 @@ class Tetris:
                 case Move.SPIN: self.rotate()
                 case Move.LEFT: self.change_x(-1)
                 case Move.RIGHT: self.change_x(+1)
+                case Move.HOLD: self.hold()
                 case Move.HARD_DROP: self.hard_drop()
                 case Move.SOFT_DROP: soft_drop = True
         
@@ -224,7 +241,8 @@ class Tetris:
             "score": self.score,
             "lines": self.lines,
             "level": self.level,
-            "piece_queue": self.piece_queue,
+            "held": self.held_shape,
+            "piece_queue": self.shape_queue,
             "frame": self.frame,
         }
         
@@ -247,7 +265,7 @@ class Tetris:
         for row_index, row in enumerate(self.grid):
             lines.append(
                 line_padding_left
-                + "".join([full if (tile or (1, (row_index, col_index)) in self.current_figure) else empty for col_index, tile in enumerate(row)])
+                + "".join([full if (tile or (1, (row_index, col_index)) in self.current_tetromino) else empty for col_index, tile in enumerate(row)])
                 + line_padding_right
             )
 
