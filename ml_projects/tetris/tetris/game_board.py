@@ -48,48 +48,54 @@ class Tetromino:
         for row in range(self.get_height()):
             for col in range(self.get_height()):
                 yield (self.image()[row][col], (self.y + row, self.x + col))
-            
-SCORES = [0, 40, 100, 300, 1200]
 
 class Tetris:
+    DEFAULT_FPS = 60
+    
     def __init__(
-        self, width: int, height: int,
-        drop_delay_frames: int = 1, soft_drop_delay_frames: int = 1,
-        enable_wall_kick = True, enable_start_at_top = True) -> None:
+        self, width: int, height: int, FPS: int = 1,
+        enable_wall_kick = True, piece_queue_size = None) -> None:
 
         self.width, self.height = width, height
         
-        self.enable_wall_kick = enable_wall_kick
-        self.enable_start_at_top = enable_start_at_top
+        self.fps = FPS
         
-        self.drop_delay_frames = drop_delay_frames
-        self.soft_drop_delay_frames = soft_drop_delay_frames
+        self.enable_wall_kick = enable_wall_kick
+        
+        if piece_queue_size is None: piece_queue_size = 0
+        self.piece_queue_size = piece_queue_size
         
         self.reset()
 
     def reset(self) -> None:
         self.grid = np.zeros((self.height, self.width), dtype=np.uint8)
         
+        self.piece_queue = []
+        self.fill_piece_queue()
+        
         self.frame = self.score = self.lines = self.level = 0
         self.done = False
          
         self.new_figure()
+        
+    def fill_piece_queue(self):
+        while len(self.piece_queue) < self.piece_queue_size:
+            shape = random.choice(tetromino.ALL_SHAPES)
+            self.piece_queue.append(shape)
 
     def get_current_figure(self) -> Tetromino:
         return self.current_figure
 
     def new_figure(self) -> None:
-        shape = random.choice(tetromino.ALL_SHAPES)
+        if self.piece_queue_size == 0: shape = random.choice(tetromino.ALL_SHAPES)
+        else: shape = self.piece_queue.pop(0)
         
         self.current_figure = Tetromino(
-            self.width // 2 - shape.get_largest_dimension() // 2, 0,
-            shape,
-            rotation=random.randrange(shape.get_num_of_rotations())
+            self.width // 2 - shape.get_width() // 2, 0,
+            shape
         )
         
-        if self.enable_start_at_top:
-            while not self.intersects(): self.current_figure.y -= 1
-            if self.intersects(): self.current_figure.y += 1
+        self.fill_piece_queue()
 
     def intersects(self) -> bool:
         for value, (row, col) in self.current_figure:
@@ -148,8 +154,12 @@ class Tetris:
 
         num_of_lines = len(full_line_indexes)
         
-        self.score += SCORES[num_of_lines]
+        scores = [0, 40, 100, 300, 1200]
+        
+        self.score += scores[num_of_lines] * (self.level + 1)
         self.lines += num_of_lines
+        self.level = (num_of_lines // 10)
+        
         self.done = self.intersects() 
         
     def change_x(self, dx: int) -> None:
@@ -194,11 +204,24 @@ class Tetris:
                 case Move.HARD_DROP: self.hard_drop()
                 case Move.SOFT_DROP: soft_drop = True
         
-        drop_frame = self.frame % self.drop_delay_frames == 0
-        soft_drop_frame = soft_drop and self.frame % self.soft_drop_delay_frames == 0
+        if self.level < 12: block_drop_interval = 60 - self.level*5
+        elif self.level < 13: block_drop_interval = 7
+        elif self.level < 15: block_drop_interval = 6
+        elif self.level < 17: block_drop_interval = 5
+        elif self.level < 20: block_drop_interval = 4
+        elif self.level < 24: block_drop_interval = 3
+        elif self.level < 29: block_drop_interval = 2
+        else: block_drop_interval = 1
+        
+        fps_scale = self.fps / self.DEFAULT_FPS
+        
+        block_drop_interval *= fps_scale
+        
+        is_drop_frame = self.frame % max(int(block_drop_interval), 1) == 0
+        is_soft_drop_frame = soft_drop and self.frame % fps_scale == 0
             
-        if soft_drop_frame: self.soft_drop()
-        elif drop_frame: self.gravity_drop()
+        if is_soft_drop_frame: self.soft_drop()
+        elif is_drop_frame: self.gravity_drop()
           
         reward = 0
         
@@ -206,8 +229,9 @@ class Tetris:
             "score": self.score,
             "lines": self.lines,
             "lines": self.level,
+            "piece_queue": self.piece_queue,
             "frame": self.frame,
-            "drop_frame": drop_frame
+            "drop_frame": is_drop_frame
         }
         
         return self.grid, reward, self.done, info
@@ -254,7 +278,7 @@ class Tetris:
 
         return "\n".join(lines)
 
-    def render_as_pygame(self, block_size: int = 25, background_color: pygame.Color = "black", line_color: pygame.Color = "white", outline_color: pygame.Color = "white", *, block_images = True, ghost_block = True, blank_surface = False) -> pygame.Surface:
+    def render_as_pygame(self, block_size: int = 25, background_color: pygame.Color = "black", line_color: pygame.Color = "white", *, block_images = True, ghost_block = True, blank_surface = False) -> pygame.Surface:
                 
         screen = pygame.Surface((self.width * block_size, self.height * block_size))
         
@@ -272,20 +296,18 @@ class Tetris:
                 if image.get_width() != block_size: image = pygame.transform.scale(image, (block_size, block_size))
                 screen.blit(image, pygame.Rect(col * block_size, row * block_size, block_size, block_size))
             else:
-                print(shape.get_color())
                 draw_box(row, col, color=shape.get_color(), margin=1, border_radius=2, width = ghost)
 
         screen.fill(background_color)
         
-        # for col in range(self.width + 1):
-        #     pygame.draw.line(screen, line_color, (game_x + block_size * col, game_y), (game_x + block_size * col, game_y + block_size * self.height), width=1)
+        for col in range(1, self.width):
+            pygame.draw.line(screen, line_color, (block_size * col, 0), (block_size * col, block_size * self.height), width=1)
 
-        # for row in range(self.height + 1):
-        #     pygame.draw.line(screen, line_color, (game_x, game_y + block_size * row), (game_x + block_size * self.width, game_y + block_size * row), width=1)
+        for row in range(1, self.height):
+            pygame.draw.line(screen, line_color, (0, block_size * row), (block_size * self.width, block_size * row), width=1)
 
         for value, (row, col) in self:
             if value: draw_tetromino_block(row, col, tetromino.SHAPE_ID_MAP[value])
-            draw_box(row, col, color=line_color, width = 1, border_radius=2)
                 
         for value, (row, col) in self.current_figure:
             if value: draw_tetromino_block(row, col, self.current_figure.type)
@@ -301,10 +323,6 @@ class Tetris:
                 if value: draw_tetromino_block(row, col, self.current_figure.type, ghost=True)
             
             self.current_figure.y = real_y
-        
-        if outline_color: pygame.draw.rect(screen, outline_color, pygame.Rect(
-            0, 0, block_size * self.width, block_size * self.height 
-        ), width=1)
         
         return screen
         

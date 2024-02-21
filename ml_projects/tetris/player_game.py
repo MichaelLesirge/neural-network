@@ -4,7 +4,10 @@ import constants
 
 MAIN_COLOR = "white"
 BACKGROUND_COLOR = "black"
-LINE_COLOR = (50, 50, 50)
+SECONDARY_COLOR = (50, 50, 50)
+
+BOARD_SQUARES_ACROSS = constants.BOARD_WIDTH
+BOARD_SQUARES_DOWN = constants.BOARD_HEIGHT
 
 SCREEN_WIDTH = 1000
 SCREEN_HEIGHT = SCREEN_WIDTH / 1.618
@@ -15,10 +18,19 @@ FONT = "Arial"
 
 FPS = 30
 
-DROP_DELAY_FRAMES = FPS // 3
-SOFT_DROP_DELAY_FRAMES = FPS // 30
-
 BLOCK_SIZE = 25
+
+PIECE_QUEUE_SIZE = 3
+
+def draw_outline(screen: pygame.surface, top_left: tuple[int, int], width_height: tuple[int, int]) -> None:
+    line_width = 5
+    outline_color = SECONDARY_COLOR
+    
+    x, y = top_left
+    width, height = width_height
+
+    pygame.draw.rect(screen, outline_color, pygame.Rect(x - line_width, y - line_width, width + line_width * 2, height + line_width * 2), width = line_width, border_radius=-1)
+    
     
 def main() -> None:
     pygame.init()
@@ -26,12 +38,12 @@ def main() -> None:
     pygame.key.set_repeat(170, 50)
     
     board = Tetris(
-        width=constants.BOARD_WIDTH, height=constants.BOARD_HEIGHT,
-        drop_delay_frames=DROP_DELAY_FRAMES, soft_drop_delay_frames=SOFT_DROP_DELAY_FRAMES,
-        enable_wall_kick=True, enable_start_at_top=True
+        width=BOARD_SQUARES_ACROSS, height=BOARD_SQUARES_DOWN, FPS=FPS,
+        enable_wall_kick=True, piece_queue_size=PIECE_QUEUE_SIZE
     )
     
     board_surface = board.render_as_pygame(BLOCK_SIZE, blank_surface=True)
+    
     game_position = (SCREEN_WIDTH // 2 - board_surface.get_width() // 2, SCREEN_HEIGHT // 2 - board_surface.get_height() // 2)
     
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -71,19 +83,14 @@ def main() -> None:
             block_size=BLOCK_SIZE,
             
             background_color=BACKGROUND_COLOR,
-            line_color=LINE_COLOR,
-            outline_color=MAIN_COLOR,
+            line_color=SECONDARY_COLOR,
             
             block_images=True,
             ghost_block=True
         )
         
         screen.blit(board_surface, game_position)
-
-        # print(board.render_as_str(full_block=True))
-        
-        text = pygame.font.SysFont(FONT, 25, True, False).render(f"Score: {info['score']}", True, MAIN_COLOR)
-        screen.blit(text, [5, 5])
+        draw_outline(screen, game_position, (board_surface.get_width(), board_surface.get_height()))
             
         pygame.display.flip()
 
