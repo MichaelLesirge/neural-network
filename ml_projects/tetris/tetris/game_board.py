@@ -2,9 +2,8 @@ import random
 import enum
 
 import numpy as np
-import pygame
 
-from . import tetromino
+from .tetromino import TetrominoShape
 
 class Move(enum.Enum):
     SPIN = enum.auto()
@@ -14,40 +13,36 @@ class Move(enum.Enum):
     HARD_DROP = enum.auto()
     
     QUIT = enum.auto()
-    
-class Render(enum.Enum):
-    ANSI = enum.auto()
-    PYGAME = enum.auto
 
 class Tetromino:
     WALL_BOUNCING = True
     
-    def __init__(self, x: int, y: int, type: tetromino.TetrominoBlockShape, rotation: int = 0) -> None:
+    def __init__(self, x: int, y: int, shape: TetrominoShape, orientation: int = 0) -> None:
         self.x = x
         self.y = y
         
-        self.type = type
+        self.shape = shape
         
-        self.rotation = rotation % len(self.type.rotations)
+        self.orientation = orientation % len(self.shape.rotations)
     
-    def get_height(self) -> int: return self.image().shape[1]
+    def get_height(self) -> int: return self.get_grid().shape[1]
         
-    def get_width(self) -> int: return self.image().shape[0]
+    def get_width(self) -> int: return self.get_grid().shape[0]
 
-    def get_color(self) -> tuple[int, int, int] | str: return self.type.get_color()
+    def get_color(self) -> tuple[int, int, int] | str: return self.shape.get_color()
     
-    def get_name(self) -> str: return self.type.get_name()
+    def get_name(self) -> str: return self.shape.get_name()
     
-    def get_id(self) -> int: return self.type.get_id()
+    def get_id(self) -> int: return self.shape.get_id()
 
-    def image(self) -> np.ndarray: return self.type.rotations[self.rotation]
+    def get_grid(self) -> np.ndarray: return self.shape.get_grid(self.orientation)
      
-    def rotate(self) -> None: self.rotation = (self.rotation + 1) % len(self.type.rotations)            
+    def rotate(self) -> None: self.orientation = (self.orientation + 1) % len(self.shape.rotations)            
 
     def __iter__(self):
         for row in range(self.get_height()):
             for col in range(self.get_width()):
-                yield (self.image()[row][col], (self.y + row, self.x + col))
+                yield (self.get_grid()[row][col], (self.y + row, self.x + col))
 
 class Tetris:
     DEFAULT_FPS = 60
@@ -70,7 +65,7 @@ class Tetris:
     def reset(self) -> None:
         self.grid = np.zeros((self.height, self.width), dtype=np.uint8)
         
-        self.piece_queue: list[tetromino.TetrominoBlockShape] = []
+        self.piece_queue: list[TetrominoShape] = []
         self.fill_piece_queue()
         
         self.frame = self.score = self.lines = self.level = 0
@@ -80,14 +75,14 @@ class Tetris:
         
     def fill_piece_queue(self):
         while len(self.piece_queue) < self.piece_queue_size:
-            shape = random.choice(tetromino.ALL_SHAPES)
+            shape = random.choice(TetrominoShape.ALL_SHAPES)
             self.piece_queue.append(shape)
 
     def get_current_figure(self) -> Tetromino:
         return self.current_figure
 
     def new_figure(self) -> None:
-        if self.piece_queue_size == 0: shape = random.choice(tetromino.ALL_SHAPES)
+        if self.piece_queue_size == 0: shape = random.choice(TetrominoShape.ALL_SHAPES)
         else: shape = self.piece_queue.pop(0)
         
         self.current_figure = Tetromino(
@@ -179,9 +174,9 @@ class Tetris:
             self.current_figure.x += dx
             self.current_figure.y += dy
             
-            old_rotation = self.current_figure.rotation
+            old_orientation = self.current_figure.orientation
             self.current_figure.rotate()      
-            if self.intersects(): self.current_figure.rotation = old_rotation
+            if self.intersects(): self.current_figure.orientation = old_orientation
             else: return
                 
             self.current_figure.x -= dx
@@ -234,13 +229,6 @@ class Tetris:
         }
         
         return self.grid, reward, self.done, info
-    
-    def render(self, mode: Render = Render.ANSI, *args, **kwargs) -> str:
-        match mode:
-            case Render.ANSI:
-                return self.render_as_str(*args, **kwargs)
-            case Render.PYGAME:
-                return self.render_as_pygame(*args, **kwargs)
         
     def render_as_str(self, block_width = 2, full_block = True) -> str:
         
@@ -276,43 +264,10 @@ class Tetris:
         )
 
         return "\n".join(lines)
-
-    def render_as_pygame(self, block_size: int = 25, background_color: pygame.Color = "black", line_color: pygame.Color = "white", *, ghost_block = True) -> tuple[pygame.Surface, list[pygame.Surface]]:
-        screen = pygame.Surface((self.width * block_size, self.height * block_size))
-
-        def draw_tetromino_block(row: int, col: int, shape: tetromino.TetrominoBlockShape, ghost = False):
-            image = shape.image_ghost if ghost else shape.image
-            if image.get_width() != block_size: image = pygame.transform.scale(image, (block_size, block_size))
-            screen.blit(image, pygame.Rect(col * block_size, row * block_size, block_size, block_size))
-                            
-        screen.fill(background_color)
-        
-        for col in range(1, self.width):
-            pygame.draw.line(screen, line_color, (block_size * col, 0), (block_size * col, block_size * self.height), width=1)
-
-        for row in range(1, self.height):
-            pygame.draw.line(screen, line_color, (0, block_size * row), (block_size * self.width, block_size * row), width=1)
-
-        for value, (row, col) in self:
-            if value: draw_tetromino_block(row, col, tetromino.SHAPE_ID_MAP[value])
-                
-        for value, (row, col) in self.current_figure:
-            if value: draw_tetromino_block(row, col, self.current_figure.type)
-         
-        if ghost_block:   
-            real_y = self.current_figure.y
-            
-            while not self.intersects():
-                self.current_figure.y += 1
-            self.current_figure.y -= 1
-        
-            for value, (row, col) in self.current_figure:
-                if value: draw_tetromino_block(row, col, self.current_figure.type, ghost=True)
-            
-            self.current_figure.y = real_y
-        
-        return screen
-        
+ 
+    def __str__(self) -> str:
+        return self.render_as_str()
+    
     def __iter__(self):
         for row in range(self.height):
             for col in range(self.width):

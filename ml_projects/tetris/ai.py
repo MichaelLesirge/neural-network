@@ -53,10 +53,10 @@ _one_hot_rotations = np.eye(tetromino.MAX_ROTATIONS, dtype=np.float64)
 def game_to_inputs(board: Tetris) -> np.ndarray:
     return np.concatenate([
         np.array([value is not None for value, _ in board], dtype=np.float64).flatten(), #  board
-        _one_hot_shapes[_piece_to_index[board.current_figure.type]], # piece type
+        _one_hot_shapes[_piece_to_index[board.current_figure.shape]], # piece type
         _one_hot_x[board.current_figure.x], # x
         _one_hot_y[board.current_figure.y], # y
-        _one_hot_rotations[board.current_figure.rotation], # rotation
+        _one_hot_rotations[board.current_figure.orientation], # rotation
     ])
     
 def outputs_to_moves(output_array: np.ndarray) -> list[Moves]:
