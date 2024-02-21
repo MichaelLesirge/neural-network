@@ -1,20 +1,31 @@
+import pathlib
+
 import numpy as np
+import pygame
 
 MAX_ROTATIONS = 4
 
 ALL_SHAPES: list["TetrominoBlockShape"] = []
-COLOR_MAP: dict[int, str | tuple[int, int, int]] = {}
+SHAPE_ID_MAP: dict[int, "TetrominoBlockShape"] = {}
 
+def rotate(shape):
+    return np.flip(np.rot90(shape))
 
 class TetrominoBlockShape:
 
-    def __init__(self, name: str, color: tuple[int, int, int] | str, shape: list[list[int]] | np.ndarray, rotator = np.rot90) -> None:
+    def __init__(self, name: str, color: pygame.Color, shape: list[list[int]] | np.ndarray, rotator = rotate) -> None:
 
         self.name = name
+        self.color = color
         self.id = len(ALL_SHAPES) + 1
 
+        parent_path = pathlib.Path(__file__).parent
+        
+        self.image = pygame.image.load(parent_path / "normal-tetromino" / f"{self.name}.png")
+        self.image_ghost = pygame.image.load(parent_path / "ghost-tetromino" / f"{self.name}.png")
+
         ALL_SHAPES.append(self)
-        COLOR_MAP[self.id] = color
+        SHAPE_ID_MAP[self.id] = self
 
         shape = np.array(shape, dtype=np.uint8)
 
@@ -27,13 +38,16 @@ class TetrominoBlockShape:
 
     def get_name(self) -> str: return self.name
 
-    def get_color(self) -> str: return COLOR_MAP[self.id]
+    def get_color(self) -> pygame.Color: return self.color
 
-    def get_id(self) -> str: return self.id
+    def get_id(self) -> int: return self.id
 
     def get_num_of_rotations(self) -> int: return len(self.rotations)
     
     def get_largest_dimension(self) -> int: return max(self.rotations[0].shape)
+
+    def __str__(self) -> str:
+        return f"{self.__class__.__name__}({self.name}, {self.color}, {self.rotations[0]})"
 
 
 TetrominoBlockShape("I", (0, 240, 240), [

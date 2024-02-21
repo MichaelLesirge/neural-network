@@ -20,6 +20,8 @@ class Render(enum.Enum):
     PYGAME = enum.auto
 
 class Tetromino:
+    WALL_BOUNCING = True
+    
     def __init__(self, x: int, y: int, type: tetromino.TetrominoBlockShape, rotation: int = 0) -> None:
         self.x = x
         self.y = y
@@ -30,7 +32,7 @@ class Tetromino:
     
     def get_height(self) -> int: return self.image().shape[1]
         
-    def get_height(self) -> int: return self.image().shape[0]
+    def get_width(self) -> int: return self.image().shape[0]
 
     def get_color(self) -> tuple[int, int, int] | str: return self.type.get_color()
     
@@ -40,7 +42,7 @@ class Tetromino:
 
     def image(self) -> np.ndarray: return self.type.rotations[self.rotation]
      
-    def rotate(self) -> None: self.rotation = (self.rotation + 1) % len(self.type.rotations)
+    def rotate(self) -> None: self.rotation = (self.rotation + 1) % len(self.type.rotations)            
 
     def __iter__(self):
         for row in range(self.get_height()):
@@ -50,9 +52,11 @@ class Tetromino:
 SCORES = [0, 40, 100, 300, 1200]
 
 class Tetris:
-    def __init__(self, width: int, height: int, drop_delay_frames: int = 1, soft_drop_delay_frames: int = 1) -> None:
+    def __init__(self, width: int, height: int, drop_delay_frames: int = 1, soft_drop_delay_frames: int = 1, enable_wall_kick = True) -> None:
 
         self.width, self.height = width, height
+        
+        self.enable_wall_kick = enable_wall_kick
         
         self.drop_delay_frames = drop_delay_frames
         self.soft_drop_delay_frames = soft_drop_delay_frames
@@ -132,10 +136,23 @@ class Tetris:
             self.current_figure.x = old_x
 
     def rotate(self) -> None:
-        old_rotation = self.current_figure.rotation
-        self.current_figure.rotate()
-        if self.intersects():
-            self.current_figure.rotation = old_rotation
+
+        positions_to_try = [(0, 0)]
+        
+        if self.enable_wall_kick:
+            positions_to_try.extend([(1, 0), (-1, 0)])
+        
+        for (dx, dy) in positions_to_try:
+            self.current_figure.x += dx
+            self.current_figure.y += dy
+            
+            old_rotation = self.current_figure.rotation
+            self.current_figure.rotate()      
+            if self.intersects(): self.current_figure.rotation = old_rotation
+            else: return
+                
+            self.current_figure.x -= dx
+            self.current_figure.y -= dy
             
     def step(self, moves: Move | list[Move]):
         
@@ -213,15 +230,26 @@ class Tetris:
 
         return "\n".join(lines)
 
-    def render_as_pygame(self, screen: pygame.Surface, block_size: int = 20, top_left_coordinate: tuple[int, int] = (0, 0), background_color: pygame.Color = "black", line_color: pygame.color = "white", main_color: pygame.color = "white") -> None:
+    def render_as_pygame(self, block_size: int = 25, background_color: pygame.Color = "black", line_color: pygame.Color = "white", outline_color: pygame.Color = "white", *, block_images = True, ghost_block = True, blank_surface = False) -> pygame.Surface:
+                
+        screen = pygame.Surface((self.width * block_size, self.height * block_size))
         
-        game_x, game_y = top_left_coordinate
+        if blank_surface: return screen
         
         def draw_box(row: int, col: int, color = "white", width = 0, border_radius = -1, margin = 0):
             pygame.draw.rect(screen, color, pygame.Rect(
-                game_x + col * block_size + margin, game_y + row * block_size + margin,
+                col * block_size + margin, row * block_size + margin,
                 block_size - margin, block_size - margin
             ), width = width, border_radius = border_radius)            
+                        
+        def draw_tetromino_block(row: int, col: int, shape: tetromino.TetrominoBlockShape, ghost = False):
+            if block_images:
+                image = shape.image_ghost if ghost else shape.image
+                if image.get_width() != block_size: image = pygame.transform.scale(image, (block_size, block_size))
+                screen.blit(image, pygame.Rect(col * block_size, row * block_size, block_size, block_size))
+            else:
+                print(shape.get_color())
+                draw_box(row, col, color=shape.get_color(), margin=1, border_radius=2, width = ghost)
 
         screen.fill(background_color)
         
@@ -232,16 +260,29 @@ class Tetris:
         #     pygame.draw.line(screen, line_color, (game_x, game_y + block_size * row), (game_x + block_size * self.width, game_y + block_size * row), width=1)
 
         for value, (row, col) in self:
-            if value: draw_box(row, col, color=tetromino.COLOR_MAP[value], margin=1, border_radius=2)
-            draw_box(row, col, color=line_color, width = 1)
+            if value: draw_tetromino_block(row, col, tetromino.SHAPE_ID_MAP[value])
+            draw_box(row, col, color=line_color, width = 1, border_radius=2)
                 
         for value, (row, col) in self.current_figure:
-            if value: draw_box(row, col, color=self.current_figure.get_color(), margin=1, border_radius=2)
-
+            if value: draw_tetromino_block(row, col, self.current_figure.type)
+         
+        if ghost_block:   
+            real_y = self.current_figure.y
+            
+            while not self.intersects():
+                self.current_figure.y += 1
+            self.current_figure.y -= 1
         
-        pygame.draw.rect(screen, main_color, pygame.Rect(
-            game_x, game_y, block_size * self.width, block_size * self.height 
+            for value, (row, col) in self.current_figure:
+                if value: draw_tetromino_block(row, col, self.current_figure.type, ghost=True)
+            
+            self.current_figure.y = real_y
+        
+        if outline_color: pygame.draw.rect(screen, outline_color, pygame.Rect(
+            0, 0, block_size * self.width, block_size * self.height 
         ), width=1)
+        
+        return screen
         
     def __iter__(self):
         for row in range(self.height):
