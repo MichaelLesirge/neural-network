@@ -242,6 +242,7 @@ class Tetris:
             "lines": self.lines,
             "level": self.level,
             "held": self.held_shape,
+            "block_drop_interval": block_drop_interval,
             "piece_queue": self.shape_queue,
             "frame": self.frame,
         }

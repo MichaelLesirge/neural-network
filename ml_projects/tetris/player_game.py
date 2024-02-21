@@ -18,8 +18,16 @@ TETRIS_SQUARE_SIZE = 25
 GAME_WIDTH, GAME_HEIGHT = BOARD_SQUARES_ACROSS * TETRIS_SQUARE_SIZE, BOARD_SQUARES_DOWN * TETRIS_SQUARE_SIZE
 GAME_X, GAME_Y = (SCREEN_WIDTH // 2 - GAME_WIDTH // 2, SCREEN_HEIGHT // 2 - GAME_HEIGHT // 2)
 
-SIDE_BAR_GAP = TETRIS_SQUARE_SIZE
+
+SIDE_PANEL_GAP = TETRIS_SQUARE_SIZE
 SIDE_PANEL_WIDTH = TETRIS_SQUARE_SIZE * 7
+
+SIDE_LEFT_X = GAME_X - SIDE_PANEL_WIDTH - SIDE_PANEL_GAP
+SIDE_RIGHT_X = GAME_X + GAME_WIDTH + SIDE_PANEL_GAP
+
+SIDE_PANEL_MARGIN = TETRIS_SQUARE_SIZE
+
+OUTLINE_WIDTH = 3
 
 # Other Window Data
 WINDOW_NAME = "Tetris"
@@ -49,7 +57,7 @@ SHAPE_GHOST_IMAGES: dict[TetrominoShape, pygame.Surface] = {
 PIECE_QUEUE_SIZE = 3
 SHOW_GHOST_PEACES = True
 
-def blit_with_outline(screen: pygame.Surface, source: pygame.Surface, dest: tuple[int, int], line_width = 3, outline_color = MAIN_COLOR) -> None:    
+def blit_with_outline(screen: pygame.Surface, source: pygame.Surface, dest: tuple[int, int], line_width, outline_color = MAIN_COLOR) -> None:    
     x, y = dest
     width, height = source.get_width(), source.get_height()
 
@@ -135,30 +143,33 @@ def main() -> None:
             ghost_block=SHOW_GHOST_PEACES
         )
         
-        blit_with_outline(screen, tetris_board_surface, (GAME_X, GAME_Y))
+        blit_with_outline(screen, tetris_board_surface, (GAME_X, GAME_Y), OUTLINE_WIDTH)
         
-        display_info = ["score", "level", "lines"]
-        left_side_bar = render_info_panel(
-            {key.upper(): font.render(str(info[key]), True, MAIN_COLOR) for key in display_info},
-            font=font, width=SIDE_PANEL_WIDTH, margin=SIDE_BAR_GAP
+        display_info_keys = ["score", "level", "lines", "time"]
+        
+        minutes, seconds = divmod(info["frame"] / FPS, 60)
+        
+        display_info = {**info, "fps": round(clock.get_fps(), 3), "time": f"{minutes:.0f}:{seconds:0>2.0f}"}
+        info_side_bar = render_info_panel(
+            {key.upper().replace("_", " "): font.render(str(display_info[key]), True, MAIN_COLOR) for key in display_info_keys},
+            font=font, width=SIDE_PANEL_WIDTH, margin=SIDE_PANEL_MARGIN
         )
         
-        blit_with_outline(screen, left_side_bar, (GAME_X - SIDE_PANEL_WIDTH - SIDE_BAR_GAP, GAME_Y))
+        blit_with_outline(screen, info_side_bar, (SIDE_LEFT_X, GAME_Y), OUTLINE_WIDTH)
 
-        right_side_bar = render_info_panel(
+        next_side_bar = render_info_panel(
             {"next".upper(): render_shapes(info["piece_queue"], TETRIS_SQUARE_SIZE)},
-            font=font, width=SIDE_PANEL_WIDTH, margin=SIDE_BAR_GAP
+            font=font, width=SIDE_PANEL_WIDTH, margin=SIDE_PANEL_MARGIN
         )
 
-        blit_with_outline(screen, right_side_bar, (GAME_X + GAME_WIDTH + SIDE_BAR_GAP, GAME_Y))
+        blit_with_outline(screen, next_side_bar, (SIDE_RIGHT_X, GAME_Y), OUTLINE_WIDTH)
         
-        bottom_left_side_bar = render_info_panel(
+        held_side_bar = render_info_panel(
             {"held".upper(): render_shapes([info["held"]], TETRIS_SQUARE_SIZE)},
-            font=font, width=SIDE_PANEL_WIDTH, margin=SIDE_BAR_GAP
+            font=font, width=SIDE_PANEL_WIDTH, margin=SIDE_PANEL_MARGIN
         )
         
-        blit_with_outline(screen, bottom_left_side_bar, (GAME_X - SIDE_PANEL_WIDTH - SIDE_BAR_GAP, GAME_Y + GAME_HEIGHT - bottom_left_side_bar.get_height()))
-        
+        blit_with_outline(screen, held_side_bar, (SIDE_RIGHT_X, GAME_Y + GAME_HEIGHT - held_side_bar.get_height()), OUTLINE_WIDTH)
             
         if paused: screen.blit(paused_text, (SCREEN_WIDTH // 2 - paused_text.get_width() // 2, SCREEN_HEIGHT // 2 - paused_text.get_height() // 2))
                     
