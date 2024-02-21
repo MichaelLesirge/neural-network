@@ -52,11 +52,15 @@ class Tetromino:
 SCORES = [0, 40, 100, 300, 1200]
 
 class Tetris:
-    def __init__(self, width: int, height: int, drop_delay_frames: int = 1, soft_drop_delay_frames: int = 1, enable_wall_kick = True) -> None:
+    def __init__(
+        self, width: int, height: int,
+        drop_delay_frames: int = 1, soft_drop_delay_frames: int = 1,
+        enable_wall_kick = True, enable_start_at_top = True) -> None:
 
         self.width, self.height = width, height
         
         self.enable_wall_kick = enable_wall_kick
+        self.enable_start_at_top = enable_start_at_top
         
         self.drop_delay_frames = drop_delay_frames
         self.soft_drop_delay_frames = soft_drop_delay_frames
@@ -66,12 +70,9 @@ class Tetris:
     def reset(self) -> None:
         self.grid = np.zeros((self.height, self.width), dtype=np.uint8)
         
-        self.score = 0
-        self.lines = 0
+        self.frame = self.score = self.lines = self.level = 0
         self.done = False
-        
-        self.frame = 0
-        
+         
         self.new_figure()
 
     def get_current_figure(self) -> Tetromino:
@@ -79,16 +80,21 @@ class Tetris:
 
     def new_figure(self) -> None:
         shape = random.choice(tetromino.ALL_SHAPES)
+        
         self.current_figure = Tetromino(
             self.width // 2 - shape.get_largest_dimension() // 2, 0,
             shape,
             rotation=random.randrange(shape.get_num_of_rotations())
         )
+        
+        if self.enable_start_at_top:
+            while not self.intersects(): self.current_figure.y -= 1
+            if self.intersects(): self.current_figure.y += 1
 
     def intersects(self) -> bool:
         for value, (row, col) in self.current_figure:
             if value and ( 
-                row >= self.height or col >= self.width or col < 0 or
+                row >= self.height or row < 0 or col >= self.width or col < 0 or
                 self.grid[row][col] != 0
             ):
                 return True
@@ -103,15 +109,32 @@ class Tetris:
             self.grid[0, :] = 0
     
     def hard_drop(self) -> None:
+        
         while not self.intersects():
+            self.score += 2
             self.current_figure.y += 1
+            
         self.current_figure.y -= 1
+        self.score -= 2
+        
         self.freeze()
 
-    def soft_drop(self) -> None:
+    def soft_drop(self):
+        self.score += 1
         self.current_figure.y += 1
+        
         if self.intersects():
             self.current_figure.y -= 1
+            self.score -= 1
+            
+            self.freeze()
+
+    def gravity_drop(self) -> None:
+        self.current_figure.y += 1
+        
+        if self.intersects():
+            self.current_figure.y -= 1
+ 
             self.freeze()
 
     def freeze(self) -> bool:
@@ -156,9 +179,11 @@ class Tetris:
             
     def step(self, moves: Move | list[Move]):
         
+        self.frame += 1
+        
         if isinstance(moves, Move):
             moves = [moves]
-        
+                    
         soft_drop = False
         for move in moves:
             match move:
@@ -171,17 +196,16 @@ class Tetris:
         
         drop_frame = self.frame % self.drop_delay_frames == 0
         soft_drop_frame = soft_drop and self.frame % self.soft_drop_delay_frames == 0
-        
-        if drop_frame or soft_drop_frame:
-            self.soft_drop()
-        
-        self.frame += 1
-        
+            
+        if soft_drop_frame: self.soft_drop()
+        elif drop_frame: self.gravity_drop()
+          
         reward = 0
         
         info = {
             "score": self.score,
             "lines": self.lines,
+            "lines": self.level,
             "frame": self.frame,
             "drop_frame": drop_frame
         }

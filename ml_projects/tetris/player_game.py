@@ -28,7 +28,7 @@ def main() -> None:
     board = Tetris(
         width=constants.BOARD_WIDTH, height=constants.BOARD_HEIGHT,
         drop_delay_frames=DROP_DELAY_FRAMES, soft_drop_delay_frames=SOFT_DROP_DELAY_FRAMES,
-        enable_wall_kick=True
+        enable_wall_kick=True, enable_start_at_top=True
     )
     
     board_surface = board.render_as_pygame(BLOCK_SIZE, blank_surface=True)
