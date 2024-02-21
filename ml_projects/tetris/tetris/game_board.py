@@ -158,7 +158,7 @@ class Tetris:
         
         self.score += scores[num_of_lines] * (self.level + 1)
         self.lines += num_of_lines
-        self.level = (num_of_lines // 10)
+        self.level = (self.lines // 10)
         
         self.done = self.intersects() 
         

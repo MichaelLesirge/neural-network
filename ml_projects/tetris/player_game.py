@@ -6,7 +6,7 @@ import constants
 BOARD_SQUARES_ACROSS = constants.BOARD_WIDTH
 BOARD_SQUARES_DOWN = constants.BOARD_HEIGHT
 
-# Window size
+# Window sizes
 SCREEN_WIDTH = 1000
 SCREEN_HEIGHT = SCREEN_WIDTH / 1.618
 
@@ -20,7 +20,6 @@ SIDE_BAR_WIDTH = TETRIS_SQUARE_SIZE * 7
 
 # Other Window Data
 WINDOW_NAME = "Tetris"
-FONT = "Monospace"
 
 # Window colors
 MAIN_COLOR = "white"
@@ -37,11 +36,12 @@ KEY_REPEAT_INTERVAL = (50 / 1000) * FPS
 PIECE_QUEUE_SIZE = 3
 SHOW_GHOST_PEACES = True
 
-def draw_outline(screen: pygame.surface, cord: tuple[int, int], width_height: tuple[int, int], line_width = 3, outline_color = MAIN_COLOR) -> None:    
-    x, y = cord
-    width, height = width_height
+def blit_with_outline(screen: pygame.Surface, source: pygame.Surface, dest: tuple[int, int], line_width = 3, outline_color = MAIN_COLOR) -> None:    
+    x, y = dest
+    width, height = source.get_width(), source.get_height()
 
-    pygame.draw.rect(screen, outline_color, pygame.Rect(x - line_width, y - line_width, width + line_width * 2, height + line_width * 2), width = line_width)    
+    pygame.draw.rect(screen, outline_color, pygame.Rect(x - line_width, y - line_width, width + line_width * 2, height + line_width * 2), width = line_width)  
+    screen.blit(source, dest)
 
 def main() -> None:
     pygame.init()
@@ -58,11 +58,11 @@ def main() -> None:
     
     clock = pygame.time.Clock()
         
-    title_font = pygame.font.SysFont(FONT, TETRIS_SQUARE_SIZE * 2, True, False)
+    title_font = pygame.font.SysFont("Monospace", TETRIS_SQUARE_SIZE * 2, True, False)
     title = title_font.render(WINDOW_NAME, True, MAIN_COLOR)
     paused_text = title_font.render("PAUSED", True, MAIN_COLOR)
     
-    font = pygame.font.SysFont(FONT, TETRIS_SQUARE_SIZE, False, False)
+    font = pygame.font.SysFont("Berlin Sans FB", TETRIS_SQUARE_SIZE, False, False)
         
     pressing_down_arrow = False
     left_down_clock = right_down_clock = None
@@ -80,10 +80,10 @@ def main() -> None:
         moves = []
                     
         for event in pygame.event.get():
-            if event.type == pygame.QUIT:           moves = [Move.QUIT]
+            if event.type == pygame.QUIT:           going = False
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:    paused = not paused
-                if event.key == pygame.K_q:         moves = [Move.QUIT]
+                if event.key == pygame.K_q:         going = False
                 if event.key == pygame.K_UP:        moves.append(Move.SPIN)
                 if event.key == pygame.K_SPACE:     moves.append(Move.HARD_DROP)
                 if event.key == pygame.K_LEFT:
@@ -115,7 +115,7 @@ def main() -> None:
         if not paused:
             state, reward, done, info = board.step(moves)
                 
-        if done or (paused and Move.QUIT in moves): going = False
+        if done: going = False
         
         board_surface = board.render_as_pygame(
             block_size=TETRIS_SQUARE_SIZE,
@@ -126,58 +126,68 @@ def main() -> None:
             ghost_block=SHOW_GHOST_PEACES
         )
         
-        screen.blit(board_surface, (GAME_X, GAME_Y))
-        draw_outline(screen, (GAME_X, GAME_Y), (board_surface.get_width(), board_surface.get_height()))
+        blit_with_outline(screen, board_surface, (GAME_X, GAME_Y))
         
-        data = {"Score": info["score"], "Level": info["level"], "Lines": info["lines"]}
-        for i, (name, value) in enumerate(data.items()):
-            box_width = SIDE_BAR_WIDTH
-            box_height = TETRIS_SQUARE_SIZE * 3
-            box_x = GAME_X - SIDE_BAR_GAP - box_width
-            box_y = GAME_Y + (box_height + SIDE_BAR_GAP) * i
-            
-            draw_outline(screen, (box_x, box_y), (box_width, box_height))
-            
-            text = font.render(f"{name}: {value}", True, MAIN_COLOR)
-            
-            text_x = box_x + box_width // 2 - text.get_width() // 2
-            text_y = box_y + box_height // 2 - text.get_height() // 2
-            
-            screen.blit(text, (text_x, text_y))
+        display_info = ["score", "level", "lines"]
+        left_side_bar = render_info_panel(
+            {key.upper(): font.render(str(info[key]), True, MAIN_COLOR) for key in display_info},
+            font=font, width=SIDE_BAR_WIDTH, margin=5, section_margin=2
+        )
         
-        box_x = GAME_X + GAME_WIDTH + SIDE_BAR_GAP
-        box_y = GAME_Y
-        box_width = SIDE_BAR_WIDTH
-        box_height = PIECE_QUEUE_SIZE * TETRIS_SQUARE_SIZE * 6
-        draw_outline(screen, (box_x, box_y), (box_width, box_height))
-        piece_queue = info["piece_queue"]
-        for i, type in enumerate(piece_queue):
-            
-            type_image = pygame.Surface((type.get_width() * TETRIS_SQUARE_SIZE, type.get_height() * TETRIS_SQUARE_SIZE))
-
-            def draw_tetromino_block(row: int, col: int):
-                image = type.image
-                if image.get_width() != TETRIS_SQUARE_SIZE: image = pygame.transform.scale(image, (TETRIS_SQUARE_SIZE, TETRIS_SQUARE_SIZE))
-                type_image.blit(image, pygame.Rect(col * TETRIS_SQUARE_SIZE, row * TETRIS_SQUARE_SIZE, TETRIS_SQUARE_SIZE, TETRIS_SQUARE_SIZE))
-                
-            for row in range(type.get_height()):
-                for col in range(type.get_width()):
-                    if type.get_default_shape()[row][col]: draw_tetromino_block(row, col)
-            
-            
-            type_image_x = box_x + box_width // 2 - type_image.get_width() // 2
-            type_image_y = box_y + TETRIS_SQUARE_SIZE * 6 * i + TETRIS_SQUARE_SIZE
-            
-            screen.blit(type_image, (type_image_x, type_image_y))
+        blit_with_outline(screen, left_side_bar, (GAME_X - SIDE_BAR_WIDTH - SIDE_BAR_GAP, GAME_Y))
             
         if paused: screen.blit(paused_text, (SCREEN_WIDTH // 2 - paused_text.get_width() // 2, SCREEN_HEIGHT // 2 - paused_text.get_height() // 2))
                     
         pygame.display.flip()
 
         clock.tick(FPS)
-
-
-    pygame.quit()
         
+    pygame.quit()
+
+def render_section(title: str, content: pygame.Surface, font: pygame.font.Font, width: int, margin: int) -> pygame.Surface:
+    title_render = font.render(title, True, MAIN_COLOR)
+    
+    title_area_height = margin + title_render.get_height() + margin
+    content_area_height = margin + content.get_height() + margin
+    
+    section = pygame.Surface((width, title_area_height + content_area_height))
+    
+    pygame.draw.rect(section, SECONDARY_COLOR, pygame.Rect((0, 0), (width, title_area_height)))
+    pygame.draw.rect(section, BACKGROUND_COLOR, pygame.Rect((0, title_area_height), (width, content_area_height)))
+    
+    section.blit(title_render, (
+        section.get_width() // 2 - title_render.get_width() // 2,
+        title_area_height // 2 - title_render.get_height() // 2))
+    
+    section.blit(content, (
+        section.get_width() // 2 - content.get_width() // 2,
+        title_area_height + content_area_height // 2 - content.get_height() // 2))
+    
+    return section
+    
+def render_info_panel(data: dict[str, pygame.Surface], font: pygame.font.Font, width: int, margin: int, section_margin: int, height = None):
+    panel = pygame.Surface((
+        width,
+        margin + sum(
+            section_margin + font.get_height() + section_margin +
+            section_margin + section.get_height() + section_margin +
+            margin
+            for section in data.values()) + margin
+    ))
+        
+    panel.fill(SECONDARY_COLOR)
+    
+    section_y = margin
+    section_width = width - margin * 2
+    
+    for i, (title, content) in enumerate(data.items()):
+        section = render_section(title, content, font, section_width, section_margin)
+        
+        panel.blit(section, (margin, section_y))
+        section_y += section.get_height() + margin
+        
+    return panel
+            
+
 if __name__ == "__main__":
     main()
