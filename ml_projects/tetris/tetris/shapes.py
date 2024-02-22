@@ -1,11 +1,12 @@
 import numpy as np
 
-MAX_ROTATIONS = 4
 
 def rotate(shape):
     return np.flip(np.rot90(shape))
 
 class TetrominoShape:
+    MAX_ROTATIONS = 4
+    
     ALL_SHAPES: list["TetrominoShape"] = []
     SHAPE_ID_MAP: dict[int, "TetrominoShape"] = {}
 
@@ -15,13 +16,13 @@ class TetrominoShape:
         self.color = color
         self.id = len(self.ALL_SHAPES) + 1
         
-        self.ALL_SHAPES.append(self)
-        self.SHAPE_ID_MAP[self.id] = self
+        TetrominoShape.ALL_SHAPES.append(self)
+        TetrominoShape.SHAPE_ID_MAP[self.id] = self
 
         shape = np.array(shape, dtype=np.uint8)
 
         self.rotations: list[np.ndarray] = []
-        for i in range(MAX_ROTATIONS):
+        for i in range(TetrominoShape.MAX_ROTATIONS):
             self.rotations.append(shape)
             shape = rotate(shape)
             if np.array_equal(shape, self.rotations[0]):

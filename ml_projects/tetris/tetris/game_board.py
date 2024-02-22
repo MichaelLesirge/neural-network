@@ -294,3 +294,50 @@ class Tetris:
         for row in range(self.height):
             for col in range(self.width):
                 yield (self.grid[row][col], (row, col))
+    
+    def _number_of_holes(self):
+        holes = 0
+
+        for col in zip(*self.grid):
+            i = 0
+            while i < self.height and col[i] != Tetris.MAP_BLOCK:
+                i += 1
+            holes += len([x for x in col[i+1:] if x == Tetris.MAP_EMPTY])
+
+        return holes
+
+    def _bumpiness(self):
+        total_bumpiness = 0
+        max_bumpiness = 0
+        min_ys = []
+
+        for col in zip(*self.grid):
+            i = 0
+            while i < self.height and col[i] != Tetris.MAP_BLOCK:
+                i += 1
+            min_ys.append(i)
+        
+        for i in range(len(min_ys) - 1):
+            bumpiness = abs(min_ys[i] - min_ys[i+1])
+            max_bumpiness = max(bumpiness, max_bumpiness)
+            total_bumpiness += abs(min_ys[i] - min_ys[i+1])
+
+        return total_bumpiness, max_bumpiness
+
+    def _height(self) -> tuple:
+        sum_height = 0
+        max_height = 0
+        min_height = self.height
+
+        for col in zip(self.grid):
+            i = 0
+            while i < self.height and col[i] == Tetris.MAP_EMPTY:
+                i += 1
+            height = self.height - i
+            sum_height += height
+            if height > max_height:
+                max_height = height
+            elif height < min_height:
+                min_height = height
+
+        return sum_height, max_height, min_height
