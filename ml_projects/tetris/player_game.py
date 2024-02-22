@@ -44,20 +44,22 @@ KEY_REPEAT_DELAY = (170 / 1000) * FPS
 KEY_REPEAT_INTERVAL = (50 / 1000) * FPS
 
 # Images
-PATH = pathlib.Path(__file__).parent
+MEDIA_PATH = pathlib.Path(__file__).parent / "media"
 
 SHAPE_IMAGES: dict[TetrominoShape, pygame.Surface] = {
-    shape: pygame.image.load(PATH / "normal-tetromino" / f"{shape.get_name()}.png") for shape in TetrominoShape.ALL_SHAPES
+    shape: pygame.image.load(MEDIA_PATH / "normal-tetromino" / f"{shape.get_name()}.png") for shape in TetrominoShape.ALL_SHAPES
 }
 SHAPE_GHOST_IMAGES: dict[TetrominoShape, pygame.Surface] = {
-    shape: pygame.image.load(PATH / "ghost-tetromino" / f"{shape.get_name()}.png") for shape in TetrominoShape.ALL_SHAPES
+    shape: pygame.image.load(MEDIA_PATH / "ghost-tetromino" / f"{shape.get_name()}.png") for shape in TetrominoShape.ALL_SHAPES
 }
 
 # Game rules
 PIECE_QUEUE_SIZE = 3
 SHOW_GHOST_PEACES = True
 
-def blit_with_outline(screen: pygame.Surface, source: pygame.Surface, dest: tuple[int, int], line_width, outline_color = MAIN_COLOR) -> None:    
+def blit_with_outline(screen: pygame.Surface, source: pygame.Surface, dest: tuple[int, int]) -> None:
+    line_width = OUTLINE_WIDTH
+    outline_color = MAIN_COLOR
     x, y = dest
     width, height = source.get_width(), source.get_height()
 
@@ -66,15 +68,31 @@ def blit_with_outline(screen: pygame.Surface, source: pygame.Surface, dest: tupl
 
 def main() -> None:
     pygame.init()
-        
+    pygame.mixer.init()
+    
+    pygame.mixer.music.load(MEDIA_PATH / "tetris.mp3") 
+    pygame.mixer.music.play(-1, 0, 1000 * 10)
+
     game = Tetris(
         width=BOARD_SQUARES_ACROSS, height=BOARD_SQUARES_DOWN, FPS=FPS,
-        enable_wall_kick=True, piece_queue_size=PIECE_QUEUE_SIZE
+        enable_wall_kick=True, piece_queue_size=PIECE_QUEUE_SIZE, enable_hold=True
     )
     
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     pygame.display.set_caption(WINDOW_NAME)
+        
+    button_size = TETRIS_SQUARE_SIZE * 2
     
+    pause_button = ToggleButton(screen, (262 - button_size / 2 - 5, 483),
+                                pygame.image.load(MEDIA_PATH / "play.png"),
+                                pygame.image.load(MEDIA_PATH / "pause.png"),
+                                button_size)
+
+    mute_button = ToggleButton(screen, (262 + button_size / 2 + 5, 483),
+                                pygame.image.load(MEDIA_PATH / "play_sound.png"),
+                                pygame.image.load(MEDIA_PATH / "mute_sound.png"),
+                                button_size)
+        
     clock = pygame.time.Clock()
         
     title_font = pygame.font.SysFont("Monospace", 50, True, False)
@@ -87,9 +105,7 @@ def main() -> None:
     left_down_clock = right_down_clock = None
     
     going = True
-    
-    paused = False
-    
+        
     while going:
         
         screen.fill(BACKGROUND_COLOR)
@@ -97,15 +113,18 @@ def main() -> None:
         screen.blit(title, (SCREEN_WIDTH // 2 - title.get_width() // 2, 0))
          
         moves = []
+        
+        left_click = False
                     
         for event in pygame.event.get():
             if event.type == pygame.QUIT:           going = False
             elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:    paused = not paused
+                if event.key == pygame.K_ESCAPE:    pause_button.toggle_state()
                 if event.key == pygame.K_q:         going = False
                 if event.key == pygame.K_UP:        moves.append(Move.SPIN)
                 if event.key == pygame.K_SPACE:     moves.append(Move.HARD_DROP)
                 if event.key == pygame.K_c:         moves.append(Move.HOLD)
+                if event.key == pygame.K_m:         mute_button.toggle_state()
                 if event.key == pygame.K_LEFT:
                     moves.append(Move.LEFT)
                     left_down_clock = KEY_REPEAT_DELAY
@@ -117,6 +136,12 @@ def main() -> None:
                 if event.key == pygame.K_DOWN:      pressing_down_arrow = False
                 if event.key == pygame.K_LEFT:      left_down_clock = None
                 if event.key == pygame.K_RIGHT:     right_down_clock = None
+            elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                left_click = True 
+                
+        mouse_pos = pygame.mouse.get_pos()
+        for button in ToggleButton.all_buttons:
+            button.update(mouse_pos, mouse_down = left_click)
         
         if left_down_clock is not None:
             left_down_clock -= 1
@@ -132,10 +157,15 @@ def main() -> None:
         
         if pressing_down_arrow: moves.append(Move.SOFT_DROP)   
         
-        if not paused:
+        if not pause_button.get_state():
             state, reward, done, info = game.step(moves)
                 
         if done: going = False
+        
+        should_pause = (pause_button.get_state() or mute_button.get_state())
+        is_playing = pygame.mixer.music.get_busy()
+        if should_pause and is_playing: pygame.mixer.music.pause()
+        if not (should_pause or is_playing): pygame.mixer.music.unpause()
         
         tetris_board_surface = render_game(
             game,
@@ -143,8 +173,8 @@ def main() -> None:
             ghost_block=SHOW_GHOST_PEACES
         )
         
-        blit_with_outline(screen, tetris_board_surface, (GAME_X, GAME_Y), OUTLINE_WIDTH)
-        
+        blit_with_outline(screen, tetris_board_surface, (GAME_X, GAME_Y))
+         
         display_info_keys = ["score", "level", "lines", "time"]
         
         minutes, seconds = divmod(info["frame"] / FPS, 60)
@@ -155,28 +185,37 @@ def main() -> None:
             font=font, width=SIDE_PANEL_WIDTH, margin=SIDE_PANEL_MARGIN
         )
         
-        blit_with_outline(screen, info_side_bar, (SIDE_LEFT_X, GAME_Y), OUTLINE_WIDTH)
+        blit_with_outline(screen, info_side_bar, (SIDE_LEFT_X, GAME_Y))
 
         next_side_bar = render_info_panel(
             {"next".upper(): render_shapes(info["piece_queue"], TETRIS_SQUARE_SIZE)},
             font=font, width=SIDE_PANEL_WIDTH, margin=SIDE_PANEL_MARGIN
         )
 
-        blit_with_outline(screen, next_side_bar, (SIDE_RIGHT_X, GAME_Y), OUTLINE_WIDTH)
+        blit_with_outline(screen, next_side_bar, (SIDE_RIGHT_X, GAME_Y))
         
         held_side_bar = render_info_panel(
             {"held".upper(): render_shapes([info["held"]], TETRIS_SQUARE_SIZE)},
             font=font, width=SIDE_PANEL_WIDTH, margin=SIDE_PANEL_MARGIN
         )
         
-        blit_with_outline(screen, held_side_bar, (SIDE_RIGHT_X, GAME_Y + GAME_HEIGHT - held_side_bar.get_height()), OUTLINE_WIDTH)
-            
-        if paused: screen.blit(paused_text, (SCREEN_WIDTH // 2 - paused_text.get_width() // 2, SCREEN_HEIGHT // 2 - paused_text.get_height() // 2))
+        blit_with_outline(screen, held_side_bar, (SIDE_RIGHT_X, GAME_Y + GAME_HEIGHT - held_side_bar.get_height()))
+        
+        control_side_bar = render_info_panel(
+            {"control".upper(): render_shapes([None], TETRIS_SQUARE_SIZE)},
+            font=font, width=SIDE_PANEL_WIDTH, margin=SIDE_PANEL_MARGIN
+        )
+        blit_with_outline(screen, control_side_bar, (SIDE_LEFT_X, GAME_Y + GAME_HEIGHT - control_side_bar.get_height()))
+                     
+        pause_button.draw()
+        mute_button.draw()
+             
+        if pause_button.get_state(): screen.blit(paused_text, (SCREEN_WIDTH // 2 - paused_text.get_width() // 2, SCREEN_HEIGHT // 2 - paused_text.get_height() // 2))
                     
         pygame.display.flip()
 
         clock.tick(FPS)
-        
+                
     pygame.quit()
 
 def draw_tetromino_block(screen: pygame.Surface, block_size: int, row: int, col: int, shape: TetrominoShape, ghost = False):
@@ -284,12 +323,52 @@ def render_info_panel(data: dict[str, pygame.Surface], font: pygame.font.Font, w
     
     for title, content in data.items():
         section = render_section(title, content, font, section_width)
-        
         panel.blit(section, (margin, section_y))
         section_y += section.get_height() + margin
         
     return panel
-            
+
+class ToggleButton:
+    all_buttons: list["ToggleButton"] = []
+    
+    def __init__(self, screen: pygame.Surface, position: tuple[int, int], enable: pygame.Surface, disable: pygame.Surface, size: int) -> None:
+        self.x, self.y = position
+        self.size = size
+        
+        self.radius_squared = (self.size / 2) ** 2
+                
+        self.screen = screen
+        
+        self.enable = pygame.transform.scale(enable, (self.size, self.size))
+        self.disable = pygame.transform.scale(disable, (self.size, self.size))
+        
+        self.state = self.is_clicked = self.is_hovered = False
+        
+        ToggleButton.all_buttons.append(self)
+    
+    def is_over(self, pos: tuple[int, int]) -> bool:
+        return pygame.Vector2(pos).distance_squared_to((self.x, self.y)) <= self.radius_squared
+                
+    def update(self, mouse_pos: tuple[int, int], mouse_down: bool = False) -> None:
+        
+        self.is_hovered = self.is_over(mouse_pos)
+        self.is_clicked = self.is_hovered and mouse_down
+         
+        if self.is_clicked: self.toggle_state()
+        
+    def draw(self) -> None:
+        image = self.enable if self.state else self.disable
+
+        image = pygame.transform.scale_by(image, 1 + (-0.2 if self.is_clicked else 0) + (0.1 if self.is_hovered else 0))
+        
+        self.screen.blit(image, (self.x - image.get_width() // 2, self.y - image.get_height() // 2))
+        # blit_with_outline(self.screen, image, (self.x - image.get_width() // 2, self.y - image.get_height() // 2))
+        # pygame.draw.circle(self.screen, "red", (self.x, self.y), 10)
+    
+    def toggle_state(self) -> None:
+        self.state = not self.state
+        
+    def get_state(self) -> bool: return self.state
 
 if __name__ == "__main__":
     main()

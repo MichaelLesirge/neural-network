@@ -50,7 +50,7 @@ class Tetris:
     
     def __init__(
         self, width: int, height: int, FPS: int = 1,
-        enable_wall_kick = True, piece_queue_size = None) -> None:
+        enable_wall_kick = True, piece_queue_size = False, enable_hold = True) -> None:
 
         self.width, self.height = width, height
         
@@ -58,8 +58,11 @@ class Tetris:
         
         self.enable_wall_kick = enable_wall_kick
         
-        if piece_queue_size is None: piece_queue_size = 0
+        if piece_queue_size is False: piece_queue_size = 0
+        if piece_queue_size is True: piece_queue_size = 3
         self.piece_queue_size = piece_queue_size
+        
+        self.enable_hold = enable_hold
         
         self.reset()
 
@@ -98,7 +101,7 @@ class Tetris:
         self.fill_piece_queue()
         
     def hold(self) -> None:
-        if not self.can_swap: return
+        if not (self.enable_hold and self.can_swap): return
         
         starting_current = self.current_tetromino
         if self.held_shape: self.shape_queue.insert(0, self.held_shape)
