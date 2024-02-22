@@ -41,8 +41,8 @@ class Loss(BaseLayer, ABC):
 class MSE(Loss):
     _verbose_name = "mean squared error"
     
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, categorical_labels: bool = False) -> None:
+        super().__init__(categorical_labels)
     
     def loss(self, y_true, y_pred):
         return np.square(y_true - y_pred)
