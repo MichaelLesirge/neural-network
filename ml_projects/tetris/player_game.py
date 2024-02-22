@@ -5,6 +5,8 @@ import pygame
 from tetris import Tetris, Move, TetrominoShape
 import constants
 
+import json, time
+
 # Game Size
 BOARD_SQUARES_ACROSS = constants.BOARD_WIDTH
 BOARD_SQUARES_DOWN = constants.BOARD_HEIGHT
@@ -52,6 +54,8 @@ SHAPE_IMAGES: dict[TetrominoShape, pygame.Surface] = {
 SHAPE_GHOST_IMAGES: dict[TetrominoShape, pygame.Surface] = {
     shape: pygame.image.load(MEDIA_PATH / "ghost-tetromino" / f"{shape.get_name()}.png") for shape in TetrominoShape.ALL_SHAPES
 }
+
+BLANK_SURFACE = pygame.Surface((0, 0))
 
 # Game rules
 PIECE_QUEUE_SIZE = 3
@@ -104,9 +108,10 @@ def main() -> None:
     pressing_down_arrow = False
     left_down_clock = right_down_clock = None
     
-    going = True
+    has_quit_game = False
+    game_going = True
         
-    while going:
+    while game_going and (not has_quit_game):
         
         screen.fill(BACKGROUND_COLOR)
         
@@ -117,10 +122,10 @@ def main() -> None:
         left_click = False
                     
         for event in pygame.event.get():
-            if event.type == pygame.QUIT:           going = False
+            if event.type == pygame.QUIT:           has_quit_game = True
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:    pause_button.toggle_state()
-                if event.key == pygame.K_q:         going = False
+                if event.key == pygame.K_q:         moves.append(Move.QUIT)
                 if event.key == pygame.K_UP:        moves.append(Move.SPIN)
                 if event.key == pygame.K_SPACE:     moves.append(Move.HARD_DROP)
                 if event.key == pygame.K_c:         moves.append(Move.HOLD)
@@ -160,7 +165,7 @@ def main() -> None:
         if not pause_button.get_state():
             state, reward, done, info = game.step(moves)
                 
-        if done: going = False
+        if done: game_going = False
         
         should_pause = (pause_button.get_state() or mute_button.get_state())
         is_playing = pygame.mixer.music.get_busy()
@@ -181,28 +186,28 @@ def main() -> None:
         
         display_info = {**info, "fps": round(clock.get_fps(), 3), "time": f"{minutes:.0f}:{seconds:0>2.0f}"}
         info_side_bar = render_info_panel(
-            {key.upper().replace("_", " "): font.render(str(display_info[key]), True, MAIN_COLOR) for key in display_info_keys},
+            {key: font.render(str(display_info[key]), True, MAIN_COLOR) for key in display_info_keys},
             font=font, width=SIDE_PANEL_WIDTH, margin=SIDE_PANEL_MARGIN
         )
         
         blit_with_outline(screen, info_side_bar, (SIDE_LEFT_X, GAME_Y))
 
         next_side_bar = render_info_panel(
-            {"next".upper(): render_shapes(info["piece_queue"], TETRIS_SQUARE_SIZE)},
+            {"next": render_shapes(info["piece_queue"], TETRIS_SQUARE_SIZE)},
             font=font, width=SIDE_PANEL_WIDTH, margin=SIDE_PANEL_MARGIN
         )
 
         blit_with_outline(screen, next_side_bar, (SIDE_RIGHT_X, GAME_Y))
         
         held_side_bar = render_info_panel(
-            {"held".upper(): render_shapes([info["held"]], TETRIS_SQUARE_SIZE)},
+            {"held": render_shapes([info["held"]], TETRIS_SQUARE_SIZE)},
             font=font, width=SIDE_PANEL_WIDTH, margin=SIDE_PANEL_MARGIN
         )
         
         blit_with_outline(screen, held_side_bar, (SIDE_RIGHT_X, GAME_Y + GAME_HEIGHT - held_side_bar.get_height()))
         
         control_side_bar = render_info_panel(
-            {"control".upper(): render_shapes([None], TETRIS_SQUARE_SIZE)},
+            {"control": render_shapes([None], TETRIS_SQUARE_SIZE)},
             font=font, width=SIDE_PANEL_WIDTH, margin=SIDE_PANEL_MARGIN
         )
         blit_with_outline(screen, control_side_bar, (SIDE_LEFT_X, GAME_Y + GAME_HEIGHT - control_side_bar.get_height()))
@@ -215,8 +220,49 @@ def main() -> None:
         pygame.display.flip()
 
         clock.tick(FPS)
-                
-    pygame.quit()
+    
+    if not has_quit_game:
+        waiting_for_key = True
+        
+        try:
+            with open(MEDIA_PATH.parent / "storage.json", "r") as file:
+                storage = json.load(file)
+        except FileNotFoundError:
+            storage = {}
+        
+        score = info["score"]
+        high_score = storage.get("highScore", 0)
+        if score > high_score:
+            storage["highScore"] = score
+            storage["highScoreTime"] = int(time.time())
+            
+            with open(MEDIA_PATH.parent / "storage.json", "w") as file:
+                json.dump(storage, file)
+            
+
+        game_over_bar = render_info_panel(
+            {"Game Over": BLANK_SURFACE, "score": score, "best": storage["highScore"], "Again?": "Space Key"},
+            font=font, width=SIDE_PANEL_WIDTH, margin=SIDE_PANEL_MARGIN
+        )
+        
+        frame = 0
+        wait_seconds = 2
+        draw_on_frame = (FPS * wait_seconds)
+        
+        
+        while waiting_for_key and (not has_quit_game):
+            frame += 1
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT: has_quit_game = True
+                elif event.type == pygame.KEYDOWN: waiting_for_key = False
+            if frame > draw_on_frame:
+                blit_with_outline(screen, game_over_bar, (GAME_X + GAME_WIDTH // 2 - game_over_bar.get_width() // 2, GAME_Y + GAME_HEIGHT // 2 - game_over_bar.get_height() // 2))
+                pygame.display.flip()
+            clock.tick(FPS)
+
+    if has_quit_game: pygame.quit()
+    else: main()
+    
 
 def draw_tetromino_block(screen: pygame.Surface, block_size: int, row: int, col: int, shape: TetrominoShape, ghost = False):
     image = (SHAPE_GHOST_IMAGES if ghost else SHAPE_IMAGES)[shape]
@@ -255,7 +301,7 @@ def render_game(game: Tetris, block_size: int = 25, ghost_block = True) -> tuple
     return screen
 
 def render_shape(shape: TetrominoShape, block_size: int) -> pygame.Surface:
-    if shape is None: return pygame.Surface((0, 0))
+    if shape is None: return BLANK_SURFACE 
     
     grid = shape.get_trimmed_grid()
     height, width = grid.shape
@@ -313,6 +359,8 @@ def render_section(title: str, content: pygame.Surface, font: pygame.font.Font, 
     return section
     
 def render_info_panel(data: dict[str, pygame.Surface], font: pygame.font.Font, width: int, margin: int):
+    data = {key.upper().replace("_", " "): (value if isinstance(value, pygame.Surface) else font.render(str(value), True, MAIN_COLOR)) for key, value in data.items()}
+    
     height = margin + sum(font.get_height() + section.get_height() + margin for section in data.values())
     panel = pygame.Surface((width, height))
         
