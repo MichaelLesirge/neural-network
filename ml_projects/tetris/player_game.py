@@ -234,7 +234,7 @@ def main() -> None:
         high_score = storage.get("highScore", 0)
         if score > high_score:
             storage["highScore"] = score
-            storage["highScoreTime"] = int(time.time())
+            storage["highScoreTime"] = time.ctime()
             
             with open(MEDIA_PATH.parent / "storage.json", "w") as file:
                 json.dump(storage, file)
@@ -248,8 +248,8 @@ def main() -> None:
         frame = 0
         wait_seconds = 2
         draw_on_frame = (FPS * wait_seconds)
-
-        pygame.mixer.music.fadeout(wait_seconds * 1000)
+        
+        pygame.mixer.music.fadeout(wait_seconds * 2 * 1000)
          
         while waiting_for_key and (not has_quit_game):
             frame += 1
@@ -257,7 +257,7 @@ def main() -> None:
                 if event.type == pygame.QUIT: has_quit_game = True
                 elif frame > draw_on_frame and event.type == pygame.KEYDOWN: waiting_for_key = False
             if frame > draw_on_frame:
-                pygame.mixer.music.stop()
+                # pygame.mixer.music.stop()
                 blit_with_outline(screen, game_over_bar, (GAME_X + GAME_WIDTH // 2 - game_over_bar.get_width() // 2, GAME_Y + GAME_HEIGHT // 2 - game_over_bar.get_height() // 2))
                 pygame.display.flip()
             clock.tick(FPS)
