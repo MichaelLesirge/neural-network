@@ -14,23 +14,21 @@ import constants
 import neural_network as nn
 from tetris import Move, Tetris, TetrominoShape
 
-outputs = [
+potential_moves: list[Move] = [
     Move.LEFT, Move.RIGHT, Move.SPIN, None
 ]
 
-n_inputs = (    
+state_size = (    
     (constants.BOARD_WIDTH * constants.BOARD_HEIGHT)  # flat board
     + len(TetrominoShape.ALL_SHAPES)  # one hot current piece type
     + constants.BOARD_WIDTH + constants.BOARD_HEIGHT # one hot X and Y location 
     + TetrominoShape.MAX_ROTATIONS # one hot piece rotation
 )
 
-n_outputs = len(outputs)
-
 layer_size = 8 ** 2  # 64
  
 network = nn.network.Network([
-    nn.layers.Dense(n_inputs, layer_size),
+    nn.layers.Dense(state_size, layer_size),
     nn.activations.ReLU(),
 
     nn.layers.Dense(layer_size, layer_size),
@@ -39,32 +37,15 @@ network = nn.network.Network([
     nn.layers.Dense(layer_size, layer_size),
     nn.activations.ReLU(),
     
-    nn.layers.Dense(layer_size, n_outputs),
-    nn.activations.Softmax(),
+    nn.layers.Dense(layer_size, 1),
+    nn.activations.Linear(),
 
-], loss=nn.losses.CategoricalCrossEntropy(categorical_labels=True))
+], loss=nn.losses.MSE())
 
+save_file_name = str(directory / "tetris_model")
 
-_piece_to_index = dict(((b, a) for (a, b) in enumerate(TetrominoShape.ALL_SHAPES)))
-_one_hot_shapes = np.eye(len(TetrominoShape.ALL_SHAPES), dtype=np.float64)
-_one_hot_x = np.eye(constants.BOARD_WIDTH, dtype=np.float64)
-_one_hot_y = np.eye(constants.BOARD_HEIGHT, dtype=np.float64) 
-_one_hot_rotations = np.eye(TetrominoShape.MAX_ROTATIONS, dtype=np.float64)
-def game_to_inputs(board: Tetris) -> np.ndarray:
-    return np.concatenate([
-        np.array([value is not None for value, _ in board], dtype=np.float64).flatten(), #  board
-        _one_hot_shapes[_piece_to_index[board.current_tetromino.shape]], # piece type
-        _one_hot_x[board.current_tetromino.x], # x
-        _one_hot_y[board.current_tetromino.y], # y
-        _one_hot_rotations[board.current_tetromino.orientation], # rotation
-    ])
-    
-def outputs_to_moves(output_array: np.ndarray) -> list[Move]:
-    return [
-        outputs[output_array.argmax()]
-    ]
+def save():
+    network.dump(save_file_name)
 
-_move_to_index = dict((b, a) for (a, b) in enumerate(outputs))
-def moves_to_labels(moves: list[Move]) -> np.ndarray:
-    moves = [move for move in moves if move in outputs] or [None]
-    return _move_to_index[moves[-1]]
+def load():
+    network.load(save_file_name)

@@ -65,6 +65,7 @@ class Tetris:
         self.enable_hold = enable_hold
         
         self.reset()
+        self._create_inputs_cache()
 
     def reset(self) -> None:
         self.grid = np.zeros((self.height, self.width), dtype=np.uint8)
@@ -201,13 +202,10 @@ class Tetris:
             self.current_tetromino.x -= dx
             self.current_tetromino.y -= dy
             
-    def step(self, moves: Move | list[Move]):
+    def step(self, moves: list[Move]):
 
         self.frame += 1
         
-        if isinstance(moves, Move):
-            moves = [moves]
-                    
         soft_drop = False
         for move in moves:
             match move:
@@ -218,6 +216,7 @@ class Tetris:
                 case Move.HOLD: self.hold()
                 case Move.HARD_DROP: self.hard_drop()
                 case Move.SOFT_DROP: soft_drop = True
+                case None: pass
         
         if self.level < 12: block_drop_interval = 60 - self.level*5
         elif self.level < 13: block_drop_interval = 7
@@ -237,8 +236,12 @@ class Tetris:
             
         if is_soft_drop_frame: self.soft_drop()
         elif is_drop_frame: self.gravity_drop()
-          
-        reward = 0
+        
+        reward = (
+            (self.score / 100) * 0.5
+            + ((self.height // 2 - self._height()))
+            - (self._number_of_holes() / (self.width * self.height))
+        )
         
         info = {
             "score": self.score,
@@ -295,49 +298,55 @@ class Tetris:
             for col in range(self.width):
                 yield (self.grid[row][col], (row, col))
     
-    def _number_of_holes(self):
+    # Ai related methods
+    
+    def _create_inputs_cache(self):
+        self._piece_to_index = dict(((b, a) for (a, b) in enumerate(TetrominoShape.ALL_SHAPES)))
+        self._one_hot_shapes = np.eye(len(TetrominoShape.ALL_SHAPES), dtype=np.float64)
+        self._one_hot_x = np.eye(self.width, dtype=np.float64)
+        self._one_hot_y = np.eye(self.height, dtype=np.float64) 
+        self._one_hot_rotations = np.eye(TetrominoShape.MAX_ROTATIONS, dtype=np.float64)
+        
+    def game_to_inputs(self) -> np.ndarray:
+        return np.concatenate([
+            np.array([value is not None for value, _ in self], dtype=np.float64).flatten(), #  board
+            self._one_hot_shapes[self._piece_to_index[self.current_tetromino.shape]], # piece type
+            self._one_hot_x[self.current_tetromino.x], # x
+            self._one_hot_y[self.current_tetromino.y], # y
+            self._one_hot_rotations[self.current_tetromino.orientation], # rotation
+        ])
+    
+    def get_next_states(self, potential_moves: list[Move]) -> dict[Move, np.ndarray]:
+        output = {}
+        
+        starting_states = (self.current_tetromino.x, self.current_tetromino.y, self.current_tetromino.orientation)
+        
+        for move in potential_moves:
+            match move:
+                case Move.SPIN: self.rotate()
+                case Move.LEFT: self.change_x(-1)
+                case Move.RIGHT: self.change_x(+1)
+                case None: pass
+                case _: raise Exception(f"TODO: {move.name} is not currently predictable, only basic Tetromino control is implanted")
+                
+            output[move] = self.game_to_inputs()
+            
+            (self.current_tetromino.x, self.current_tetromino.y, self.current_tetromino.orientation) = starting_states
+            
+        return output
+    
+    def _number_of_holes(self) -> int:
         holes = 0
 
-        for col in zip(*self.grid):
-            i = 0
-            while i < self.height and col[i] != Tetris.MAP_BLOCK:
-                i += 1
-            holes += len([x for x in col[i+1:] if x == Tetris.MAP_EMPTY])
+        for col in self.grid.T:
+            has_seen_block = False
+            for value in col:
+                if (not has_seen_block and value): has_seen_block = True
+                holes += (has_seen_block) and value == 0
+                
 
         return holes
 
-    def _bumpiness(self):
-        total_bumpiness = 0
-        max_bumpiness = 0
-        min_ys = []
-
-        for col in zip(*self.grid):
-            i = 0
-            while i < self.height and col[i] != Tetris.MAP_BLOCK:
-                i += 1
-            min_ys.append(i)
-        
-        for i in range(len(min_ys) - 1):
-            bumpiness = abs(min_ys[i] - min_ys[i+1])
-            max_bumpiness = max(bumpiness, max_bumpiness)
-            total_bumpiness += abs(min_ys[i] - min_ys[i+1])
-
-        return total_bumpiness, max_bumpiness
-
-    def _height(self) -> tuple:
-        sum_height = 0
-        max_height = 0
-        min_height = self.height
-
-        for col in zip(self.grid):
-            i = 0
-            while i < self.height and col[i] == Tetris.MAP_EMPTY:
-                i += 1
-            height = self.height - i
-            sum_height += height
-            if height > max_height:
-                max_height = height
-            elif height < min_height:
-                min_height = height
-
-        return sum_height, max_height, min_height
+    def _height(self) -> int:
+        try: return self.height - np.min(np.nonzero(self.grid)[0], 0)
+        except ValueError: return 0
