@@ -46,7 +46,7 @@ class Network:
         return inputs
     
     
-    def train(self, x: np.ndarray, y: np.ndarray, learning_rate: float = 0.001, batch_size: int = 32, epochs: int = 1, shuffle: bool = True):
+    def train(self, x: np.ndarray, y: np.ndarray, learning_rate: float = 0.001, batch_size: int = 32, epochs: int = 1, shuffle: bool = True, logging = True):
 
         for proc in self.reprocesses:
             x = proc(x)
@@ -74,7 +74,7 @@ class Network:
                 loss = self.loss.forward(y_batch, output)
                 
                 percent_complete = int((batch + len(x_split) * epoch) / (len(x_split) * epochs) * 100)
-                if percent_complete > last_percent_complete or batch == 0:
+                if logging and (percent_complete > last_percent_complete or batch == 0):
                     last_percent_complete = percent_complete
                     message = f"{percent_complete}% complete. {epoch=}, {batch=}, {loss=}"
                     max_str_len = max(max_str_len, len(message))
@@ -85,7 +85,7 @@ class Network:
                 for layer, activation in zip(reversed(self.layers), reversed(zs)):
                     grad = layer.backward(activation, grad, learning_rate)
             
-        print(f"100% complete. finished, {loss=}".ljust(max_str_len))
+        if logging: print(f"100% complete. finished, {loss=}".ljust(max_str_len))
  
     def dump(self, file_path: str) -> None:
         with open(file_path.lstrip(".pkl") + ".pkl", "wb") as file:
