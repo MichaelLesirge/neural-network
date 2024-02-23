@@ -65,7 +65,10 @@ class DQNAgent:
 
     def best_state(self, states: list[np.ndarray]):
         """Returns the best state for a given collection of state"""
-        
+
+        if random.random() <= self.epsilon:
+            return random.choice(list(states))
+
         max_value = best_state = None
         
         for state in states:
