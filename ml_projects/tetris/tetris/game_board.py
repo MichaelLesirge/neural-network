@@ -237,23 +237,18 @@ class Tetris:
         if is_soft_drop_frame: self.soft_drop()
         elif is_drop_frame: self.gravity_drop()
         
-        reward = (
-            (self.score / 100) * 0.5
-            + ((self.height // 2 - self._height()))
-            - (self._number_of_holes() / (self.width * self.height))
-        )
-        
+        reward = self.value_function()
+                
         info = {
             "score": self.score,
             "lines": self.lines,
             "level": self.level,
             "held": self.held_shape,
-            "block_drop_interval": block_drop_interval,
             "piece_queue": self.shape_queue,
             "frame": self.frame,
         }
         
-        return self.grid, reward, self.done, info
+        return self.state(), reward, self.done, info
         
     def render_as_str(self, block_width = 2, full_block = True) -> str:
         
@@ -307,14 +302,23 @@ class Tetris:
         self._one_hot_y = np.eye(self.height, dtype=np.float64) 
         self._one_hot_rotations = np.eye(TetrominoShape.MAX_ROTATIONS, dtype=np.float64)
         
-    def game_to_inputs(self) -> np.ndarray:
+    def state(self) -> np.ndarray:
         return np.concatenate([
-            np.array([value is not None for value, _ in self], dtype=np.float64).flatten(), #  board
+            (self.grid > 0).flatten(), #  board
             self._one_hot_shapes[self._piece_to_index[self.current_tetromino.shape]], # piece type
             self._one_hot_x[self.current_tetromino.x], # x
             self._one_hot_y[self.current_tetromino.y], # y
             self._one_hot_rotations[self.current_tetromino.orientation], # rotation
-        ])
+        ], dtype=np.float64)
+        
+    def value_function(self) -> np.ndarray:
+        return (
+            + (self.height / 2 - self._get_column_heights(condenser=np.mean)) / self.height * 0.7
+            - self._get_column_heights(condenser=np.max) / self.height * 0.9
+            - (self._get_column_heights(condenser=self._height_bumpiness_condenser)) / self.height * 1.2
+            - (self._get_number_of_holes())
+        )
+
     
     def get_next_states(self, potential_moves: list[Move]) -> dict[Move, np.ndarray]:
         output = {}
@@ -329,13 +333,13 @@ class Tetris:
                 case None: pass
                 case _: raise Exception(f"TODO: {move.name} is not currently predictable, only basic Tetromino control is implanted")
                 
-            output[move] = self.game_to_inputs()
+            output[move] = self.state()
             
             (self.current_tetromino.x, self.current_tetromino.y, self.current_tetromino.orientation) = starting_states
             
         return output
     
-    def _number_of_holes(self) -> int:
+    def _get_number_of_holes(self) -> int:
         holes = 0
 
         for col in self.grid.T:
@@ -346,7 +350,15 @@ class Tetris:
                 
 
         return holes
-
-    def _height(self) -> int:
-        try: return self.height - np.min(np.nonzero(self.grid)[0], 0)
-        except ValueError: return 0
+    
+    def _get_column_heights(self, condenser = None) -> np.ndarray[int] | int:
+        heights = self.height - np.nonzero(self.grid)[0]
+        if condenser is not None: heights = condenser(heights) if heights.size else 0
+        return heights
+    
+    def _height_bumpiness_condenser(self, heights: np.ndarray[int]) -> int:
+        total_bumpiness = 0
+        for i, height in enumerate(heights[:-1]):
+            height_difference = height - heights[i + 1]
+            total_bumpiness += abs(height_difference)
+        return total_bumpiness

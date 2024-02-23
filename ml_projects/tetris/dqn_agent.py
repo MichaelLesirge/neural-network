@@ -16,7 +16,7 @@ class DQNAgent:
                  replay_start_size: int = None):
 
         # Our model
-        self.network = network
+        self.action_value_function = network
         
         # The size of our state (model input size)
         self.state_size = state_size
@@ -53,7 +53,7 @@ class DQNAgent:
 
     def predict_value(self, state: np.ndarray) -> float:
         """Predicts the score for a certain state"""
-        return self.network.compute(state)[0]
+        return self.action_value_function.compute(state)[0]
 
     def act(self, state: np.ndarray) -> float:
         """Returns the expected score of a certain state"""
@@ -65,9 +65,6 @@ class DQNAgent:
 
     def best_state(self, states: list[np.ndarray]):
         """Returns the best state for a given collection of state"""
-
-        if random.random() <= self.epsilon:
-            return random.choice(list(states))
         
         max_value = best_state = None
         
@@ -80,6 +77,15 @@ class DQNAgent:
 
         return best_state
 
+    def best_action(self, next_states: dict[object, np.ndarray]) -> object:
+        """Returns the best state for a given collection of state"""
+
+        best_state = self.best_state(next_states.values())
+        
+        for action, state in next_states.items():
+            if np.array_equal(state, best_state):
+                return action
+
     def train(self, batch_size = 32, epochs = 3) -> None:
         """Trains the agent"""
         n = len(self.memory)
@@ -90,7 +96,7 @@ class DQNAgent:
 
             # Get the expected score for the next states, in batch (better performance)
             next_states = np.array([next_state for (state, reward, done, next_state) in batch])
-            next_qs = [y[0] for y in self.network.compute(next_states)]
+            next_qs = [y[0] for y in self.action_value_function.compute(next_states)]
 
             x = np.empty((len(batch), self.state_size), dtype=np.float64)
             y = np.empty((len(batch), 1), dtype=np.float64)
@@ -107,7 +113,7 @@ class DQNAgent:
                 y[i, 0] = (new_q)
                 
             # Fit the model to the given values
-            self.network.train(x, y, batch_size=batch_size, epochs=epochs, learning_rate=self.learning_rate, logging=False)
+            self.action_value_function.train(x, y, batch_size=batch_size, epochs=epochs, learning_rate=self.learning_rate, logging=False)
 
             # Update the exploration variable
             if self.epsilon > self.epsilon_min:

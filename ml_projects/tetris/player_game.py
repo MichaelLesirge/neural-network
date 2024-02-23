@@ -1,11 +1,11 @@
-import pathlib
+import json, time, pathlib
 
 import pygame
+import numpy as np
 
 from tetris import Tetris, Move, TetrominoShape
-import constants
-
-import json, time
+import constants, ai
+from dqn_agent import DQNAgent
 
 # Game Size
 BOARD_SQUARES_ACROSS = constants.BOARD_WIDTH
@@ -45,8 +45,9 @@ FPS = 30
 KEY_REPEAT_DELAY = (170 / 1000) * FPS
 KEY_REPEAT_INTERVAL = (50 / 1000) * FPS
 
-# Images
-MEDIA_PATH = pathlib.Path(__file__).parent / "media"
+# Path
+PATH = pathlib.Path(__file__).parent
+MEDIA_PATH = PATH / "media"
 
 SHAPE_IMAGES: dict[TetrominoShape, pygame.Surface] = {
     shape: pygame.image.load(MEDIA_PATH / "normal-tetromino" / f"{shape.get_name()}.png") for shape in TetrominoShape.ALL_SHAPES
@@ -54,6 +55,8 @@ SHAPE_IMAGES: dict[TetrominoShape, pygame.Surface] = {
 SHAPE_GHOST_IMAGES: dict[TetrominoShape, pygame.Surface] = {
     shape: pygame.image.load(MEDIA_PATH / "ghost-tetromino" / f"{shape.get_name()}.png") for shape in TetrominoShape.ALL_SHAPES
 }
+
+HIGH_SCORE_STORAGE_PATH = PATH / "highScore.json"
 
 BLANK_SURFACE = pygame.Surface((0, 0))
 
@@ -71,8 +74,12 @@ def blit_with_outline(screen: pygame.Surface, source: pygame.Surface, dest: tupl
     screen.blit(source, dest)
 
 def main() -> None:
+    
     pygame.init()
     pygame.mixer.init()
+    
+    ai.load()
+    agent = DQNAgent(ai.network, ai.state_size)
     
     pygame.mixer.music.load(MEDIA_PATH / "tetris.mp3") 
     pygame.mixer.music.play(-1, 0, 1000 * 10)
@@ -100,7 +107,6 @@ def main() -> None:
     clock = pygame.time.Clock()
         
     title_font = pygame.font.SysFont("Monospace", 50, True, False)
-    title = title_font.render(WINDOW_NAME, True, MAIN_COLOR)
     paused_text = title_font.render("PAUSED", True, MAIN_COLOR)
     
     font = pygame.font.SysFont("Berlin Sans FB", 22, False, False)
@@ -110,26 +116,32 @@ def main() -> None:
     
     has_quit_game = False
     game_going = True
+    
+    used_ai_control = using_ai_control = False
         
     while game_going and (not has_quit_game):
-        
+        fps = FPS
+                
         screen.fill(BACKGROUND_COLOR)
         
+        prefix = ("(AI)" if using_ai_control else "")
+        title = title_font.render(WINDOW_NAME + prefix, True, MAIN_COLOR) 
         screen.blit(title, (SCREEN_WIDTH // 2 - title.get_width() // 2, 0))
          
         moves = []
         
         left_click = False
-                    
+            
         for event in pygame.event.get():
             if event.type == pygame.QUIT:           has_quit_game = True
             elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:    pause_button.toggle_state()
                 if event.key == pygame.K_q:         moves.append(Move.QUIT)
                 if event.key == pygame.K_UP:        moves.append(Move.SPIN)
                 if event.key == pygame.K_SPACE:     moves.append(Move.HARD_DROP)
                 if event.key == pygame.K_c:         moves.append(Move.HOLD)
+                if event.key == pygame.K_ESCAPE:    pause_button.toggle_state()
                 if event.key == pygame.K_m:         mute_button.toggle_state()
+                if event.key == pygame.K_a:         using_ai_control = not using_ai_control
                 if event.key == pygame.K_LEFT:
                     moves.append(Move.LEFT)
                     left_down_clock = KEY_REPEAT_DELAY
@@ -162,11 +174,26 @@ def main() -> None:
         
         if pressing_down_arrow: moves.append(Move.SOFT_DROP)   
         
-        if not pause_button.get_state():
+        if using_ai_control:
+            
+            if Move.SOFT_DROP in moves: fps *= 10
+            
+            moves = [move for move in moves if move in [Move.QUIT]]
+            
+            used_ai_control = True
+            
+            next_states = game.get_next_states(ai.potential_moves)
+            
+            best_action = agent.best_action(next_states)
+            
+            moves.append(best_action)
+
+        
+        if (not pause_button.get_state()) or (game.frame < 1):    
             state, reward, done, info = game.step(moves)
                 
         if done: game_going = False
-        
+         
         should_pause = (pause_button.get_state() or mute_button.get_state())
         is_playing = pygame.mixer.music.get_busy()
         if should_pause and is_playing: pygame.mixer.music.pause()
@@ -179,25 +206,36 @@ def main() -> None:
         )
         
         blit_with_outline(screen, tetris_board_surface, (GAME_X, GAME_Y))
-         
-        display_info_keys = ["score", "level", "lines", "time"]
-        
+                 
         minutes, seconds = divmod(info["frame"] / FPS, 60)
         
-        display_info = {**info, "fps": round(clock.get_fps(), 3), "time": f"{minutes:.0f}:{seconds:0>2.0f}"}
-        info_side_bar = render_info_panel(
-            {key: font.render(str(display_info[key]), True, MAIN_COLOR) for key in display_info_keys},
+        display_info = {
+            **info,
+            "fps": round(clock.get_fps(), 3),
+            "time": f"{minutes:.0f}:{seconds:0>2.0f}",
+            "reward": round(reward, 3),
+            "ai_reward": round(agent.predict_value(state)[0], 3),
+        }
+        
+        info_side_panel = render_info_panel(
+            {key: display_info[key] for key in ["score", "level", "lines", "time"]},
             font=font, width=SIDE_PANEL_WIDTH, margin=SIDE_PANEL_MARGIN
         )
         
-        blit_with_outline(screen, info_side_bar, (SIDE_LEFT_X, GAME_Y))
+        blit_with_outline(screen, info_side_panel, (SIDE_LEFT_X, GAME_Y))
+        
+        ai_info_side_panel = render_info_panel(
+            {key: display_info[key] for key in ["reward", "ai_reward"]},
+            font=font, width=SIDE_PANEL_WIDTH - (SIDE_PANEL_MARGIN * 2), margin=(0, SIDE_PANEL_MARGIN)
+        )
+        if used_ai_control: blit_with_outline(screen, ai_info_side_panel, (SIDE_LEFT_X - SIDE_PANEL_WIDTH + SIDE_PANEL_MARGIN, GAME_Y))
 
-        next_side_bar = render_info_panel(
+        next_side_panel = render_info_panel(
             {"next": render_shapes(info["piece_queue"], TETRIS_SQUARE_SIZE)},
             font=font, width=SIDE_PANEL_WIDTH, margin=SIDE_PANEL_MARGIN
         )
 
-        blit_with_outline(screen, next_side_bar, (SIDE_RIGHT_X, GAME_Y))
+        blit_with_outline(screen, next_side_panel, (SIDE_RIGHT_X, GAME_Y))
         
         held_side_bar = render_info_panel(
             {"held": render_shapes([info["held"]], TETRIS_SQUARE_SIZE)},
@@ -211,7 +249,6 @@ def main() -> None:
             font=font, width=SIDE_PANEL_WIDTH, margin=SIDE_PANEL_MARGIN
         )
         blit_with_outline(screen, control_side_bar, (SIDE_LEFT_X, GAME_Y + GAME_HEIGHT - control_side_bar.get_height()))
-                     
         pause_button.draw()
         mute_button.draw()
              
@@ -219,45 +256,44 @@ def main() -> None:
                     
         pygame.display.flip()
 
-        clock.tick(FPS)
+        clock.tick(fps)
     
     if not has_quit_game:
         waiting_for_key = True
         
         try:
-            with open(MEDIA_PATH.parent / "storage.json", "r") as file:
-                storage = json.load(file)
+            with open(MEDIA_PATH.parent / HIGH_SCORE_STORAGE_PATH, "r") as file:
+                high_score = json.load(file)
         except FileNotFoundError:
-            storage = {}
+            high_score = {}
         
-        score = info["score"]
-        high_score = storage.get("highScore", 0)
-        if score > high_score:
-            storage["highScore"] = score
-            storage["highScoreTime"] = time.ctime()
+        if info["score"] > high_score.get("score", 0):
+            high_score["score"] = info["score"]
+            high_score["ai"] = used_ai_control
+            high_score["ctime"] = time.ctime()
+            high_score["time"] = time.time()
             
-            with open(MEDIA_PATH.parent / "storage.json", "w") as file:
-                json.dump(storage, file)
+            with open(MEDIA_PATH.parent / HIGH_SCORE_STORAGE_PATH, "w") as file:
+                json.dump(high_score, file)
             
 
         game_over_bar = render_info_panel(
-            {"Game Over": BLANK_SURFACE, "score": score, "best": storage["highScore"], "Again?": "Space Key"},
+            {"Game Over": BLANK_SURFACE, "score": info["score"], "best": high_score["score"], "Again?": "Space Key"},
             font=font, width=SIDE_PANEL_WIDTH, margin=SIDE_PANEL_MARGIN
         )
         
         frame = 0
-        wait_seconds = 2
+        wait_seconds = 1
         draw_on_frame = (FPS * wait_seconds)
         
-        pygame.mixer.music.fadeout(wait_seconds * 2 * 1000)
+        pygame.mixer.music.fadeout(wait_seconds * 1000)
          
         while waiting_for_key and (not has_quit_game):
             frame += 1
             for event in pygame.event.get():
                 if event.type == pygame.QUIT: has_quit_game = True
-                elif frame > draw_on_frame and event.type == pygame.KEYDOWN: waiting_for_key = False
+                elif frame > draw_on_frame and event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE: waiting_for_key = False
             if frame > draw_on_frame:
-                # pygame.mixer.music.stop()
                 blit_with_outline(screen, game_over_bar, (GAME_X + GAME_WIDTH // 2 - game_over_bar.get_width() // 2, GAME_Y + GAME_HEIGHT // 2 - game_over_bar.get_height() // 2))
                 pygame.display.flip()
             clock.tick(FPS)
@@ -360,21 +396,24 @@ def render_section(title: str, content: pygame.Surface, font: pygame.font.Font, 
     
     return section
     
-def render_info_panel(data: dict[str, pygame.Surface], font: pygame.font.Font, width: int, margin: int):
+def render_info_panel(data: dict[str, pygame.Surface], font: pygame.font.Font, width: int, margin: int | tuple[int, int]):
     data = {key.upper().replace("_", " "): (value if isinstance(value, pygame.Surface) else font.render(str(value), True, MAIN_COLOR)) for key, value in data.items()}
+        
+    try: x_margin, y_margin = margin
+    except TypeError: x_margin = y_margin = margin
     
-    height = margin + sum(font.get_height() + section.get_height() + margin for section in data.values())
+    height = y_margin + sum(font.get_height() + section.get_height() + y_margin for section in data.values())
     panel = pygame.Surface((width, height))
         
     panel.fill(SECONDARY_COLOR)
     
-    section_y = margin
-    section_width = width - margin * 2
+    section_y = y_margin
+    section_width = width - x_margin * 2
     
     for title, content in data.items():
         section = render_section(title, content, font, section_width)
-        panel.blit(section, (margin, section_y))
-        section_y += section.get_height() + margin
+        panel.blit(section, (x_margin, section_y))
+        section_y += section.get_height() + y_margin
         
     return panel
 
@@ -421,4 +460,28 @@ class ToggleButton:
     def get_state(self) -> bool: return self.state
 
 if __name__ == "__main__":
+    print("""\033[32m
+[][][][][] [][][][] [][][][][] [][][][]  [][][]   [][][]  
+    []     []           []     []     []   []   []      [] 
+    []     []           []     []     []   []   []       
+    []     [][][]       []     [][][][]    []     [][][]  
+    []     []           []     []   []     []           [] 
+    []     []           []     []    []    []   []      [] 
+    []     [][][][]     []     []     [] [][][]   [][][]          
+          \033[0m""")
+    
+    print(f"\033[1m{'Button':<12} Action\033[0m")
+    for key, control in {
+        "up arrow": "rotate",
+        "left arrow": "left",
+        "right arrow": "right",
+        "down arrow": "soft drop",
+        "space": "hard drop",
+        "c": "hold",
+        "esc": "pause",
+        "m": "mute",
+        "a": "enable ai",
+    }.items():
+        print(f"{key.title():<12} {control.upper()}\033[0m")
+    
     main()
