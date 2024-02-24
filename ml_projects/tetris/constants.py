@@ -44,5 +44,5 @@ NETWORK = nn.network.Network([
 
 ], loss=nn.losses.MSE())
 
-VERSION = None
+VERSION = 6
 SAVE_FILE_NAME = str(directory / ("tetris_model" + ("" if VERSION is None else f"_{VERSION}")))

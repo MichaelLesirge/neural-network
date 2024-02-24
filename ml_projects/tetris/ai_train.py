@@ -31,7 +31,7 @@ def main():
                      learning_rate=0.01,
                      epsilon_stop_episode=epsilon_stop_episode,
                      mem_size=20_000,
-                     discount=0.99,
+                     discount=0.95,
                      replay_start_size=6000)
 
     scores = []
@@ -69,8 +69,10 @@ def main():
 
         # Render
         if render_every and episode % render_every == 0:
-            print(info)
+            print("END OF GAME:", info)
             print(env.render_as_str())
+            y_true, y_pred = env.value_function(), agent.predict_value(env.state())
+            print(f"{y_true=} {y_pred=}")
 
         # Logs
         if episode % log_every == 0:
