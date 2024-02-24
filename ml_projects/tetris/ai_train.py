@@ -1,7 +1,6 @@
 import numpy as np
 
 import constants
-import ai
 from dqn_agent import DQNAgent
 from tetris import Tetris
 
@@ -28,7 +27,7 @@ def main():
 
     # ai.load()
     
-    agent = DQNAgent(ai.network, ai.state_size,
+    agent = DQNAgent(constants.NETWORK, constants.STATE_SIZE,
                      learning_rate=0.01,
                      epsilon_stop_episode=epsilon_stop_episode,
                      mem_size=20_000,
@@ -38,7 +37,7 @@ def main():
     scores = []
     average_game_rewards = []
     
-    move_counter = {move: 0 for move in ai.potential_moves}
+    move_counter = {move: 0 for move in constants.POTENTIAL_MOVES}
 
     for episode in range(episodes):
         env.reset()
@@ -49,7 +48,7 @@ def main():
         game_rewards = []
         # Game
         while (not done) and (steps < max_steps):
-            next_states = env.get_next_states(ai.potential_moves)
+            next_states = env.get_next_states(constants.POTENTIAL_MOVES)
             
             best_action = agent.best_action(next_states)
 
@@ -75,7 +74,7 @@ def main():
 
         # Logs
         if episode % log_every == 0:
-            print(f"Episode #{episode} ({episode / episodes:.1%}). {agent.epsilon = }")
+            print(f"Episode #{episode} ({episode / episodes:.1%}). {agent.epsilon = }. ({constants.VERSION})")
 
             avg_score = np.mean(scores[-log_every:])
             min_score = min(scores[-log_every:])
@@ -102,7 +101,7 @@ def main():
     avg_reward = np.mean(average_game_rewards)    
     print(f"Final Overall: {avg_score = }, {avg_reward = }")
     
-    ai.save()
+    constants.NETWORK.dump(constants.SAVE_FILE_NAME)
 
 
 if __name__ == "__main__":

@@ -312,11 +312,18 @@ class Tetris:
         ], dtype=np.float64)
         
     def value_function(self) -> np.ndarray:
+        heights = self._get_column_heights()
+        # print(
+        #     + (self.height / 2 - np.max(heights)),
+        #     + (self.height / 2 - np.mean(heights)),
+        #     - (self._heights_bumpiness(heights) / self.height),
+        #     - (self._get_number_of_holes()) * 5,
+        # )
         return (
-            + (self.height / 2 - self._get_column_heights(condenser=np.mean)) / self.height * 0.7
-            - self._get_column_heights(condenser=np.max) / self.height * 0.9
-            - (self._get_column_heights(condenser=self._height_bumpiness_condenser)) / self.height * 1.2
-            - (self._get_number_of_holes())
+            + (self.height / 2 - np.max(heights))
+            + (self.height / 2 - np.mean(heights))
+            - (self._heights_bumpiness(heights) / self.height / self.width)
+            - (self._get_number_of_holes()) * 5
         )
 
     
@@ -351,12 +358,11 @@ class Tetris:
 
         return holes
     
-    def _get_column_heights(self, condenser = None) -> np.ndarray[int] | int:
-        heights = self.height - np.nonzero(self.grid)[0]
-        if condenser is not None: heights = condenser(heights) if heights.size else 0
-        return heights
+    def _get_column_heights(self) -> np.ndarray[int] | int:
+        mask = self.grid != 0
+        return self.height - np.where(mask.any(axis=0), mask.argmax(axis=0), self.height)
     
-    def _height_bumpiness_condenser(self, heights: np.ndarray[int]) -> int:
+    def _heights_bumpiness(self, heights: np.ndarray[int]) -> int:
         total_bumpiness = 0
         for i, height in enumerate(heights[:-1]):
             height_difference = height - heights[i + 1]

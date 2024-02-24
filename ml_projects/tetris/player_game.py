@@ -4,7 +4,7 @@ import pygame
 import numpy as np
 
 from tetris import Tetris, Move, TetrominoShape
-import constants, ai
+import constants
 from dqn_agent import DQNAgent
 
 # Game Size
@@ -78,8 +78,11 @@ def main() -> None:
     pygame.init()
     pygame.mixer.init()
     
-    ai.load()
-    agent = DQNAgent(ai.network, ai.state_size)
+    try: 
+        constants.NETWORK.load(constants.SAVE_FILE_NAME)
+        agent = DQNAgent(constants.NETWORK, constants.STATE_SIZE, epsilon=0)
+    except FileNotFoundError:
+        agent = None
     
     pygame.mixer.music.load(MEDIA_PATH / "tetris.mp3") 
     pygame.mixer.music.play(-1, 0, 1000 * 10)
@@ -135,11 +138,11 @@ def main() -> None:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:           has_quit_game = True
             elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_q:         moves.append(Move.QUIT)
+                if event.key == pygame.K_ESCAPE:         game_going = False
                 if event.key == pygame.K_UP:        moves.append(Move.SPIN)
                 if event.key == pygame.K_SPACE:     moves.append(Move.HARD_DROP)
                 if event.key == pygame.K_c:         moves.append(Move.HOLD)
-                if event.key == pygame.K_ESCAPE:    pause_button.toggle_state()
+                if event.key == pygame.K_p:    pause_button.toggle_state()
                 if event.key == pygame.K_m:         mute_button.toggle_state()
                 if event.key == pygame.K_a:         using_ai_control = not using_ai_control
                 if event.key == pygame.K_LEFT:
@@ -176,17 +179,18 @@ def main() -> None:
         
         if using_ai_control:
             
-            if Move.SOFT_DROP in moves: fps *= 10
+            if Move.SOFT_DROP in moves: fps *= 20
             
-            moves = [move for move in moves if move in [Move.QUIT]]
+            moves.clear()
             
             used_ai_control = True
             
-            next_states = game.get_next_states(ai.potential_moves)
-            
-            best_action = agent.best_action(next_states)
-            
-            moves.append(best_action)
+            if agent is not None:
+                next_states = game.get_next_states(constants.POTENTIAL_MOVES)
+                
+                best_action = agent.best_action(next_states)
+                
+                moves.append(best_action)
 
         
         if (not pause_button.get_state()) or (game.frame < 1):    
@@ -214,7 +218,7 @@ def main() -> None:
             "fps": round(clock.get_fps(), 3),
             "time": f"{minutes:.0f}:{seconds:0>2.0f}",
             "reward": round(reward, 3),
-            "ai_reward": round(agent.predict_value(state)[0], 3),
+            "ai_reward": round(agent.predict_value(state)[0], 3) if agent else None,
         }
         
         info_side_panel = render_info_panel(
@@ -478,7 +482,8 @@ if __name__ == "__main__":
         "down arrow": "soft drop",
         "space": "hard drop",
         "c": "hold",
-        "esc": "pause",
+        "esc": "quit",
+        "p": "pause",
         "m": "mute",
         "a": "enable ai",
     }.items():
