@@ -283,7 +283,7 @@ def main() -> None:
 
         game_over_bar = render_info_panel(
             {"Game Over": BLANK_SURFACE, "score": info["score"], "best": high_score["score"], "Again?": "Space Key"},
-            font=font, width=SIDE_PANEL_WIDTH, margin=SIDE_PANEL_MARGIN
+            font=font, width=(8 * TETRIS_SQUARE_SIZE), margin=SIDE_PANEL_MARGIN
         )
         
         frame = 0
