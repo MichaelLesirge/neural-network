@@ -63,9 +63,12 @@ class DQNAgent:
                  
         return self.predict_value([state])
 
-    def best_state(self, states: list[np.ndarray]):
+    def best_state(self, states: list[np.ndarray]) -> np.ndarray:
         """Returns the best state for a given collection of state"""
+        if (len(states) == 0): return None
+        
         if random.random() <= self.epsilon: return random.choice(list(states))
+        
         return max(states, key=self.predict_value)
 
     def best_action(self, next_states: dict[object, np.ndarray]) -> object:
