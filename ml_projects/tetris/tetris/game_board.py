@@ -314,61 +314,12 @@ class Tetris:
     def value_function(self) -> float:
         heights = self._get_column_heights()
 
-        # Control
-        # return (
-        #     + (self.score / 100) * 0.5
-        #     + ((self.height // 2 - np.max(self._get_column_heights())))
-        #     - (self._get_number_of_holes() / (self.width * self.height))
-        # ) * 0.01
-
-        # V1
-        # return (
-        #     + (self.height / 2 - np.max(heights))
-        #     + (self.height / 2 - np.mean(heights))
-        #     - (self._heights_bumpiness(heights) / self.height / self.width)
-        #     - (self._get_number_of_holes()) * 5
-        # ) * 0.01
-
-        # V2
-        # return (
-        #     + (self.height / 2 - np.max(heights))
-        #     + (self.height / 2 - np.mean(heights))
-        #     - (self._heights_bumpiness(heights) / self.height)
-        #     - (self._get_number_of_holes()) * 5
-        # ) * 0.01
-        
-        # V3
-        # return (
-        #     + (self.height / 2 - np.max(heights)) * 0.5
-        #     + (self.height / 2 - np.mean(heights)) * 0.5
-        #     - (self._heights_bumpiness(heights) / self.height)
-        #     - (self._get_number_of_holes()) * 7.5
-        # ) * 0.01
-        
-        # V4
-        # return (
-        #     + (self.height / 2 - np.max(heights)) * 0.5
-        #     + (self.height / 2 - np.mean(heights)) * 0.5
-        #     - (self._heights_bumpiness(heights) / self.height / self.width)
-        #     - (self._get_number_of_holes()) * 10
-        # ) * 0.01
-        
-        # V5
-        # return (
-        #     + (self.height / 2 - np.max(heights)) * 2.5
-        #     + (self.height / 2 - np.mean(heights)) * 0.025
-        #     - (self._heights_bumpiness(heights) / self.height / self.width)
-        #     - (self._get_number_of_holes()) * 5
-        # ) * 0.01
-        
-        # V6
         return (
-            + (self.score / 100)
             + (self.height / 2 - np.max(heights))
             + (self.height / 2 - np.mean(heights))
             - (self._heights_bumpiness(heights) / self.height / self.width)
             - (self._get_number_of_holes()) * 5
-        ) * 0.01
+        )
 
     
     def get_next_states(self, potential_moves: list[Move]) -> dict[Move, np.ndarray]:
