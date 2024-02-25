@@ -30,7 +30,7 @@ def main():
     agent = DQNAgent(constants.NETWORK, constants.STATE_SIZE,
                      learning_rate=0.01,
                      epsilon_stop_episode=epsilon_stop_episode,
-                     mem_size=20_000,
+                     mem_size=10_000,
                      discount=0.95,
                      replay_start_size=6000)
 

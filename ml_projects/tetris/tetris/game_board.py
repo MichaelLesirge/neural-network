@@ -315,10 +315,10 @@ class Tetris:
         heights = self._get_column_heights()
 
         return (
-            + (self.height / 2 - np.max(heights))
-            + (self.height / 2 - np.mean(heights))
+            + (self.height / 2 - np.max(heights)) / self.height
+            + (self.height / 2 - np.mean(heights)) / self.height
             - (self._heights_bumpiness(heights) / self.height / self.width)
-            - (self._get_number_of_holes()) * 5
+            - (self._get_number_of_holes()) / self.height
         )
 
     

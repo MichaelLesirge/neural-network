@@ -27,7 +27,7 @@ STATE_SIZE = (
     + TetrominoShape.MAX_ROTATIONS # one hot piece rotation
 )
 
-_LAYER_SIZE = 8 ** 2  # 64
+_LAYER_SIZE = 2 ** 8  # 256
  
 NETWORK = nn.network.Network([
     nn.layers.Dense(STATE_SIZE, _LAYER_SIZE),

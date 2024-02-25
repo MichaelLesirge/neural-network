@@ -66,34 +66,21 @@ class DQNAgent:
     def best_state(self, states: list[np.ndarray]):
         """Returns the best state for a given collection of state"""
 
-        if random.random() <= self.epsilon:
-            return random.choice(list(states))
-
-        max_value = best_state = None
-        
-        for state in states:
-            value = self.predict_value(
-                np.reshape(state, [1, -1]))
-            if not max_value or value > max_value:
-                max_value = value
-                best_state = state
-
-        return best_state
+        return max(states, key=self.predict_value)
 
     def best_action(self, next_states: dict[object, np.ndarray]) -> object:
         """Returns the best state for a given collection of state"""
 
         best_state = self.best_state(next_states.values())
-        
+ 
         for action, state in next_states.items():
             if np.array_equal(state, best_state):
                 return action
 
     def train(self, batch_size = 32, epochs = 3) -> None:
         """Trains the agent"""
-        n = len(self.memory)
 
-        if n >= self.replay_start_size and n >= batch_size:
+        if len(self.memory) >= self.replay_start_size and len(self.memory) >= batch_size:
 
             batch = random.sample(self.memory, batch_size)
 
