@@ -322,7 +322,7 @@ class Tetris:
         )
 
     
-    def get_next_states(self, potential_moves: list[Move]) -> dict[Move, np.ndarray]:
+    def get_next_states(self, potential_moves: list[Move], filter_invalid = True) -> dict[Move, np.ndarray]:
         output = {}
         
         starting_states = (self.current_tetromino.x, self.current_tetromino.y, self.current_tetromino.orientation)
@@ -334,8 +334,9 @@ class Tetris:
                 case Move.RIGHT: self.change_x(+1)
                 case None: pass
                 case _: raise Exception(f"TODO: {move.name} is not currently predictable, only basic Tetromino control is implanted")
-                
-            output[move] = self.state()
+            
+            if (move is None) or (self.current_tetromino.x, self.current_tetromino.y, self.current_tetromino.orientation) != starting_states:
+                output[move] = self.state()
             
             (self.current_tetromino.x, self.current_tetromino.y, self.current_tetromino.orientation) = starting_states
             
