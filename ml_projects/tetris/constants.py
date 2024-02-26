@@ -10,14 +10,12 @@ sys.path.append(str(directory.parent.parent))
 
 # --- Imports ---
 
-import numpy as np
-
 import constants
 import neural_network as nn
-from tetris import Move, Tetris, TetrominoShape
+from tetris import Move, TetrominoShape
 
 POTENTIAL_MOVES: list[Move] = [
-    Move.LEFT, Move.RIGHT, Move.SPIN, None
+    None, Move.SPIN, Move.RIGHT, Move.LEFT, 
 ]
 
 STATE_SIZE = (    
@@ -28,7 +26,6 @@ STATE_SIZE = (
 )
 
 _LAYER_SIZE = 2 ** 8  # 256
- 
 NETWORK = nn.network.Network([
     nn.layers.Dense(STATE_SIZE, _LAYER_SIZE),
     nn.activations.ReLU(),

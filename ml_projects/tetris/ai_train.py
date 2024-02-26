@@ -71,8 +71,8 @@ def main():
         if render_every and episode % render_every == 0:
             print("END OF GAME:", info)
             print(env.render_as_str())
-            y_true, y_pred = env.value_function(), agent.predict_value(env.state())
-            print(f"{y_true=} {y_pred=}")
+            y_true, y_pred = env.value_function(), agent.predict_value(env.state())[0]
+            print(f"{y_true=}, {y_pred=}")
 
         # Logs
         if episode % log_every == 0:
