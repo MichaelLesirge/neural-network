@@ -148,8 +148,6 @@ class Tetris:
             self.current_tetromino.y -= 1
             self.score -= 1
             
-            self.freeze()
-
     def gravity_drop(self) -> None:
         self.current_tetromino.y += 1
         
@@ -234,8 +232,8 @@ class Tetris:
         is_drop_frame = self.frame % max(int(block_drop_interval), 1) == 0
         is_soft_drop_frame = soft_drop and self.frame % fps_scale == 0
             
-        if is_soft_drop_frame: self.soft_drop()
-        elif is_drop_frame: self.gravity_drop()
+        if is_drop_frame: self.gravity_drop()
+        elif is_soft_drop_frame: self.soft_drop()
         
         reward = self.value_function()
                 
