@@ -306,6 +306,7 @@ class Tetris:
     def state(self) -> np.ndarray:
         return np.concatenate([
             (self.grid > 0).flatten(), #  board
+            # Get ghost block state
             self._one_hot_shapes[self._piece_to_index[self.current_tetromino.shape]], # piece type
             self._one_hot_x[self.current_tetromino.x], # x
             self._one_hot_y[self.current_tetromino.y], # y
@@ -326,10 +327,7 @@ class Tetris:
     def get_next_states(self) -> dict[Move, np.ndarray]:
         output = {}
         
-        is_drop_frame = self.frame % self.block_drop_interval == 0
-        # if (is_drop_frame): self.p
-        
-        output[None] = self.state()
+        # Do move, get state, get ghost block state, get next pieces 
             
         return output
     

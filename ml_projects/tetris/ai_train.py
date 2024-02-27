@@ -46,6 +46,7 @@ def main():
         steps = 0 
         
         game_rewards = []
+        
         # Game
         while (not done) and (steps < max_steps):
             next_states = env.get_next_states()
@@ -55,7 +56,7 @@ def main():
             move_counter[best_action] += 1
             state, reward, done, info = env.step([best_action])
             
-            print(np.array_equal(next_states[best_action], state))
+            assert np.array_equal(next_states[best_action], state), "Bad next state"
                         
             agent.add_to_memory(state, reward, done, next_states[best_action])
                         
