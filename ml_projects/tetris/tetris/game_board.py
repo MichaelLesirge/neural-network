@@ -49,7 +49,7 @@ class Tetris:
     DEFAULT_FPS = 60
     
     def __init__(
-        self, width: int, height: int, FPS: int = 1,
+        self, width: int, height: int, FPS: int = DEFAULT_FPS,
         enable_wall_kick = True, piece_queue_size = False, enable_hold = True) -> None:
 
         self.width, self.height = width, height
@@ -64,6 +64,8 @@ class Tetris:
         
         self.enable_hold = enable_hold
         
+        self.fps_scale = self.fps / self.DEFAULT_FPS
+        
         self.reset()
         self._create_inputs_cache()
 
@@ -74,6 +76,7 @@ class Tetris:
         self.fill_piece_queue()
         
         self.frame = self.score = self.lines = self.level = 0
+        self.block_drop_interval = self.DEFAULT_FPS * self.fps_scale
         self.done = False
 
         self.held_shape: TetrominoShape = None
@@ -169,9 +172,22 @@ class Tetris:
         
         scores = [0, 40, 100, 300, 1200]
         
-        self.score += scores[num_of_lines] * (self.level + 1)
-        self.lines += num_of_lines
-        self.level = (self.lines // 10)
+        # Optimization
+        if num_of_lines > 0:
+            self.lines += num_of_lines
+            self.score += scores[num_of_lines] * (self.level + 1)
+            self.level = (self.lines // 10)
+
+            if self.level < 12: block_drop_interval = 60 - self.level*5
+            elif self.level < 13: block_drop_interval = 7
+            elif self.level < 15: block_drop_interval = 6
+            elif self.level < 17: block_drop_interval = 5
+            elif self.level < 20: block_drop_interval = 4
+            elif self.level < 24: block_drop_interval = 3
+            elif self.level < 29: block_drop_interval = 2
+            else: block_drop_interval = 1
+            
+            self.block_drop_interval = max(int(block_drop_interval * self.fps_scale), 1)
         
         self.done = self.intersects() 
         
@@ -199,7 +215,7 @@ class Tetris:
                 
             self.current_tetromino.x -= dx
             self.current_tetromino.y -= dy
-            
+                
     def step(self, moves: list[Move]):
 
         self.frame += 1
@@ -215,22 +231,9 @@ class Tetris:
                 case Move.HARD_DROP: self.hard_drop()
                 case Move.SOFT_DROP: soft_drop = True
                 case None: pass
-        
-        if self.level < 12: block_drop_interval = 60 - self.level*5
-        elif self.level < 13: block_drop_interval = 7
-        elif self.level < 15: block_drop_interval = 6
-        elif self.level < 17: block_drop_interval = 5
-        elif self.level < 20: block_drop_interval = 4
-        elif self.level < 24: block_drop_interval = 3
-        elif self.level < 29: block_drop_interval = 2
-        else: block_drop_interval = 1
-        
-        fps_scale = self.fps / self.DEFAULT_FPS
-        
-        block_drop_interval *= fps_scale
-        
-        is_drop_frame = self.frame % max(int(block_drop_interval), 1) == 0
-        is_soft_drop_frame = soft_drop and self.frame % fps_scale == 0
+         
+        is_drop_frame = self.frame % self.block_drop_interval == 0
+        is_soft_drop_frame = soft_drop and self.frame % self.fps_scale == 0
             
         if is_drop_frame: self.gravity_drop()
         elif is_soft_drop_frame: self.soft_drop()
@@ -320,23 +323,13 @@ class Tetris:
         )
 
     
-    def get_next_states(self, potential_moves: list[Move], filter_invalid = True) -> dict[Move, np.ndarray]:
+    def get_next_states(self) -> dict[Move, np.ndarray]:
         output = {}
         
-        starting_states = (self.current_tetromino.x, self.current_tetromino.y, self.current_tetromino.orientation)
+        is_drop_frame = self.frame % self.block_drop_interval == 0
+        # if (is_drop_frame): self.p
         
-        for move in potential_moves:
-            match move:
-                case Move.SPIN: self.rotate()
-                case Move.LEFT: self.change_x(-1)
-                case Move.RIGHT: self.change_x(+1)
-                case None: pass
-                case _: raise Exception(f"TODO: {move.name} is not currently predictable, only basic Tetromino control is implanted")
-            
-            if (move is None) or (self.current_tetromino.x, self.current_tetromino.y, self.current_tetromino.orientation) != starting_states:
-                output[move] = self.state()
-            
-            (self.current_tetromino.x, self.current_tetromino.y, self.current_tetromino.orientation) = starting_states
+        output[None] = self.state()
             
         return output
     
@@ -348,8 +341,7 @@ class Tetris:
             for value in col:
                 if (not has_seen_block and value): has_seen_block = True
                 holes += (has_seen_block) and value == 0
-                
-
+        
         return holes
     
     def _get_column_heights(self) -> np.ndarray[int] | int:

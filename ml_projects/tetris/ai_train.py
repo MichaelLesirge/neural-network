@@ -8,7 +8,7 @@ from tetris import Tetris
 def main():
     
     env = Tetris(
-        constants.BOARD_WIDTH, constants.BOARD_HEIGHT,
+        constants.BOARD_WIDTH, constants.BOARD_HEIGHT, FPS=1,
         enable_wall_kick=True, piece_queue_size=False, enable_hold=False
     )
     
@@ -27,7 +27,7 @@ def main():
 
     # ai.load()
     
-    agent = DQNAgent(constants.NETWORK, constants.STATE_SIZE,
+    agent = DQNAgent(constants.AGENT_NAME, env.state().size,
                      learning_rate=0.01,
                      epsilon_stop_episode=epsilon_stop_episode,
                      mem_size=10_000,
@@ -37,7 +37,7 @@ def main():
     scores = []
     average_game_rewards = []
     
-    move_counter = {move: 0 for move in constants.POTENTIAL_MOVES}
+    move_counter = {move: 0 for move in env.get_next_states().keys()}
 
     for episode in range(episodes):
         env.reset()
@@ -48,12 +48,14 @@ def main():
         game_rewards = []
         # Game
         while (not done) and (steps < max_steps):
-            next_states = env.get_next_states(constants.POTENTIAL_MOVES)
+            next_states = env.get_next_states()
             
-            best_action = agent.best_action(next_states)
+            best_action = agent.take_action(next_states)
 
             move_counter[best_action] += 1
             state, reward, done, info = env.step([best_action])
+            
+            print(np.array_equal(next_states[best_action], state))
                         
             agent.add_to_memory(state, reward, done, next_states[best_action])
                         
@@ -76,7 +78,7 @@ def main():
 
         # Logs
         if episode % log_every == 0:
-            print(f"Episode #{episode} ({episode / episodes:.1%}). {agent.epsilon = }. ({constants.VERSION})")
+            print(f"Episode #{episode} ({episode / episodes:.1%}). {agent.epsilon = } {agent.name}")
 
             avg_score = np.mean(scores[-log_every:])
             min_score = min(scores[-log_every:])
@@ -103,7 +105,7 @@ def main():
     avg_reward = np.mean(average_game_rewards)    
     print(f"Final Overall: {avg_score = }, {avg_reward = }")
     
-    constants.NETWORK.dump(constants.SAVE_FILE_NAME)
+    agent.dump() 
 
 
 if __name__ == "__main__":

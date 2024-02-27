@@ -47,7 +47,7 @@ KEY_REPEAT_INTERVAL = (50 / 1000) * FPS
 
 # Path
 PATH = pathlib.Path(__file__).parent
-MEDIA_PATH = PATH / "media"
+MEDIA_PATH = PATH / "assets"
 
 SHAPE_IMAGES: dict[TetrominoShape, pygame.Surface] = {
     shape: pygame.image.load(MEDIA_PATH / "normal-tetromino" / f"{shape.get_name()}.png") for shape in TetrominoShape.ALL_SHAPES
@@ -77,13 +77,7 @@ def main() -> None:
     
     pygame.init()
     pygame.mixer.init()
-    
-    try: 
-        constants.NETWORK.load(constants.SAVE_FILE_NAME)
-        agent = DQNAgent(constants.NETWORK, constants.STATE_SIZE, epsilon=0)
-    except FileNotFoundError:
-        agent = None
-    
+     
     pygame.mixer.music.load(MEDIA_PATH / "tetris.mp3") 
     pygame.mixer.music.play(-1, 0, 1000 * 10)
 
@@ -91,6 +85,11 @@ def main() -> None:
         width=BOARD_SQUARES_ACROSS, height=BOARD_SQUARES_DOWN, FPS=FPS,
         enable_wall_kick=True, piece_queue_size=PIECE_QUEUE_SIZE, enable_hold=True
     )
+    
+    try: 
+        agent = DQNAgent(constants.AGENT_NAME, game.state().size, epsilon=0)
+    except FileNotFoundError:
+        agent = None
     
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     pygame.display.set_caption(WINDOW_NAME)
@@ -188,7 +187,7 @@ def main() -> None:
             if agent is not None:
                 next_states = game.get_next_states(constants.POTENTIAL_MOVES)
                 
-                best_action = agent.best_action(next_states)
+                best_action = agent.take_action(next_states)
                 
                 moves.append(best_action)
 
