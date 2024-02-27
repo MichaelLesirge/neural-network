@@ -82,14 +82,16 @@ def main() -> None:
     pygame.mixer.music.play(-1, 0, 1000 * 10)
 
     game = Tetris(
-        width=BOARD_SQUARES_ACROSS, height=BOARD_SQUARES_DOWN, FPS=FPS,
-        enable_wall_kick=True, piece_queue_size=PIECE_QUEUE_SIZE, enable_hold=True
+        width=BOARD_SQUARES_ACROSS, height=BOARD_SQUARES_DOWN, shape_queue_size=constants.SHAPE_QUEUE_SIZE,
+        FPS=FPS,
+        enable_wall_kick=True, enable_hold=True
     )
     
     try: 
-        agent = DQNAgent(constants.AGENT_NAME, game.state().size, epsilon=0)
+        agent = DQNAgent(constants.AGENT_NAME, game.state_as_array().size, epsilon=0)
     except FileNotFoundError:
         agent = None
+
     
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     pygame.display.set_caption(WINDOW_NAME)
@@ -310,7 +312,7 @@ def draw_tetromino_block(screen: pygame.Surface, block_size: int, row: int, col:
     if image.get_width() != block_size: image = pygame.transform.scale(image, (block_size, block_size))
     screen.blit(image, pygame.Rect(col * block_size, row * block_size, block_size, block_size))
 
-def render_game(game: Tetris, block_size: int = 25, ghost_block = True) -> tuple[pygame.Surface, list[pygame.Surface]]:
+def render_game(game: Tetris, block_size: int = 25, ghost_block = True) -> tuple[pygame.Surface, list[pygame.Surface]]:    
     screen = pygame.Surface((game.width * block_size, game.height * block_size))
                         
     screen.fill(BACKGROUND_COLOR)
@@ -338,7 +340,7 @@ def render_game(game: Tetris, block_size: int = 25, ghost_block = True) -> tuple
             if value: draw_tetromino_block(screen, block_size, row, col, game.current_tetromino.shape, ghost=True)
         
         game.current_tetromino.y = real_y
-    
+        
     return screen
 
 def render_shape(shape: TetrominoShape, block_size: int) -> pygame.Surface:

@@ -10,7 +10,7 @@ class TetrominoShape:
     ALL_SHAPES: list["TetrominoShape"] = []
     SHAPE_ID_MAP: dict[int, "TetrominoShape"] = {}
 
-    def __init__(self, name: str, color: str | tuple[int, int, int], shape: list[list[int]] | np.ndarray) -> None:
+    def __init__(self, name: str, shape: list[list[int]] | np.ndarray, color: str | tuple[int, int, int] = "white") -> None:
 
         self.name = name
         self.color = color
@@ -52,50 +52,50 @@ class TetrominoShape:
         
 
     def __str__(self) -> str:
-        return f"{self.__class__.__name__}({self.name}, {self.color}, {self.rotations[0]})"
+        return f"{self.__class__.__name__}({self.name}, {self.rotations[0]})"
 
 
-TetrominoShape("I", (0, 240, 240), [
+TetrominoShape("I", [
     [0, 0, 0, 0],
     [1, 1, 1, 1],
     [0, 0, 0, 0],
     [0, 0, 0, 0],
-]),
+], (0, 240, 240)),
 
-TetrominoShape("O", (240, 240, 0), [
+TetrominoShape("O", [
     [1, 1],
     [1, 1],
-]),
+], (240, 240, 0)),
 
-TetrominoShape("L", (240, 160, 0), [
+TetrominoShape("L", [
     [0, 0, 1],
     [1, 1, 1],
     [0, 0, 0],
-]),
+], (240, 160, 0)),
 
-TetrominoShape("J", (0, 0, 240), [
+TetrominoShape("J", [
     [1, 0, 0],
     [1, 1, 1],
     [0, 0, 0],
-]),
+], (0, 0, 240)),
 
-TetrominoShape("T", (160, 0, 240), [
+TetrominoShape("T", [
     [0, 1, 0],
     [1, 1, 1],
     [0, 0, 0],
-]),
+], (160, 0, 240)),
 
-TetrominoShape("Z", (240, 0, 0), [
+TetrominoShape("Z", [
     [1, 1, 0],
     [0, 1, 1],
     [0, 0, 0],
-]),
+], (240, 0, 0)),
 
-TetrominoShape("S", (0, 240, 0), [
+TetrominoShape("S", [
     [0, 1, 1],
     [1, 1, 0],
     [0, 0, 0],
-]),
+], (0, 240, 0)),
 
 
 def main() -> None:

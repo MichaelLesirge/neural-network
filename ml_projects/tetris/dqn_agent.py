@@ -85,7 +85,7 @@ class DQNAgent:
 
         if random.random() <= self.epsilon: return random.choice(list(next_states.keys()))
 
-        best_state = self.best_state(next_states)
+        best_state = self.best_state(list(next_states.values()))
  
         for action, state in next_states.items():
             if np.array_equal(state, best_state):

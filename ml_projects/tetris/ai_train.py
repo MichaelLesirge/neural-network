@@ -8,8 +8,9 @@ from tetris import Tetris
 def main():
     
     env = Tetris(
-        constants.BOARD_WIDTH, constants.BOARD_HEIGHT, FPS=1,
-        enable_wall_kick=True, piece_queue_size=False, enable_hold=False
+        constants.BOARD_WIDTH, constants.BOARD_HEIGHT, shape_queue_size=constants.SHAPE_QUEUE_SIZE,
+        FPS=1,
+        enable_wall_kick=True, enable_hold=False,
     )
     
     episodes = 200_000
@@ -27,7 +28,7 @@ def main():
 
     # ai.load()
     
-    agent = DQNAgent(constants.AGENT_NAME, env.state().size,
+    agent = DQNAgent(constants.AGENT_NAME, env.state_as_array().size,
                      learning_rate=0.01,
                      epsilon_stop_episode=epsilon_stop_episode,
                      mem_size=10_000,
@@ -56,7 +57,10 @@ def main():
             move_counter[best_action] += 1
             state, reward, done, info = env.step([best_action])
             
-            assert np.array_equal(next_states[best_action], state), "Bad next state"
+            good = np.array_equal(next_states[best_action], state)
+            if not good:
+                print(env.render_as_str())
+                raise Exception("STATE MATCH FAIL")
                         
             agent.add_to_memory(state, reward, done, next_states[best_action])
                         
@@ -74,12 +78,12 @@ def main():
         if render_every and episode % render_every == 0:
             print("END OF GAME:", info)
             print(env.render_as_str())
-            y_true, y_pred = env.value_function(), agent.predict_value(env.state())[0]
+            y_true, y_pred = env.value_function(), agent.predict_value(env.state_as_array())[0]
             print(f"{y_true=}, {y_pred=}")
 
         # Logs
         if episode % log_every == 0:
-            print(f"Episode #{episode} ({episode / episodes:.1%}). {agent.epsilon = } {agent.name}")
+            print(f"Episode #{episode} ({episode / episodes:.1%}). {agent.epsilon=} ({agent.name})")
 
             avg_score = np.mean(scores[-log_every:])
             min_score = min(scores[-log_every:])
