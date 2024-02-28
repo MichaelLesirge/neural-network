@@ -60,7 +60,7 @@ class DQNAgent:
         self.replay_start_size = replay_start_size
         
         # Location to dump/load model to/from
-        self.save_file = str(directory / self.name) + ".pkl"
+        self.save_file = str(directory / self.name)
     
     def add_to_memory(self, current_state: np.ndarray, reward: float, done: bool, next_state: np.ndarray) -> None:
         """Adds a play to the replay memory buffer"""
@@ -125,6 +125,6 @@ class DQNAgent:
     def dump(self):
         self.network.dump(self.save_file)
 
-    def dump(self):
+    def load(self):
         self.network.load(self.save_file)
         

@@ -122,14 +122,14 @@ class Tetris:
         
         self.fill_piece_queue()
     
-    def save_state(self) -> tuple:
+    def get_state(self) -> tuple:
         return (
             self.grid.copy(), self.shape_queue.copy(), self.held_shape,
             self.current_tetromino, (self.current_tetromino.x, self.current_tetromino.y, self.current_tetromino.orientation),
             self.frame, self.score, self.lines, self.level, self.block_drop_interval, self.done,
         )
     
-    def load_state(self, data: tuple) -> None:
+    def set_state(self, data: tuple) -> None:
         (
             self.grid, self.shape_queue, self.held_shape,
             self.current_tetromino, (self.current_tetromino.x, self.current_tetromino.y, self.current_tetromino.orientation),
@@ -339,22 +339,30 @@ class Tetris:
         self._one_hot_rotations = np.eye(TetrominoShape.MAX_ROTATIONS, dtype=np.float64)
         
     def state_as_array(self) -> np.ndarray:
+        
+        state = self.get_state()
+        self.hard_drop()
+        hard_drop_grid = self.grid
+        self.set_state(state)
+        
         return np.concatenate([
             (self.grid > 0).flatten(), #  board
+            (hard_drop_grid > 0).flatten(), # board after hard drop (ghost block like feature)
             self._one_hot_shapes[self._piece_to_index[self.current_tetromino.shape]], # piece type
             self._one_hot_x[self.current_tetromino.x], # x
             self._one_hot_y[self.current_tetromino.y], # y
             self._one_hot_rotations[self.current_tetromino.orientation], # rotation
+            self._one_hot_shapes[self._piece_to_index[self.shape_queue[0]]], # next piece type
         ], dtype=np.float64)
         
     def value_function(self) -> float:
         heights = self._get_column_heights()
 
         return (
-            + (self.height / 2 - np.max(heights)) / self.height
+            + (self.height / 2 - np.max(heights)) / self.height * 2
             + (self.height / 2 - np.mean(heights)) / self.height
             - (self._heights_bumpiness(heights) / self.height / self.width)
-            - (self._get_number_of_holes()) / self.height
+            - (self._get_number_of_holes()) / self.width
         )
 
     
@@ -364,10 +372,10 @@ class Tetris:
         start_state_array = self.state_as_array()
         
         for move in [None, Move.LEFT, Move.RIGHT, Move.SPIN]:
-            state = self.save_state()
+            state = self.get_state()
             state_array, _, _, _ = self.step([move], quick_return=True)
             if (move is None) or not np.array_equal(state_array, start_state_array): output[move] = state_array
-            self.load_state(state)
+            self.set_state(state)
         
         return output
     

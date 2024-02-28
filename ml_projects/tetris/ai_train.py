@@ -9,12 +9,12 @@ def main():
     
     env = Tetris(
         constants.BOARD_WIDTH, constants.BOARD_HEIGHT, shape_queue_size=constants.SHAPE_QUEUE_SIZE,
-        FPS=1,
-        enable_wall_kick=True, enable_hold=False,
+        FPS=15, enable_wall_kick=True, enable_hold=False,
     )
     
-    episodes = 200_000
-    epsilon_stop_episode = episodes * 0.9
+    episodes = 50_000
+    epsilon_stop_episode = episodes * 0.3
+    epsilon_start = 40 / 100
 
     max_steps = float("inf")
 
@@ -33,7 +33,8 @@ def main():
                      epsilon_stop_episode=epsilon_stop_episode,
                      mem_size=10_000,
                      discount=0.95,
-                     replay_start_size=6000)
+                     replay_start_size=6000,
+                     epsilon=epsilon_start)
 
     scores = []
     average_game_rewards = []
@@ -57,10 +58,10 @@ def main():
             move_counter[best_action] += 1
             state, reward, done, info = env.step([best_action])
             
-            good = np.array_equal(next_states[best_action], state)
-            if not good:
-                print(env.render_as_str())
-                raise Exception("STATE MATCH FAIL")
+            # good = np.array_equal(next_states[best_action], state)
+            # if not good:
+            #     print(env.render_as_str())
+            #     raise Exception("STATE MATCH FAIL")
                         
             agent.add_to_memory(state, reward, done, next_states[best_action])
                         

@@ -187,7 +187,7 @@ def main() -> None:
             used_ai_control = True
             
             if agent is not None:
-                next_states = game.get_next_states(constants.POTENTIAL_MOVES)
+                next_states = game.get_next_states()
                 
                 best_action = agent.take_action(next_states)
                 
