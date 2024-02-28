@@ -1,3 +1,6 @@
+import time
+import datetime
+
 import numpy as np
 
 import constants
@@ -9,11 +12,11 @@ def main():
     
     env = Tetris(
         constants.BOARD_WIDTH, constants.BOARD_HEIGHT, shape_queue_size=constants.SHAPE_QUEUE_SIZE,
-        FPS=5, enable_wall_kick=True, enable_hold=False,
+        FPS=7, enable_wall_kick=True, enable_hold=False,
     )
     
-    episodes = 100_000
-    epsilon_stop_episode = 17_500
+    episodes = 25_000
+    epsilon_stop_episode = episodes * 0.5
     epsilon_start = 1
 
     max_steps = float("inf")
@@ -23,7 +26,6 @@ def main():
     
     train_every = 1
 
-    render_every = 100
     log_every = 100
 
     # ai.load()
@@ -38,6 +40,7 @@ def main():
 
     scores = []
     average_game_rewards = []
+    times = []
     
     move_counter = {move: 0 for move in env.get_next_states().keys()}
 
@@ -49,6 +52,7 @@ def main():
             steps = 0 
             
             game_rewards = []
+            round_start_time = time.time()
             
             # Game
             while (not done) and (steps < max_steps):
@@ -71,21 +75,23 @@ def main():
 
             average_game_rewards.append(np.mean(game_rewards))
             scores.append(info["score"])
+            times.append(time.time() - round_start_time)
 
             # Train
             if episode % train_every == 0:
                 agent.train(batch_size=batch_size, epochs=epochs)
 
-            # Render
-            if render_every and episode % render_every == 0:
+            if episode % log_every == 0:
                 print("END OF GAME:", info)
                 print(env.render_as_str())
                 y_true, y_pred = env.value_function(), agent.predict_value(env.state_as_array())[0]
                 print(f"{y_true=}, {y_pred=}")
-
-            # Logs
-            if episode % log_every == 0:
-                print(f"Episode #{episode} ({episode / episodes:.1%}). {agent.epsilon=} ({agent.name})")
+            
+                expected_round_time = np.mean(times[-log_every * 10:])
+                rounds_left = (episodes - episode)
+                
+                print(f"Episode #{episode}, ({episode / episodes:.1%}). {agent.epsilon=} ({agent.name})")
+                print(f"Estimated Time Left {datetime.timedelta(seconds=int(expected_round_time * rounds_left))}")
 
                 avg_score = np.mean(scores[-log_every:])
                 min_score = min(scores[-log_every:])
@@ -98,6 +104,12 @@ def main():
                 max_reward = max(average_game_rewards[-log_every:])
 
                 print(f"{avg_reward = }, {min_reward = }, {max_reward = }")
+
+                avg_time = np.mean(times[-log_every:])
+                min_time = min(times[-log_every:])
+                max_time = max(times[-log_every:])
+
+                print(f"{avg_time = }, {min_time = }, {max_time = }")
 
                 avg_score = np.mean(scores)
                 avg_reward = np.mean(average_game_rewards)
@@ -113,6 +125,7 @@ def main():
         print(f"Final Overall: {avg_score = }, {avg_reward = }")
     except KeyboardInterrupt:
         print("Stopping...")
+        
     agent.dump() 
 
 

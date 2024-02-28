@@ -360,13 +360,12 @@ class Tetris:
         
     def value_function(self) -> float:
         heights = self._get_column_heights()
-        number_of_holes = self._get_number_of_holes() * 0.5
 
         return (
             + (self.height / 2 - np.max(heights)) / self.width
             + (self.height / 2 - np.mean(heights)) / self.height
             - (self._heights_bumpiness(heights) / self.height / self.width)
-            - (number_of_holes if number_of_holes < 10 else (10 + number_of_holes / 5))
+            - self._get_number_of_holes() / self.width
         )
 
     
