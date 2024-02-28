@@ -77,7 +77,7 @@ class Tetris:
         self.held_shape: TetrominoShape
         self.can_swap: bool
         
-        self.shape_queue: list[TetrominoShape]
+        self._shape_queue: list[TetrominoShape]
         
         self.enable_hold = enable_hold
         
@@ -89,7 +89,7 @@ class Tetris:
     def reset(self) -> None:
         self.grid = np.zeros((self.height, self.width), dtype=np.uint8)
         
-        self.shape_queue = []
+        self._shape_queue = []
         self.fill_piece_queue()
         
         self.frame = self.score = self.lines = self.level = 0
@@ -102,18 +102,21 @@ class Tetris:
         self.new_figure()
         
     def fill_piece_queue(self):
-        while len(self.shape_queue) < self.shape_queue_size:
+        while len(self._shape_queue) < self.shape_queue_size + 1:
             shape = random.choice(TetrominoShape.ALL_SHAPES)
-            self.shape_queue.append(shape)
+            self._shape_queue.append(shape)
 
     def get_current_figure(self) -> Tetromino:
         return self.current_tetromino
+    
+    @property
+    def shape_queue(self):
+        return self._shape_queue[:-1]
 
     def new_figure(self) -> None:
         self.can_swap = True
         
-        if self.shape_queue_size == 0: shape = random.choice(TetrominoShape.ALL_SHAPES)
-        else: shape = self.shape_queue.pop(0)
+        shape = self._shape_queue.pop(0)
         
         self.current_tetromino = Tetromino(
             self.width // 2 - shape.get_width() // 2, 0,
@@ -124,14 +127,14 @@ class Tetris:
     
     def get_state(self) -> tuple:
         return (
-            self.grid.copy(), self.shape_queue.copy(), self.held_shape,
+            self.grid.copy(), self._shape_queue.copy(), self.held_shape,
             self.current_tetromino, (self.current_tetromino.x, self.current_tetromino.y, self.current_tetromino.orientation),
             self.frame, self.score, self.lines, self.level, self.block_drop_interval, self.done,
         )
     
     def set_state(self, data: tuple) -> None:
         (
-            self.grid, self.shape_queue, self.held_shape,
+            self.grid, self._shape_queue, self.held_shape,
             self.current_tetromino, (self.current_tetromino.x, self.current_tetromino.y, self.current_tetromino.orientation),
             self.frame, self.score, self.lines, self.level, self.block_drop_interval, self.done,
         ) = data
@@ -140,7 +143,7 @@ class Tetris:
         if not (self.enable_hold and self.can_swap): return
         
         starting_current = self.current_tetromino
-        if self.held_shape: self.shape_queue.insert(0, self.held_shape)
+        if self.held_shape: self._shape_queue.insert(0, self.held_shape)
         
         self.new_figure()
         
@@ -352,17 +355,18 @@ class Tetris:
             self._one_hot_x[self.current_tetromino.x], # x
             self._one_hot_y[self.current_tetromino.y], # y
             self._one_hot_rotations[self.current_tetromino.orientation], # rotation
-            self._one_hot_shapes[self._piece_to_index[self.shape_queue[0]]], # next piece type
+            self._one_hot_shapes[self._piece_to_index[self._shape_queue[0]]], # next piece type
         ], dtype=np.float64)
         
     def value_function(self) -> float:
         heights = self._get_column_heights()
+        number_of_holes = self._get_number_of_holes() * 0.5
 
         return (
-            + (self.height / 2 - np.max(heights)) / self.height * 2
+            + (self.height / 2 - np.max(heights)) / self.width
             + (self.height / 2 - np.mean(heights)) / self.height
             - (self._heights_bumpiness(heights) / self.height / self.width)
-            - (self._get_number_of_holes()) / self.width
+            - (number_of_holes if number_of_holes < 10 else (10 + number_of_holes / 5))
         )
 
     

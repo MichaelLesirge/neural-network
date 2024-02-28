@@ -219,7 +219,7 @@ def main() -> None:
             "fps": round(clock.get_fps(), 3),
             "time": f"{minutes:.0f}:{seconds:0>2.0f}",
             "reward": round(reward, 3),
-            "ai_reward": round(agent.predict_value(state)[0], 3) if agent else None,
+            "ai_reward": f"{agent.predict_value(state)[0]:.5f}" if agent else None,
         }
         
         info_side_panel = render_info_panel(
