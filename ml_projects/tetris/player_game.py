@@ -87,8 +87,9 @@ def main() -> None:
         enable_wall_kick=True, enable_hold=True
     )
     
+    agent = DQNAgent(constants.AGENT_NAME, game.state_as_array().size, epsilon=0)
     try: 
-        agent = DQNAgent(constants.AGENT_NAME, game.state_as_array().size, epsilon=0)
+        agent.load()
     except FileNotFoundError:
         agent = None
 
