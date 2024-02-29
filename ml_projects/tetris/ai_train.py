@@ -40,9 +40,10 @@ def main():
 
     scores = []
     average_game_rewards = []
-    times = []
+    log_delay_times = []
+    log_start_time = time.time()
     
-    move_counter = {move: 0 for move in env.get_next_states().keys()}
+    move_counter = {move: 0 for move in env._next_state_move}
 
     try:
         for episode in range(episodes):
@@ -52,7 +53,6 @@ def main():
             steps = 0 
             
             game_rewards = []
-            round_start_time = time.time()
             
             # Game
             while (not done) and (steps < max_steps):
@@ -75,23 +75,25 @@ def main():
 
             average_game_rewards.append(np.mean(game_rewards))
             scores.append(info["score"])
-            times.append(time.time() - round_start_time)
 
             # Train
             if episode % train_every == 0:
                 agent.train(batch_size=batch_size, epochs=epochs)
 
             if episode % log_every == 0:
+                log_delay_times.append(time.time() - log_start_time)
+                log_start_time = time.time()
+                
                 print("END OF GAME:", info)
                 print(env.render_as_str())
                 y_true, y_pred = env.value_function(), agent.predict_value(env.state_as_array())[0]
                 print(f"{y_true=}, {y_pred=}")
             
-                expected_round_time = np.mean(times[-log_every * 10:])
+                expected_round_time = np.mean(log_delay_times[-10:])
                 rounds_left = (episodes - episode)
                 
                 print(f"Episode #{episode}, ({episode / episodes:.1%}). {agent.epsilon=} ({agent.name})")
-                print(f"Estimated Time Left {datetime.timedelta(seconds=int(expected_round_time * rounds_left))}")
+                print(f"Estimated Time: Total={datetime.timedelta(seconds=int(expected_round_time * rounds_left))}, Round={datetime.timedelta(seconds=expected_round_time)}")
 
                 avg_score = np.mean(scores[-log_every:])
                 min_score = min(scores[-log_every:])
@@ -104,12 +106,6 @@ def main():
                 max_reward = max(average_game_rewards[-log_every:])
 
                 print(f"{avg_reward = }, {min_reward = }, {max_reward = }")
-
-                avg_time = np.mean(times[-log_every:])
-                min_time = min(times[-log_every:])
-                max_time = max(times[-log_every:])
-
-                print(f"{avg_time = }, {min_time = }, {max_time = }")
 
                 avg_score = np.mean(scores)
                 avg_reward = np.mean(average_game_rewards)
