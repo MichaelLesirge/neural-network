@@ -127,14 +127,14 @@ class Tetris:
     
     def get_state(self) -> tuple:
         return (
-            self.grid.copy(), self._shape_queue.copy(), self.held_shape,
+            self.grid.copy(), self._shape_queue.copy(), self.held_shape, self.can_swap,
             self.current_tetromino, (self.current_tetromino.x, self.current_tetromino.y, self.current_tetromino.orientation),
             self.frame, self.score, self.lines, self.level, self.block_drop_interval, self.done,
         )
     
     def set_state(self, data: tuple) -> None:
         (
-            self.grid, self._shape_queue, self.held_shape,
+            self.grid, self._shape_queue, self.held_shape, self.can_swap,
             self.current_tetromino, (self.current_tetromino.x, self.current_tetromino.y, self.current_tetromino.orientation),
             self.frame, self.score, self.lines, self.level, self.block_drop_interval, self.done,
         ) = data
@@ -345,12 +345,12 @@ class Tetris:
         
         state = self.get_state()
         self.hard_drop()
-        hard_drop_grid = self.grid
+        hard_drop_grid = (self.grid > 0).flatten()
         self.set_state(state)
         
         return np.concatenate([
             (self.grid > 0).flatten(), #  board
-            (hard_drop_grid > 0).flatten(), # board after hard drop (ghost block like feature)
+            hard_drop_grid, # board after hard drop (ghost block like feature)
             self._one_hot_shapes[self._piece_to_index[self.current_tetromino.shape]], # piece type
             self._one_hot_x[self.current_tetromino.x], # x
             self._one_hot_y[self.current_tetromino.y], # y
