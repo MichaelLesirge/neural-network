@@ -100,13 +100,13 @@ def main() -> None:
     button_size = TETRIS_SQUARE_SIZE * 2
     
     pause_button = ToggleButton(screen, (262 - button_size / 2 - 5, 483),
-                                pygame.image.load(MEDIA_PATH / "play.png"),
                                 pygame.image.load(MEDIA_PATH / "pause.png"),
+                                pygame.image.load(MEDIA_PATH / "play.png"),
                                 button_size)
 
     mute_button = ToggleButton(screen, (262 + button_size / 2 + 5, 483),
-                                pygame.image.load(MEDIA_PATH / "play_sound.png"),
                                 pygame.image.load(MEDIA_PATH / "mute_sound.png"),
+                                pygame.image.load(MEDIA_PATH / "play_sound.png"),
                                 button_size)
         
     clock = pygame.time.Clock()
