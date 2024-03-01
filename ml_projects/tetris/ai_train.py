@@ -9,26 +9,27 @@ from tetris import Tetris
 
 # Run dqn with Tetris
 def main():
+
+    fps = 3
     
     env = Tetris(
         constants.BOARD_WIDTH, constants.BOARD_HEIGHT, shape_queue_size=constants.SHAPE_QUEUE_SIZE,
-        FPS=7, enable_wall_kick=True, enable_hold=False,
+        FPS=fps, enable_wall_kick=True, enable_hold=False,
     )
     
-    episodes = 25_000
-    epsilon_stop_episode = episodes * 0.5
-    epsilon_start = 1
+    episodes = 100_000
+    epsilon_stop_episode = episodes * 0.45
+    epsilon_start = 0.05
 
     max_steps = float("inf")
 
     batch_size = 512
     epochs = 1
     
-    train_every = 1
+    train_every = fps
 
     log_every = 100
 
-    # ai.load()
     
     agent = DQNAgent(constants.AGENT_NAME, env.state_as_array().size,
                      learning_rate=0.01,
@@ -37,6 +38,7 @@ def main():
                      discount=0.95,
                      replay_start_size=6000,
                      epsilon=epsilon_start)
+    agent.load()
 
     scores = []
     average_game_rewards = []
