@@ -17,9 +17,9 @@ def main():
         FPS=fps, enable_wall_kick=True, enable_hold=False,
     )
     
-    episodes = 100_000
-    epsilon_stop_episode = episodes * 0.45
-    epsilon_start = 0.05
+    episodes = 1_000_000
+    epsilon_stop_episode = 25_000
+    epsilon_start = 3 / 100
 
     max_steps = float("inf")
 
@@ -92,7 +92,7 @@ def main():
                 print(f"{y_true=}, {y_pred=}")
             
                 expected_round_time = np.mean(log_delay_times[-10:])
-                rounds_left = (episodes - episode)
+                rounds_left = (episodes - episode) / log_every
                 
                 print(f"Episode #{episode}, ({episode / episodes:.1%}). {agent.epsilon=} ({agent.name})")
                 print(f"Estimated Time: Total={datetime.timedelta(seconds=int(expected_round_time * rounds_left))}, Round={datetime.timedelta(seconds=expected_round_time)}")
