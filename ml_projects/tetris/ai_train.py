@@ -10,7 +10,7 @@ from tetris import Tetris
 # Run dqn with Tetris
 def main():
 
-    fps = 3
+    fps = 1
     
     env = Tetris(
         constants.BOARD_WIDTH, constants.BOARD_HEIGHT, shape_queue_size=constants.SHAPE_QUEUE_SIZE,
@@ -18,8 +18,8 @@ def main():
     )
     
     episodes = 1_000_000
-    epsilon_stop_episode = 25_000
-    epsilon_start = 3 / 100
+    epsilon_stop_episode = 15_000
+    epsilon_start = 10 / 100
 
     max_steps = float("inf")
 
@@ -45,8 +45,6 @@ def main():
     log_delay_times = []
     log_start_time = time.time()
     
-    move_counter = {move: 0 for move in env._next_state_move}
-
     try:
         for episode in range(episodes):
             env.reset()
@@ -62,8 +60,7 @@ def main():
                 
                 best_action = agent.take_action(next_states)
 
-                move_counter[best_action] += 1
-                state, reward, done, info = env.step([best_action])
+                state, reward, done, info = env.step(best_action)
                 
                 # good = np.array_equal(next_states[best_action], state)
                 # if not good:
@@ -112,9 +109,6 @@ def main():
                 avg_score = np.mean(scores)
                 avg_reward = np.mean(average_game_rewards)
                 print(f"Overall: {avg_score = }, {avg_reward = }")
-                
-                print({move.name if move else "NONE": count for (move, count) in move_counter.items()})
-                move_counter = {move: 0 for move in move_counter}
                 
                 print()
                 

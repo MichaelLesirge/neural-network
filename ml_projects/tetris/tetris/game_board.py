@@ -358,27 +358,27 @@ class Tetris:
             self._one_hot_shapes[self._piece_to_index[self._shape_queue[0]]], # next piece type
         ], dtype=np.float64)
         
-    def value_function(self) -> float:
+    def value_function(self) -> float:        
         heights = self._get_column_heights()
-
         return 1 - (
             + 0.5 * (self._get_number_of_holes() / self.width)
             + 0.3 * (np.max(heights) / self.height)
             + 0.2 * (np.mean(heights) / self.height)
             + 0.1 * (self._heights_bumpiness(heights) / self.height)
-        ) * 2
+        ) * 2 - (5 * self.done)
 
     
-    _next_state_move = [None, Move.LEFT, Move.RIGHT, Move.SPIN]
+    _next_state_move = {None: 0, Move.LEFT: 10, Move.RIGHT: 10, Move.SPIN: 4}
     def get_next_states(self) -> dict[Move, np.ndarray]:
         output = {}
         
         start_state_array = self.state_as_array()
         
-        for move in self._next_state_move:
+        for move, r in self._next_state_move.items():
             state = self.get_state()
-            state_array, _, _, _ = self.step([move], quick_return=True)
-            if (move is None) or not np.array_equal(state_array, start_state_array): output[move] = state_array
+            move_r = tuple([move] * r)
+            state_array, _, _, _ = self.step(move_r * r, quick_return=True)
+            if (move is None) or not np.array_equal(state_array, start_state_array): output[move_r] = state_array
             self.set_state(state)
         
         return output
