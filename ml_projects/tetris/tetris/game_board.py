@@ -213,13 +213,15 @@ class Tetris:
             self.score += scores[num_of_lines] * (self.level + 1)
             self.level = (self.lines // 10)
 
-            if self.level < 12: block_drop_interval = 60 - self.level*5
-            elif self.level < 13: block_drop_interval = 7
-            elif self.level < 15: block_drop_interval = 6
-            elif self.level < 17: block_drop_interval = 5
-            elif self.level < 20: block_drop_interval = 4
-            elif self.level < 24: block_drop_interval = 3
-            elif self.level < 29: block_drop_interval = 2
+            if self.level < 11: block_drop_interval = 60 - self.level * 5
+            elif self.level < 12: block_drop_interval = 9
+            elif self.level < 13: block_drop_interval = 8
+            elif self.level < 15: block_drop_interval = 7
+            elif self.level < 17: block_drop_interval = 6
+            elif self.level < 20: block_drop_interval = 5
+            elif self.level < 24: block_drop_interval = 4
+            elif self.level < 29: block_drop_interval = 3
+            elif self.level < 30: block_drop_interval = 3
             else: block_drop_interval = 1
             
             self.block_drop_interval = max(int(block_drop_interval * self.fps_scale), 1)
