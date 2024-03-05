@@ -192,7 +192,7 @@ def main() -> None:
                 
                 best_action = agent.take_action(next_states)
                 
-                moves.extend(best_action)
+                moves.append(best_action)
 
         
         if (not pause_button.get_state()) or (game.frame < 1):    

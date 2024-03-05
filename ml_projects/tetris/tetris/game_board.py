@@ -370,17 +370,16 @@ class Tetris:
         ) * 2 - (5 * self.done)
 
     
-    _next_state_move = {None: 0, Move.LEFT: 10, Move.RIGHT: 10, Move.SPIN: 4}
+    _next_state_move = [None, Move.LEFT, Move.RIGHT, Move.SPIN]
     def get_next_states(self) -> dict[Move, np.ndarray]:
         output = {}
         
         start_state_array = self.state_as_array()
         
-        for move, r in self._next_state_move.items():
+        for move in self._next_state_move:
             state = self.get_state()
-            move_r = tuple([move] * r)
-            state_array, _, _, _ = self.step(move_r * r, quick_return=True)
-            if (move is None) or not np.array_equal(state_array, start_state_array): output[move_r] = state_array
+            state_array, _, _, _ = self.step([move], quick_return=True)
+            if (move is None) or not np.array_equal(state_array, start_state_array): output[move] = state_array
             self.set_state(state)
         
         return output
