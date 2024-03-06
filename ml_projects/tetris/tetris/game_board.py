@@ -362,25 +362,28 @@ class Tetris:
         
     def value_function(self) -> float:        
         heights = self._get_column_heights()
+        
         return 1 - (
             + 0.5 * (self._get_number_of_holes() / self.width)
             + 0.3 * (np.max(heights) / self.height)
             + 0.2 * (np.mean(heights) / self.height)
             + 0.1 * (self._heights_bumpiness(heights) / self.height)
-        ) * 2 - (5 * self.done)
+        ) * 2 - (self.done * 5)
 
     
-    _next_state_move = [None, Move.LEFT, Move.RIGHT, Move.SPIN]
+    _next_state_move = {None: 1, Move.LEFT: 5, Move.RIGHT: 5, Move.SPIN: 4}
     def get_next_states(self) -> dict[Move, np.ndarray]:
         output = {}
         
         start_state_array = self.state_as_array()
         
-        for move in self._next_state_move:
-            state = self.get_state()
-            state_array, _, _, _ = self.step([move], quick_return=True)
-            if (move is None) or not np.array_equal(state_array, start_state_array): output[move] = state_array
-            self.set_state(state)
+        for move, repeat in self._next_state_move.items():
+            for i in range(repeat):
+                moves = tuple([move] * (i + 1))
+                state = self.get_state()
+                state_array, _, _, _ = self.step(moves, quick_return=True)
+                if (move is None) or not np.array_equal(state_array, start_state_array): output[moves] = state_array
+                self.set_state(state)
         
         return output
     

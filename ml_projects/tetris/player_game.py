@@ -116,17 +116,18 @@ def main() -> None:
     
     font = pygame.font.SysFont("Berlin Sans FB", 22, False, False)
         
-    pressing_down_arrow = False
+    pressing_down_arrow =  False
     left_down_clock = right_down_clock = None
     
     has_quit_game = False
     game_going = True
     
     used_ai_control = using_ai_control = False
+    
+    fps_speed_level = 0
+    fps_change_percent = 10
         
-    while game_going and (not has_quit_game):
-        fps = FPS
-                
+    while game_going and (not has_quit_game):                
         screen.fill(BACKGROUND_COLOR)
         
         prefix = ("(AI)" if using_ai_control else "")
@@ -135,16 +136,16 @@ def main() -> None:
          
         moves = []
         
-        left_click = False
-            
+        left_click = up = down = False
+        
         for event in pygame.event.get():
             if event.type == pygame.QUIT:           has_quit_game = True
             elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:         game_going = False
-                if event.key == pygame.K_UP:        moves.append(Move.SPIN)
+                if event.key == pygame.K_ESCAPE:    game_going = False
+                if event.key == pygame.K_UP:        up = True; moves.append(Move.SPIN)
                 if event.key == pygame.K_SPACE:     moves.append(Move.HARD_DROP)
                 if event.key == pygame.K_c:         moves.append(Move.HOLD)
-                if event.key == pygame.K_p:    pause_button.toggle_state()
+                if event.key == pygame.K_p:         pause_button.toggle_state()
                 if event.key == pygame.K_m:         mute_button.toggle_state()
                 if event.key == pygame.K_a:         using_ai_control = not using_ai_control
                 if event.key == pygame.K_LEFT:
@@ -153,7 +154,7 @@ def main() -> None:
                 if event.key == pygame.K_RIGHT:      
                     right_down_clock = KEY_REPEAT_DELAY
                     moves.append(Move.RIGHT)
-                if event.key == pygame.K_DOWN:      pressing_down_arrow = True
+                if event.key == pygame.K_DOWN:      down = pressing_down_arrow = True
             elif event.type == pygame.KEYUP:
                 if event.key == pygame.K_DOWN:      pressing_down_arrow = False
                 if event.key == pygame.K_LEFT:      left_down_clock = None
@@ -179,11 +180,11 @@ def main() -> None:
         
         if pressing_down_arrow: moves.append(Move.SOFT_DROP)   
         
-        if using_ai_control:
-            
-            if Move.SOFT_DROP in moves: fps *= 20
-            
+        if using_ai_control:            
             moves.clear()
+            
+            if up: fps_speed_level += 1
+            if down: fps_speed_level -= 1 
             
             used_ai_control = True
             
@@ -192,8 +193,9 @@ def main() -> None:
                 
                 best_action = agent.take_action(next_states)
                 
-                moves.append(best_action)
-
+                moves.extend(best_action)
+        else:
+            fps_speed_level = 0
         
         if (not pause_button.get_state()) or (game.frame < 1):    
             state, reward, done, info = game.step(moves)
@@ -234,7 +236,18 @@ def main() -> None:
             {key: display_info[key] for key in ["reward", "ai_reward"]},
             font=font, width=SIDE_PANEL_WIDTH - (SIDE_PANEL_MARGIN * 2), margin=(0, SIDE_PANEL_MARGIN)
         )
-        if used_ai_control: blit_with_outline(screen, ai_info_side_panel, (SIDE_LEFT_X - SIDE_PANEL_WIDTH + SIDE_PANEL_MARGIN, GAME_Y))
+
+        fps_percent = 1 + (fps_speed_level * (fps_change_percent / 100))
+        fps = FPS * fps_percent
+
+        fps_panel = render_info_panel(
+            {"fps": format(clock.get_fps(), ".2f"), "speed": format(fps_percent, ".0%")},
+            font=font, width=SIDE_PANEL_WIDTH - (SIDE_PANEL_MARGIN * 2), margin=(0, SIDE_PANEL_MARGIN)
+        )
+        
+        if used_ai_control:
+            blit_with_outline(screen, ai_info_side_panel, (SIDE_LEFT_X - SIDE_PANEL_WIDTH + SIDE_PANEL_MARGIN, GAME_Y))
+            blit_with_outline(screen, fps_panel, (SIDE_LEFT_X - SIDE_PANEL_WIDTH + SIDE_PANEL_MARGIN, GAME_Y + SIDE_PANEL_GAP + ai_info_side_panel.get_height()))
 
         next_side_panel = render_info_panel(
             {"next": render_shapes(info["piece_queue"], TETRIS_SQUARE_SIZE)},
@@ -257,8 +270,9 @@ def main() -> None:
         blit_with_outline(screen, control_side_bar, (SIDE_LEFT_X, GAME_Y + GAME_HEIGHT - control_side_bar.get_height()))
         pause_button.draw()
         mute_button.draw()
-             
-        if pause_button.get_state(): screen.blit(paused_text, (SCREEN_WIDTH // 2 - paused_text.get_width() // 2, SCREEN_HEIGHT // 2 - paused_text.get_height() // 2))
+         
+        if pause_button.get_state():
+            screen.blit(paused_text, (SCREEN_WIDTH // 2 - paused_text.get_width() // 2, SCREEN_HEIGHT // 2 - paused_text.get_height() // 2))
                     
         pygame.display.flip()
 
