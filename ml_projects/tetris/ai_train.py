@@ -70,7 +70,7 @@ def main():
                 # if not np.array_equal(next_states[best_action], state):
                 #     print(env.render_as_str())
                 #     print(abs(next_states[best_action].sum() - state.sum()))
-                #     print(np.array2string((next_states[best_action] == state), max_line_width=6*10+2, separator=" "))
+                #     print(np.array2string((next_states[best_action] == state), max_line_width=6*10+1, separator=" "))
                 #     raise Exception("State Match Failed")
                             
                 agent.add_to_memory(state, reward, done, next_states[best_action])
