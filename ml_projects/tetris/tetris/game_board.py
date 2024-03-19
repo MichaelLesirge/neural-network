@@ -3,6 +3,7 @@ import enum
 
 import numpy as np
 
+from . import shapes
 from .shapes import TetrominoShape
 
 class Move(enum.Enum):
@@ -24,7 +25,7 @@ class Tetromino:
         
         self.shape = shape
         
-        self.orientation = orientation % len(self.shape.rotations)
+        self.orientation = orientation % len(self.shape.orientations)
     
     def get_height(self) -> int: return self.get_grid().shape[1]
         
@@ -38,7 +39,7 @@ class Tetromino:
 
     def get_grid(self) -> np.ndarray: return self.shape.get_grid(self.orientation)
      
-    def rotate(self) -> None: self.orientation = (self.orientation + 1) % len(self.shape.rotations)            
+    def rotate(self) -> None: self.orientation = (self.orientation + 1) % len(self.shape.orientations)            
 
     def __iter__(self):
         for row in range(self.get_height()):
@@ -51,6 +52,8 @@ class Tetromino:
 class Tetris:
     DEFAULT_FPS = 60
     
+    MIN_SHAPE_QUEUE_SIZE = 32
+    
     def __init__(
         self, width: int, height: int, FPS: int = DEFAULT_FPS,
         enable_wall_kick = True, shape_queue_size: int = None, enable_hold = True) -> None:
@@ -59,17 +62,22 @@ class Tetris:
         
         self.fps = FPS
         
-        self.enable_wall_kick = enable_wall_kick
+        self.visible_shape_queue_size = shape_queue_size
+        self.enable_hold = enable_hold
+                
+        self.shape_bag = [
+            shapes.I, shapes.O, shapes.L, shapes.J, shapes.T, shapes.Z
+        ]
         
-        if shape_queue_size is None: shape_queue_size = 0
-        self.shape_queue_size = shape_queue_size
+        self.positions_to_try = [(0, 0)]
+        if enable_wall_kick:
+            self.positions_to_try.extend([(1, 0), (-1, 0)])
         
         self.done: bool
         self.frame: int
         self.score: int
         self.lines: int
         self.level: int
-        
         self.block_drop_interval: int
         
         self.current_tetromino: Tetromino
@@ -77,19 +85,18 @@ class Tetris:
         self.held_shape: TetrominoShape
         self.can_swap: bool
         
-        self._shape_queue: list[TetrominoShape]
-        
-        self.enable_hold = enable_hold
-        
+        self.shape_queue: list[TetrominoShape]
+                
         self.fps_scale = self.fps / self.DEFAULT_FPS
         
         self.reset()
         self._create_inputs_cache()
+        self._create_moves_cache()
 
     def reset(self) -> None:
         self.grid = np.zeros((self.height, self.width), dtype=np.uint8)
         
-        self._shape_queue = []
+        self.shape_queue = []
         self.fill_piece_queue()
         
         self.frame = self.score = self.lines = self.level = 0
@@ -102,21 +109,18 @@ class Tetris:
         self.new_figure()
         
     def fill_piece_queue(self):
-        while len(self._shape_queue) < self.shape_queue_size + 1:
-            shape = random.choice(TetrominoShape.ALL_SHAPES)
-            self._shape_queue.append(shape)
+        while len(self.shape_queue) < self.MIN_SHAPE_QUEUE_SIZE:
+            shape_bag_copy = self.shape_bag.copy()
+            np.random.shuffle(shape_bag_copy)
+            self.shape_queue.extend(shape_bag_copy)
 
     def get_current_figure(self) -> Tetromino:
         return self.current_tetromino
     
-    @property
-    def shape_queue(self):
-        return self._shape_queue[:-1]
-
     def new_figure(self) -> None:
         self.can_swap = True
         
-        shape = self._shape_queue.pop(0)
+        shape = self.shape_queue.pop(0)
         
         self.current_tetromino = Tetromino(
             self.width // 2 - shape.get_width() // 2, 0,
@@ -127,15 +131,15 @@ class Tetris:
     
     def get_state(self) -> tuple:
         return (
-            self.grid.copy(), self._shape_queue.copy(), self.held_shape, self.can_swap,
-            self.current_tetromino, (self.current_tetromino.x, self.current_tetromino.y, self.current_tetromino.orientation),
+            self.grid.copy(), self.shape_queue.copy(), self.held_shape, self.can_swap,
+            self.current_tetromino, self.current_tetromino.x, self.current_tetromino.y, self.current_tetromino.orientation, self.current_tetromino.shape,
             self.frame, self.score, self.lines, self.level, self.block_drop_interval, self.done,
         )
     
     def set_state(self, data: tuple) -> None:
         (
-            self.grid, self._shape_queue, self.held_shape, self.can_swap,
-            self.current_tetromino, (self.current_tetromino.x, self.current_tetromino.y, self.current_tetromino.orientation),
+            self.grid, self.shape_queue, self.held_shape, self.can_swap,
+            self.current_tetromino, self.current_tetromino.x, self.current_tetromino.y, self.current_tetromino.orientation, self.current_tetromino.shape,
             self.frame, self.score, self.lines, self.level, self.block_drop_interval, self.done,
         ) = data
                 
@@ -143,7 +147,7 @@ class Tetris:
         if not (self.enable_hold and self.can_swap): return
         
         starting_current = self.current_tetromino
-        if self.held_shape: self._shape_queue.insert(0, self.held_shape)
+        if self.held_shape: self.shape_queue.insert(0, self.held_shape)
         
         self.new_figure()
         
@@ -162,7 +166,7 @@ class Tetris:
     def find_full_lines(self) -> list[int]:
         return [i for i, row in enumerate(self.grid) if all(row)]
 
-    def remove_full_lines(self, lines: list[int]) -> None:
+    def clear_lines(self, lines: list[int]) -> None:
         for line in lines:
             self.grid[1:line + 1, :] = self.grid[:line, :]
             self.grid[0, :] = 0
@@ -199,7 +203,7 @@ class Tetris:
             if value: self.grid[row][col] = self.current_tetromino.get_id()
         
         full_line_indexes = self.find_full_lines()
-        self.remove_full_lines(full_line_indexes)
+        self.clear_lines(full_line_indexes)
 
         self.new_figure()
 
@@ -235,13 +239,8 @@ class Tetris:
             self.current_tetromino.x = old_x
 
     def rotate(self) -> None:
-
-        positions_to_try = [(0, 0)]
-        
-        if self.enable_wall_kick:
-            positions_to_try.extend([(1, 0), (-1, 0)])
-        
-        for (dx, dy) in positions_to_try:
+ 
+        for (dx, dy) in self.positions_to_try:
             self.current_tetromino.x += dx
             self.current_tetromino.y += dy
             
@@ -285,7 +284,7 @@ class Tetris:
             "lines": self.lines,
             "level": self.level,
             "held": self.held_shape,
-            "piece_queue": self.shape_queue,
+            "piece_queue": self.shape_queue[:self.visible_shape_queue_size],
             "frame": self.frame,
         }
         
@@ -336,12 +335,30 @@ class Tetris:
     
     # Ai related methods
     
+    def _create_moves_cache(self) -> None:
+         
+        rules = {
+            None: 1,
+            Move.LEFT: 3,
+            Move.RIGHT: 3,
+            Move.SPIN: 3,
+            Move.HOLD: 1,
+            Move.HARD_DROP: 1,
+            Move.SOFT_DROP: 1,
+        }
+         
+        self._next_state_moves = [
+            tuple([move] * (i + 1))
+            for move, repeat in rules.items()
+            for i in range(repeat)
+        ]
+        
     def _create_inputs_cache(self):
         self._piece_to_index = dict(((b, a) for (a, b) in enumerate(TetrominoShape.ALL_SHAPES)))
         self._one_hot_shapes = np.eye(len(TetrominoShape.ALL_SHAPES), dtype=np.float64)
         self._one_hot_x = np.eye(self.width, dtype=np.float64)
         self._one_hot_y = np.eye(self.height, dtype=np.float64) 
-        self._one_hot_rotations = np.eye(TetrominoShape.MAX_ROTATIONS, dtype=np.float64)
+        self._one_hot_rotations = np.eye(TetrominoShape.MAX_ORIENTATIONS, dtype=np.float64)
         
     def state_as_array(self) -> np.ndarray:
         
@@ -357,33 +374,35 @@ class Tetris:
             self._one_hot_x[self.current_tetromino.x], # x
             self._one_hot_y[self.current_tetromino.y], # y
             self._one_hot_rotations[self.current_tetromino.orientation], # rotation
-            self._one_hot_shapes[self._piece_to_index[self._shape_queue[0]]], # next piece type
+            np.concatenate([
+                self._one_hot_shapes[self._piece_to_index[shape]]
+                for shape in self.shape_queue[:self.visible_shape_queue_size]
+            ]), # next piece type
         ], dtype=np.float64)
         
-    def value_function(self) -> float:        
+    def value_function(self) -> float:      
+        if self.done: return -10
+          
         heights = self._get_column_heights()
-        
-        return 1 - (
-            + 0.5 * (self._get_number_of_holes() / self.width)
-            + 0.3 * (np.max(heights) / self.height)
-            + 0.2 * (np.mean(heights) / self.height)
-            + 0.1 * (self._heights_bumpiness(heights) / self.height)
-        ) * 2 - (self.done * 5)
+
+        return (self.score / 100) + (
+            -0.510066 * np.sum(heights) 
+            -0.051006 * np.mean(heights) 
+            -0.356630 * self._get_number_of_holes()
+            -0.184483 * self._heights_bumpiness(heights)
+        ) / 100
 
     
-    _next_state_move = {None: 1, Move.LEFT: 5, Move.RIGHT: 5, Move.SPIN: 4}
     def get_next_states(self) -> dict[Move, np.ndarray]:
         output = {}
         
         start_state_array = self.state_as_array()
         
-        for move, repeat in self._next_state_move.items():
-            for i in range(repeat):
-                moves = tuple([move] * (i + 1))
-                state = self.get_state()
-                state_array, _, _, _ = self.step(moves, quick_return=True)
-                if (move is None) or not np.array_equal(state_array, start_state_array): output[moves] = state_array
-                self.set_state(state)
+        for moves in self._next_state_moves:
+            state = self.get_state()
+            state_array, _, _, _ = self.step(moves, quick_return=True)
+            if (moves == (None,)) or not np.array_equal(state_array, start_state_array): output[moves] = state_array
+            self.set_state(state)
         
         return output
     

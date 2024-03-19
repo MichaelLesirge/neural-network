@@ -14,12 +14,12 @@ def main():
     
     env = Tetris(
         constants.BOARD_WIDTH, constants.BOARD_HEIGHT, shape_queue_size=constants.SHAPE_QUEUE_SIZE,
-        FPS=fps, enable_wall_kick=True, enable_hold=False,
+        FPS=fps, enable_wall_kick=True, enable_hold=True,
     )
     
-    episodes = 1_000_000
-    epsilon_stop_episode = 15_000
-    epsilon_start = 10 / 100
+    episodes = 100_000
+    epsilon_stop_episode = episodes * (75 / 100)
+    epsilon_start = (100 / 100)
 
     max_steps = float("inf")
 
@@ -38,9 +38,14 @@ def main():
                      discount=0.95,
                      replay_start_size=6000,
                      epsilon=epsilon_start)
-    agent.load()
+    
+    try:
+        agent.load()
+    except FileNotFoundError:
+        print("No agent to load: Starting run from scratch")
 
     scores = []
+    lines = []
     average_game_rewards = []
     log_delay_times = []
     log_start_time = time.time()
@@ -62,10 +67,11 @@ def main():
 
                 state, reward, done, info = env.step(best_action)
                 
-                # good = np.array_equal(next_states[best_action], state)
-                # if not good:
+                # if not np.array_equal(next_states[best_action], state):
                 #     print(env.render_as_str())
-                #     raise Exception("STATE MATCH FAIL")
+                #     print(abs(next_states[best_action].sum() - state.sum()))
+                #     print(np.array2string((next_states[best_action] == state), max_line_width=6*10+2, separator=" "))
+                #     raise Exception("State Match Failed")
                             
                 agent.add_to_memory(state, reward, done, next_states[best_action])
                             
@@ -74,6 +80,7 @@ def main():
 
             average_game_rewards.append(np.mean(game_rewards))
             scores.append(info["score"])
+            lines.append(info["lines"])
 
             # Train
             if episode % train_every == 0:
@@ -100,6 +107,12 @@ def main():
 
                 print(f"{avg_score = }, {min_score = }, {max_score = }")
 
+                avg_lines = np.mean(lines[-log_every:])
+                min_lines = min(lines[-log_every:])
+                max_lines = max(lines[-log_every:])
+
+                print(f"{avg_lines = }, {min_lines = }, {max_lines = }")
+
                 avg_reward = np.mean(average_game_rewards[-log_every:])
                 min_reward = min(average_game_rewards[-log_every:])
                 max_reward = max(average_game_rewards[-log_every:])
@@ -107,8 +120,9 @@ def main():
                 print(f"{avg_reward = }, {min_reward = }, {max_reward = }")
 
                 avg_score = np.mean(scores)
+                avg_lines = np.mean(lines)
                 avg_reward = np.mean(average_game_rewards)
-                print(f"Overall: {avg_score = }, {avg_reward = }")
+                print(f"Overall: {avg_score = }, {avg_lines = }, {avg_reward = }")
                 
                 print()
                 
