@@ -1,12 +1,20 @@
 print("Loading modules...")
 
+import pathlib
+import sys
+
+"""Result: unsurprising just always predicts the most common letter, e"""
+
+directory = pathlib.Path(__file__).parent.absolute()
+sys.path.append(str(directory.parent.parent))
+
 import tkinter as tk
-import pickle
 
 import numpy as np
 from matplotlib import pyplot as plt
 
 import neural_network as nn
+import data_saver
 
 # --- get data and set constants ---
 
@@ -70,24 +78,18 @@ network = nn.network.Network([
 
 ], loss=nn.losses.CategoricalCrossEntropy(categorical_labels=True), preprocess=[preprocess])
 
+save_file = str(directory / "mnist-network")
 try:
-    print("Attempting to load saved network...")
-    network.load("ml_projects/mnist/mnist-network")
+    print(f"Attempting to load saved network from {save_file}...")
+    network.load(save_file)
 except FileNotFoundError:
     print("No saved network found, getting training data")
     
-    with open("ml_projects/mnist/mnist_train_test.pkl", "rb") as file:
-        ((train_len, X_train, y_train), (test_len, X_test, y_test)) = pickle.load(file)
-        
-        X_train = np.frombuffer(X_train, dtype=np.uint8).reshape((train_len, small_drawing_height, small_drawing_width))
-        y_train = np.frombuffer(y_train, dtype=np.uint8).reshape((train_len,))
-        
-        X_test = np.frombuffer(X_test, dtype=np.uint8).reshape((test_len, small_drawing_height, small_drawing_width))
-        y_test = np.frombuffer(y_test, dtype=np.uint8).reshape((test_len,))
-            
+    (X_train, y_train), (X_test, y_test) = data_saver.load(directory)
+     
     print("Starting Training...")
     network.train(X_train, y_train, batch_size=16, epochs=2, learning_rate=0.1)
-    network.dump("ml_projects/mnist/mnist-network")
+    network.dump(save_file)
 
     # --- test model on test data ---
 
