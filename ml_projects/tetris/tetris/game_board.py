@@ -258,6 +258,7 @@ class Tetris:
     def step(self, moves: list[Move], quick_return = False) -> tuple[np.ndarray, float, bool, dict]:
 
         self.frame += 1
+        self.lines_cleared = 0
         
         soft_drop = False
         for move in moves:
@@ -288,6 +289,7 @@ class Tetris:
             "level": self.level,
             "held": self.held_shape,
             "piece_queue": self.shape_queue[:self.visible_shape_queue_size],
+            "lines_cleared": self.lines_cleared,
             "frame": self.frame,
         }
         
@@ -357,8 +359,7 @@ class Tetris:
         ]
         
     def _create_inputs_cache(self):
-        self._piece_to_index = dict(((b, a) for (a, b) in enumerate(TetrominoShape.ALL_SHAPES)))
-        self._one_hot_shapes = np.eye(len(TetrominoShape.ALL_SHAPES), dtype=np.float64)
+        self._one_hot_shapes = np.eye(max(TetrominoShape.SHAPE_ID_MAP.keys()), dtype=np.float64)
         self._one_hot_x = np.eye(self.width, dtype=np.float64)
         self._one_hot_y = np.eye(self.height, dtype=np.float64) 
         self._one_hot_rotations = np.eye(TetrominoShape.MAX_ORIENTATIONS, dtype=np.float64)
@@ -367,14 +368,22 @@ class Tetris:
         
         return np.concatenate([
             (self.grid > 0).flatten(), #  board
-            self._one_hot_shapes[self._piece_to_index[self.current_tetromino.shape]], # piece type
+            
+            self._one_hot_shapes[self.current_tetromino.shape.id], # piece type
             self._one_hot_x[self.current_tetromino.x], # x
             self._one_hot_y[self.current_tetromino.y], # y
             self._one_hot_rotations[self.current_tetromino.orientation], # rotation
-            np.concatenate([
-                self._one_hot_shapes[self._piece_to_index[shape]]
-                for shape in self.shape_queue[:self.visible_shape_queue_size]
-            ]), # next piece type
+            
+            # np.concatenate([ # next piece types
+            #     self._one_hot_shapes[shape]
+            #     for shape in self.shape_queue[:self.visible_shape_queue_size]
+            # ]), 
+            self._one_hot_shapes[self.shape_queue[0].id],  # Next pieces types (optimized)
+            self._one_hot_shapes[self.shape_queue[1].id],
+            self._one_hot_shapes[self.shape_queue[2].id],
+            
+            [self.can_swap],
+            self._one_hot_shapes[self.held_shape.id if self.held_shape else 0]
         ], dtype=np.float64)
         
     def value_function(self) -> float:                
@@ -383,9 +392,9 @@ class Tetris:
             +0.760666 * self.lines_cleared
             -0.510066 * np.sum(heights) 
             -0.356630 * self._get_number_of_holes()
-            -0.101044 * np.mean(heights) 
             -0.184483 * self._heights_bumpiness(heights)
-        )  / 25
+            -0.101044 * np.mean(heights) 
+        ) / 25
 
     
     def get_next_states(self) -> dict[tuple[Move], np.ndarray]:
