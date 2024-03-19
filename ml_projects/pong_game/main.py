@@ -33,7 +33,7 @@ class BallConstants:
 
     START_LOCATION = 0.07, 0.1
     START_SLOPE = 0.5, 1
-    BOUNCE_VELOCITY_INCREASE = 0.1
+    BOUNCE_VELOCITY_INCREASE = 0.25
 
 
 class PaddleConstants:
@@ -45,6 +45,10 @@ class PaddleConstants:
 
 def main() -> None:
     pygame.init()
+    print()
+    
+    print("1 for Human, 2 for AI, 3 for Wall")
+    right_player_type = input("Right Player Type: ").lower().strip()
     
     screen = pygame.display.set_mode(
         make_screen_size(size_px=400, aspect_ration=16/10, horizontal=True), 
@@ -67,11 +71,22 @@ def main() -> None:
         pygame.K_q, pygame.K_a
     )
 
-    right_player = HumanPaddle(
-        RelativeRectPoint(screen, PaddleConstants.START_LOCATION, reverse_x=True),
-        RelativeRectPoint(screen, PaddleConstants.PADDLE_SIZE),
-        pygame.K_p, pygame.K_l
-    )
+    if right_player_type in ("2", "ai"):
+        right_player = AiPaddle(
+            RelativeRectPoint(screen, PaddleConstants.START_LOCATION, reverse_x=True),
+            RelativeRectPoint(screen, PaddleConstants.PADDLE_SIZE),
+        )
+    elif right_player_type in ("3", "wall"):
+        right_player = WallPaddle(
+            RelativeRectPoint(screen, PaddleConstants.START_LOCATION, reverse_x=True),
+            RelativeRectPoint(screen, PaddleConstants.PADDLE_SIZE),
+        )
+    else:
+        right_player = HumanPaddle(
+            RelativeRectPoint(screen, PaddleConstants.START_LOCATION, reverse_x=True),
+            RelativeRectPoint(screen, PaddleConstants.PADDLE_SIZE),
+            pygame.K_p, pygame.K_l
+        )
     
     players = pygame.sprite.Group([left_player, right_player])  # type: ignore
     
@@ -89,9 +104,15 @@ def main() -> None:
             right_player_score_font,
             RelativeRectPoint(screen, GameConstants.SCORE_LOCATION, reverse_x=True).point_centered_for(right_player_score_font)
         )
+        
+    frame = 0
     
     while not pygame.event.get(pygame.QUIT):
-        screen.fill(GameConstants.BACKGROUND_COLOR)
+        frame += 1
+        
+        if frame % 2 == 0:
+            screen.fill(GameConstants.BACKGROUND_COLOR)
+    
         pygame.draw.line(screen, GameConstants.MAP_ITEM_COLOR,
                 RelativeRectPoint(screen, GameConstants.LINE_LOCATION, reverse_y=False).point,
                 RelativeRectPoint(screen, GameConstants.LINE_LOCATION, reverse_y=True).point)
@@ -103,10 +124,10 @@ def main() -> None:
             player.rect.clamp_ip(screen.get_rect()) 
         
         if isinstance(left_player, AiPaddle):
-            left_player.update_network(ball, screen, left_player.image.get_rect())
+            left_player.find_next_move(ball, screen)
             
         if isinstance(right_player, AiPaddle):
-            right_player.update_network(ball, screen, left_player.image.get_rect())
+            right_player.find_next_move(ball, screen)
 
         collisions = pygame.sprite.spritecollide(ball, players, False)
         if collisions:

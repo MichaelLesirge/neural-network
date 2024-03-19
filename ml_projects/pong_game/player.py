@@ -1,6 +1,6 @@
 import pygame
 
-import ball
+from ball import Ball
 from utils import RelativeRectPoint
 
 
@@ -8,9 +8,11 @@ class Constants:
     SPEED = 5
     COLOR = "white"
 
-class PaddleBase(pygame.sprite.Sprite):
+class Paddle(pygame.sprite.Sprite):
     def __init__(self, start_position: RelativeRectPoint, size: RelativeRectPoint) -> None:
         super().__init__()
+        
+        self.start_position = start_position
         
         self.score = 0
         self.size = size
@@ -20,7 +22,7 @@ class PaddleBase(pygame.sprite.Sprite):
         
         self.rect = self.image.get_rect()
                 
-        self.rect.centerx, self.rect.centery = start_position.point
+        self.rect.centery = self.start_position.y
         
     def add_score(self) -> None:
         self.score += 1
@@ -32,9 +34,9 @@ class PaddleBase(pygame.sprite.Sprite):
         self.rect.y += Constants.SPEED
     
     def update(self) -> None:
-        pass
+        self.rect.centerx = self.start_position.x
 
-class HumanPaddle(PaddleBase):
+class HumanPaddle(Paddle):
     def __init__(self, start_position: RelativeRectPoint, size: RelativeRectPoint, up_key, down_key) -> None:
         super().__init__(start_position, size)
             
@@ -42,35 +44,38 @@ class HumanPaddle(PaddleBase):
         self.down_key = down_key
         
     def update(self) -> None:
+        super().update()
                 
         keys = pygame.key.get_pressed()
         
         if keys[self.up_key]: self.go_up()
         if keys[self.down_key]: self.go_down()
         
-        super().update()
         
 
-class AiPaddle(PaddleBase):
-    def __init__(self, start_position: RelativeRectPoint, size: RelativeRectPoint, network) -> None:
+class AiPaddle(Paddle):
+    def __init__(self, start_position: RelativeRectPoint, size: RelativeRectPoint) -> None:
         super().__init__(start_position, size)
-        
-        self.network = network
         self.action = None
     
-    def update_network(self, ball: ball.Ball, screen, other_player) -> None:
-        # data = [*self.rect.topleft, *self.rect.bottomright, *other_player.topleft, *other_player.topleft, *other_player.bottomright,
-        #         *ball.rect.center, ball.x_velocity, ball.y_velocity]
-        pass
+    def find_next_move(self, ball: Ball, screen: pygame.Surface) -> None:
+        y = self.rect.centery
+        ball_y = ball.rect.centery
         
+        difference = y - ball_y
         
+        if difference > 5:
+            self.action = self.go_up
+        elif difference < 5:
+            self.action = self.go_down
+        else:
+            self.action = None
+    
     def update(self) -> None:
-        # TODO make the most complex thing I have every attempted  
-        
-        return super().update()
+        super().update()
+        if self.action: self.action()
 
-
-class WallPaddle(PaddleBase):
+class WallPaddle(Paddle):
     def __init__(self, start_position: RelativeRectPoint, size: RelativeRectPoint) -> None:
         size._y = 1
         super().__init__(start_position, size)  
