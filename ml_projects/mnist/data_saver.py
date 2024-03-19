@@ -2,6 +2,8 @@ import pickle
 
 small_drawing_width, small_drawing_height = (28, 28)
 
+save_file_name = "mnist_train_test.pkl"
+
 def save(directory):
     from keras.datasets.mnist import load_data
 
@@ -12,7 +14,7 @@ def save(directory):
     print(X_test.dtype, X_test.shape)
     print(y_test.dtype, y_test.shape)
 
-    with open(directory / "mnist_train_test.pkl", "wb") as file:
+    with open(directory / save_file_name, "wb") as file:
         data = ((X_train.shape[0], X_train.tobytes(), y_train.tobytes()), (X_test.shape[0], X_test.tobytes(), y_test.tobytes()))
         print(len(data[0]), len(data[1]))
         pickle.dump(data, file)
@@ -20,7 +22,7 @@ def save(directory):
 def load(directory):
     import numpy as np
     
-    with open(directory / "mnist_train_test.pkl", "rb") as file:
+    with open(directory / save_file_name, "rb") as file:
         ((train_len, X_train, y_train), (test_len, X_test, y_test)) = pickle.load(file)
         
         X_train = np.frombuffer(X_train, dtype=np.uint8).reshape((train_len, small_drawing_height, small_drawing_width))
