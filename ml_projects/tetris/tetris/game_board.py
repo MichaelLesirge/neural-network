@@ -303,9 +303,8 @@ class Tetris:
 
         empty = " " * (block_width - 1) + "."
 
-        line_padding_left = "〈!"
-        line_padding_right = "!〉"
-        line_padding_width = 3  # Angle brackets have space built in
+        line_padding_left = " <!"
+        line_padding_right = "!> "
 
         lines = []
 
@@ -323,9 +322,9 @@ class Tetris:
 
         bottom2 = "\\/"
         lines.append(
-            " " * line_padding_width
+            " " * len(line_padding_left)
             + (bottom2 * (self.width * block_width // len(bottom2)))
-            + " " * line_padding_width
+            + " " * len(line_padding_right)
         )
 
         return "\n".join(lines)
