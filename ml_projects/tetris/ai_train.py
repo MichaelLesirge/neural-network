@@ -18,8 +18,8 @@ def main():
     )
     
     episodes = 100_000
-    epsilon_stop_episode = episodes * (75 / 100)
-    epsilon_start = (100 / 100)
+    epsilon_stop_episode = 15_000
+    epsilon_start = (5 / 100)
 
     max_steps = float("inf")
 
@@ -35,7 +35,7 @@ def main():
                      learning_rate=0.01,
                      epsilon_stop_episode=epsilon_stop_episode,
                      mem_size=10_000,
-                     discount=0.95,
+                     discount=0.99,
                      replay_start_size=6000,
                      epsilon=epsilon_start)
     
@@ -87,6 +87,18 @@ def main():
                 agent.train(batch_size=batch_size, epochs=epochs)
 
             if episode % log_every == 0:
+                
+                env.reset()
+                done = False
+                steps = 0 
+                epsilon_saved, agent.epsilon = agent.epsilon, 0
+                while (not done) and (steps < max_steps):
+                    next_states = env.get_next_states()
+                    best_action = agent.take_action(next_states)
+                    state, reward, done, info = env.step(best_action)
+                    steps += 1
+                agent.epsilon = epsilon_saved
+                
                 log_delay_times.append(time.time() - log_start_time)
                 log_start_time = time.time()
                 
@@ -99,7 +111,8 @@ def main():
                 rounds_left = (episodes - episode) / log_every
                 
                 print(f"Episode #{episode}, ({episode / episodes:.1%}). {agent.epsilon=} ({agent.name})")
-                print(f"Estimated Time: Total={datetime.timedelta(seconds=int(expected_round_time * rounds_left))}, Round={datetime.timedelta(seconds=expected_round_time)}")
+                print(f"Estimated Time To Complete Is Currently {datetime.timedelta(seconds=int(expected_round_time * rounds_left))}")
+                print(f"Estimated Time Between Logs is {datetime.timedelta(seconds=expected_round_time)}")
 
                 avg_score = np.mean(scores[-log_every:])
                 min_score = min(scores[-log_every:])

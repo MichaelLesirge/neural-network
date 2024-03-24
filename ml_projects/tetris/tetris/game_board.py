@@ -289,7 +289,6 @@ class Tetris:
             "level": self.level,
             "held": self.held_shape,
             "piece_queue": self.shape_queue[:self.visible_shape_queue_size],
-            "lines_cleared": self.lines_cleared,
             "frame": self.frame,
         }
         
@@ -387,12 +386,13 @@ class Tetris:
         
     def value_function(self) -> float:                
         heights = self._get_column_heights()
-        return (
-            +0.760666 * self.lines_cleared
+        return self.lines_cleared + (
             -0.510066 * np.sum(heights) 
             -0.356630 * self._get_number_of_holes()
             -0.184483 * self._heights_bumpiness(heights)
-            -0.101044 * np.mean(heights) 
+            -0.101044 * np.mean(heights)
+             
+            +(5 * self.can_swap) - 2.5
         ) / 25
 
     

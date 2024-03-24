@@ -126,6 +126,8 @@ def main() -> None:
     
     fps_speed_level = 0
     fps_change_percent = 10
+    
+    wait_seconds = 1
         
     while game_going and (not has_quit_game):                
         screen.fill(BACKGROUND_COLOR)
@@ -141,7 +143,7 @@ def main() -> None:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:           has_quit_game = True
             elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:    game_going = False
+                if event.key == pygame.K_ESCAPE:    game_going = False; wait_seconds = 0.2
                 if event.key == pygame.K_UP:        up = True; moves.append(Move.SPIN)
                 if event.key == pygame.K_SPACE:     moves.append(Move.HARD_DROP)
                 if event.key == pygame.K_c:         moves.append(Move.HOLD)
@@ -303,10 +305,9 @@ def main() -> None:
         )
         
         frame = 0
-        wait_seconds = 1
-        draw_on_frame = (FPS * wait_seconds)
+        draw_on_frame = int(FPS * wait_seconds)
         
-        pygame.mixer.music.fadeout(wait_seconds * 1000)
+        pygame.mixer.music.fadeout(1000)
          
         while waiting_for_key and (not has_quit_game):
             frame += 1
