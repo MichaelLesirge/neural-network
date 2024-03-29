@@ -260,7 +260,8 @@ def main() -> None:
         
         held_side_bar = render_info_panel(
             {"held": render_shapes([info["held"]], TETRIS_SQUARE_SIZE)},
-            font=font, width=SIDE_PANEL_WIDTH, margin=SIDE_PANEL_MARGIN
+            font=font, width=SIDE_PANEL_WIDTH, margin=SIDE_PANEL_MARGIN,
+            border_color = SECONDARY_COLOR, inner_border_color = None if info["can_hold"] else "red"
         )
         
         blit_with_outline(screen, held_side_bar, (SIDE_RIGHT_X, GAME_Y + GAME_HEIGHT - held_side_bar.get_height()))
@@ -328,16 +329,16 @@ def draw_tetromino_block(screen: pygame.Surface, block_size: int, row: int, col:
     if image.get_width() != block_size: image = pygame.transform.scale(image, (block_size, block_size))
     screen.blit(image, pygame.Rect(col * block_size, row * block_size, block_size, block_size))
 
-def render_game(game: Tetris, block_size: int = 25, ghost_block = True) -> tuple[pygame.Surface, list[pygame.Surface]]:    
+def render_game(game: Tetris, block_size: int = 25, ghost_block = True, background_color = BACKGROUND_COLOR, line_color = SECONDARY_COLOR) -> tuple[pygame.Surface, list[pygame.Surface]]:    
     screen = pygame.Surface((game.width * block_size, game.height * block_size))
                         
-    screen.fill(BACKGROUND_COLOR)
+    screen.fill(background_color)
     
     for col in range(1, game.width):
-        pygame.draw.line(screen, SECONDARY_COLOR, (block_size * col, 0), (block_size * col, block_size * game.height), width=1)
+        pygame.draw.line(screen, line_color, (block_size * col, 0), (block_size * col, block_size * game.height), width=1)
 
     for row in range(1, game.height):
-        pygame.draw.line(screen, SECONDARY_COLOR, (0, block_size * row), (block_size * game.width, block_size * row), width=1)
+        pygame.draw.line(screen, line_color, (0, block_size * row), (block_size * game.width, block_size * row), width=1)
 
     for value, (row, col) in game:
         if value: draw_tetromino_block(screen, block_size, row, col, TetrominoShape.SHAPE_ID_MAP[value])
@@ -396,7 +397,7 @@ def render_shapes(shape_queue: list[TetrominoShape], block_size: int) -> pygame.
     return rendered_queue
     
 
-def render_section(title: str, content: pygame.Surface, font: pygame.font.Font, width: int) -> pygame.Surface:
+def render_section(title: str, content: pygame.Surface, font: pygame.font.Font, width: int, text_background_color = SECONDARY_COLOR, content_background_color = BACKGROUND_COLOR) -> pygame.Surface:
     title_render = font.render(title, True, MAIN_COLOR)
     
     title_area_height = title_render.get_height()
@@ -404,8 +405,8 @@ def render_section(title: str, content: pygame.Surface, font: pygame.font.Font, 
     
     section = pygame.Surface((width, title_area_height + content_area_height))
     
-    pygame.draw.rect(section, SECONDARY_COLOR, pygame.Rect((0, 0), (width, title_area_height)))
-    pygame.draw.rect(section, BACKGROUND_COLOR, pygame.Rect((0, title_area_height), (width, content_area_height)))
+    pygame.draw.rect(section, text_background_color, pygame.Rect((0, 0), (width, title_area_height)))
+    pygame.draw.rect(section, content_background_color, pygame.Rect((0, title_area_height), (width, content_area_height)))
     
     section.blit(title_render, (
         section.get_width() // 2 - title_render.get_width() // 2,
@@ -417,7 +418,7 @@ def render_section(title: str, content: pygame.Surface, font: pygame.font.Font, 
     
     return section
     
-def render_info_panel(data: dict[str, pygame.Surface], font: pygame.font.Font, width: int, margin: int | tuple[int, int]):
+def render_info_panel(data: dict[str, pygame.Surface], font: pygame.font.Font, width: int, margin: int | tuple[int, int], border_color = SECONDARY_COLOR, inner_border_color = None):
     data = {key.upper().replace("_", " "): (value if isinstance(value, pygame.Surface) else font.render(str(value), True, MAIN_COLOR)) for key, value in data.items()}
         
     try: x_margin, y_margin = margin
@@ -426,7 +427,7 @@ def render_info_panel(data: dict[str, pygame.Surface], font: pygame.font.Font, w
     height = y_margin + sum(font.get_height() + section.get_height() + y_margin for section in data.values())
     panel = pygame.Surface((width, height))
         
-    panel.fill(SECONDARY_COLOR)
+    panel.fill(border_color)
     
     section_y = y_margin
     section_width = width - x_margin * 2
@@ -434,6 +435,8 @@ def render_info_panel(data: dict[str, pygame.Surface], font: pygame.font.Font, w
     for title, content in data.items():
         section = render_section(title, content, font, section_width)
         panel.blit(section, (x_margin, section_y))
+        if (inner_border_color):
+            pygame.draw.rect(panel, inner_border_color, pygame.rect.Rect(x_margin, section_y, section.get_width(), section.get_height()), width=1)
         section_y += section.get_height() + y_margin
         
     return panel
