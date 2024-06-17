@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, asdict
 from typing import Optional
 import heapq
-from pathlib import Path
 import json
 
 @dataclass(slots=True, frozen=True)
@@ -11,13 +10,7 @@ class Score:
     time: float
     playerName: str
 
-
-"""
-Alternate ideas to ask:
-- Is the use of of the Score dataclass helpful, can something else be better?
-- Would separating score organizing from file reading and writing be a good idea? Left as is because
-"""
-    
+ 
 class ScoreManager(ABC):
     
     @abstractmethod
@@ -33,7 +26,7 @@ class ScoreManager(ABC):
         pass
 
 class JSONFileHighScoreStorage(ScoreManager):
-    def __init__(self, file_path: Path):
+    def __init__(self, file_path: str):
         self.file_path = file_path
         self._load_scores()
 
