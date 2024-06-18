@@ -3,7 +3,7 @@ from tetris import TetrisGameManager, Grid, ShuffledBagQueue, TetrominoShape
 board_size = (10, 20)
 board = Grid(board_size)
 
-visible_queue_size = 5
+visible_queue_size = 3
 
 tetromino_shapes = [
     TetrominoShape(
@@ -67,10 +67,3 @@ tetromino_shapes = [
 piece_queue = ShuffledBagQueue(tetromino_shapes, visible_queue_size)
 
 game_manager = TetrisGameManager(board, piece_queue)
-
-going = True
-while going:
-    game_manager.step([])
-    print(game_manager.falling_tetromino)
-    print(game_manager.board)
-    print()

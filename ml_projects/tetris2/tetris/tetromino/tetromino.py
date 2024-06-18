@@ -6,8 +6,14 @@ from .shape import TetrominoShape
 
 CoordinatePair = tuple[int, int]
 
+
 class Tetromino:
-    def __init__(self, shape: TetrominoShape, start_position: CoordinatePair = (0, 0), orientation: int = 0) -> None:
+    def __init__(
+        self,
+        shape: TetrominoShape,
+        start_position: CoordinatePair = (0, 0),
+        orientation: int = 0,
+    ) -> None:
         self.shape = shape
 
         self.goto(start_position)
@@ -24,14 +30,14 @@ class Tetromino:
 
     def get_grid_array(self) -> np.ndarray:
         return self.shape.get_grid_array(self.orientation)
-    
+
     def get_position(self) -> CoordinatePair:
         return (self.x, self.y)
 
     def goto(self, position: CoordinatePair) -> int:
         self.x, self.y = position
 
-    def move(self, dx = 0, dy = 0) -> int:
+    def move(self, dx=0, dy=0) -> int:
         self.x += dx
         self.y += dy
 
@@ -40,7 +46,7 @@ class Tetromino:
 
     def set_orientation(self, orientation: int) -> int:
         self.orientation = orientation % len(self.shape.orientations)
-        
+
     def copy(self) -> Self:
         return self.__class__(self.x, self.y, self.shape, self.orientation)
 
