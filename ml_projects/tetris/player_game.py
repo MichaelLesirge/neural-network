@@ -1,7 +1,6 @@
 import json, time, pathlib
 
 import pygame
-import numpy as np
 
 from tetris import Tetris, Move, TetrominoShape
 import constants

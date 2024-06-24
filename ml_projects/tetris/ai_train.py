@@ -10,16 +10,18 @@ from tetris import Tetris
 # Run dqn with Tetris
 def main():
 
-    fps = 1
+    fps = 3 
     
     env = Tetris(
         constants.BOARD_WIDTH, constants.BOARD_HEIGHT, shape_queue_size=constants.SHAPE_QUEUE_SIZE,
         FPS=fps, enable_wall_kick=True, enable_hold=True,
     )
     
-    episodes = 100_000
-    epsilon_stop_episode = 15_000
-    epsilon_start = (5 / 100)
+    print(env.block_drop_interval)
+    
+    episodes = 200_000
+    epsilon_stop_episode = 80_000
+    epsilon_start = (100 / 100)
 
     max_steps = float("inf")
 
@@ -28,11 +30,11 @@ def main():
     
     train_every = fps
 
-    log_every = 100
-
+    log_every = 500
+    save_every = 10_000
     
     agent = DQNAgent(constants.AGENT_NAME, env.state_as_array().size,
-                     learning_rate=0.01,
+                     learning_rate=0.005,
                      epsilon_stop_episode=epsilon_stop_episode,
                      mem_size=10_000,
                      discount=0.99,
@@ -138,6 +140,9 @@ def main():
                 print(f"Overall: {avg_score = }, {avg_lines = }, {avg_reward = }")
                 
                 print()
+        
+            if episode % save_every:
+                agent.dump()
                 
         avg_score = np.mean(scores)
         avg_reward = np.mean(average_game_rewards)    
@@ -145,7 +150,7 @@ def main():
     except KeyboardInterrupt:
         print("Stopping...")
         
-    agent.dump() 
+    agent.dump()
 
 
 if __name__ == "__main__":

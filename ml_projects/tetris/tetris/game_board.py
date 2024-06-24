@@ -79,7 +79,8 @@ class Tetris:
         self.frame: int
         self.score: int
         self.lines: int
-        self.lines_cleared: int
+        self.lines_cleared_in_last: int
+        self.score_in_last: int
         self.level: int
         self.block_drop_interval: int
         
@@ -102,7 +103,7 @@ class Tetris:
         self.shape_queue = []
         self.fill_piece_queue()
         
-        self.frame = self.score = self.lines = self.lines_cleared = self.level = 0
+        self.frame = self.score = self.lines = self.lines_cleared_in_last = self.score_in_last = self.level = 0
         self.block_drop_interval = 60 * self.fps_scale
         
         self.done = False
@@ -135,13 +136,13 @@ class Tetris:
     def get_state(self) -> tuple:
         return (
             self.grid.copy(), self.current_tetromino.copy(), self.shape_queue.copy(), self.held_shape, self.can_swap,
-            self.frame, self.score, self.lines, self.lines_cleared, self.level, self.block_drop_interval, self.done,
+            self.frame, self.score, self.lines, self.lines_cleared_in_last, self.level, self.block_drop_interval, self.done,
         )
     
     def set_state(self, data: tuple) -> None:
         (
             grid, current_tetromino, shape_queue, self.held_shape, self.can_swap,
-            self.frame, self.score, self.lines, self.lines_cleared, self.level, self.block_drop_interval, self.done,
+            self.frame, self.score, self.lines, self.lines_cleared_in_last, self.level, self.block_drop_interval, self.done,
         ) = data
         
         (self.grid, self.current_tetromino, self.shape_queue) = (grid.copy(), current_tetromino.copy(), shape_queue.copy())
@@ -210,14 +211,14 @@ class Tetris:
 
         self.new_figure()
 
-        self.lines_cleared = len(full_line_indexes)
+        self.lines_cleared_in_last = len(full_line_indexes)
         
         scores = [0, 40, 100, 300, 1200]
         
         # Optimization
-        if self.lines_cleared > 0:
-            self.lines += self.lines_cleared
-            self.score += scores[self.lines_cleared] * (self.level + 1)
+        if self.lines_cleared_in_last > 0:
+            self.lines += self.lines_cleared_in_last
+            self.score += scores[self.lines_cleared_in_last] * (self.level + 1)
             self.level = (self.lines // 10)
 
             if self.level < 11: block_drop_interval = 60 - self.level * 5
@@ -258,7 +259,10 @@ class Tetris:
     def step(self, moves: list[Move], quick_return = False) -> tuple[np.ndarray, float, bool, dict]:
 
         self.frame += 1
-        self.lines_cleared = 0
+        
+        self.lines_cleared_in_last = 0
+        self.score_in_last = 0
+        score_at_start = self.score
         
         soft_drop = False
         for move in moves:
@@ -282,6 +286,8 @@ class Tetris:
             return self.state_as_array(), None, None, None
         
         reward = self.value_function()
+                
+        self.score_in_last = self.score - score_at_start
                 
         info = {
             "score": self.score,
@@ -342,8 +348,8 @@ class Tetris:
          
         rules = {
             None: 1,
-            Move.LEFT: 3,
-            Move.RIGHT: 3,
+            Move.LEFT: 1,
+            Move.RIGHT: 1,
             Move.SPIN: 3,
             Move.HOLD: 1,
             Move.HARD_DROP: 1,
@@ -386,14 +392,13 @@ class Tetris:
         
     def value_function(self) -> float:                
         heights = self._get_column_heights()
-        return self.lines_cleared + (
-            -0.510066 * np.sum(heights) 
-            -0.356630 * self._get_number_of_holes()
-            -0.184483 * self._heights_bumpiness(heights)
-            -0.101044 * np.mean(heights)
-             
-            +(5 * self.can_swap) - 2.5
-        ) / 25
+        return (0
+            + self.lines_cleared_in_last
+            + (self.score_in_last / 100)
+            - (np.mean(heights) / self.height) ** 2
+            - (np.max(heights) / self.height) ** 2
+            - self._get_number_of_holes() / self.height  
+        )
 
     
     def get_next_states(self) -> dict[tuple[Move], np.ndarray]:
@@ -417,8 +422,8 @@ class Tetris:
         for col in self.grid.T:
             has_seen_block = False
             for value in col:
-                if (not has_seen_block and value): has_seen_block = True
-                holes += (has_seen_block) and value == 0
+                has_seen_block = has_seen_block or value
+                holes += (has_seen_block) and not value
         
         return holes
     

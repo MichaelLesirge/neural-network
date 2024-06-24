@@ -32,6 +32,12 @@ class DQNAgent:
             nn.layers.Dense(layer_size, layer_size),
             nn.activations.ReLU(),
             
+            nn.layers.Dense(layer_size, layer_size),
+            nn.activations.ReLU(),
+            
+            nn.layers.Dense(layer_size, layer_size),
+            nn.activations.ReLU(),
+            
             nn.layers.Dense(layer_size, 1),
             nn.activations.Linear(),
 
@@ -100,7 +106,7 @@ class DQNAgent:
 
             # Get the expected score for the next states, in batch (better performance)
             next_states = np.array([next_state for (state, reward, done, next_state) in batch])
-            next_qs = self.network.compute(next_states)
+            next_qs = [y[0] for y in self.network.compute(next_states)]
 
             x = np.empty((len(batch), self.state_size), dtype=np.float64)
             y = np.empty((len(batch), 1), dtype=np.float64)
@@ -109,7 +115,7 @@ class DQNAgent:
             for i, (state, reward, done, next_state) in enumerate(batch):
                 if not done:
                     # Partial Q formula
-                    new_q = reward + self.discount * next_qs[i, 0]
+                    new_q = reward + self.discount * next_qs[i]
                 else:
                     new_q = reward
 
