@@ -66,10 +66,10 @@ network = nn.network.Network([
 ], loss=nn.losses.CategoricalCrossEntropy())
 
 try:
-    network.load(str(directory / "mnist-network"))
+    network.load(str(directory / "char-network"))
 except FileNotFoundError:
-# if True:
-    # network.load(str(directory / https://raw.githubusercontent.com/mxw/grmr/master/src/finaltests/bible.txt))
+# if (True):
+#     network.load(str(directory / "char-network"))
 
     placers_per_message = 6
     min_message_size = 3
@@ -82,7 +82,7 @@ except FileNotFoundError:
     #     next(data, None)
     #     messages = [row[5].lower().strip() + termination_char for row in data if len(row[5]) > min_message_size and all(min_char < ord(char) <= 0x007E for char in row[5])]
 
-    with open(directory / "poems.txt", "r", encoding="utf-8") as file:
+    with open(directory / "data.txt", "r", encoding="utf-8") as file:
         messages = [line + end_line for line in file.readlines() if len(line) > min_message_size]
     
     print("Formatting Data...")
@@ -105,7 +105,7 @@ except FileNotFoundError:
     print("Training...")
 
     network.train(X_train, y_train, batch_size=16, epochs=3, learning_rate=0.0862)
-    network.dump(str(directory / "mnist-network"))
+    network.dump(str(directory / "char-network"))
 
 CHOOSE_FROM_TOP = 2
 
