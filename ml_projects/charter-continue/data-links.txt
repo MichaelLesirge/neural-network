@@ -1,0 +1,8 @@
+Some guys poems: https://github.com/rufuspollock-okfn/openmilton/blob/master/miltondata/texts/poems.txt
+Best Selling Book (Lol): https://raw.githubusercontent.com/mxw/grmr/master/src/finaltests/bible.txt
+South Park Script: https://raw.githubusercontent.com/BobAdamsEE/SouthParkData/master/All-seasons.csv
+Bee Movie Script: https://courses.cs.washington.edu/courses/cse163/20wi/files/lectures/L04/bee-movie.txt
+Shreck Script: https://notability.com/g/AMZ261xtCIQlc5DMaa6Ov
+
+- Other Stuff to try -
+https://github.com/niderhoff/nlp-datasets?tab=readme-ov-file

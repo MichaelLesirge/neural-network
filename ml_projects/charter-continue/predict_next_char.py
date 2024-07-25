@@ -1,7 +1,9 @@
+# Quick project I assumed would fail so bad code quality
+
 import pathlib
 import sys
-
-"""Result: unsurprising just always predicts the most common letter, e"""
+import csv
+import unicodedata
 
 directory = pathlib.Path(__file__).parent.absolute()
 sys.path.append(str(directory.parent.parent))
@@ -14,7 +16,7 @@ import neural_network as nn
 end_line = "\n"
 termination_chars = {end_line}
 
-fallback_char = ""
+fallback_char = " "
 min_char, max_char = ord(" "), ord("~")
 
 max_chars_in_data = 25
@@ -28,12 +30,14 @@ def char_to_num(char: str) -> int:
         return char_to_num(fallback_char)
     return n - min_char + 1
 
-
 def num_to_lower_char(n: int) -> str:
     if n == 0:
         return end_line
     return chr(n + min_char - 1)
 
+def normalize(message: str) -> str:
+    nfkd_form = unicodedata.normalize('NFKD', message)
+    return u"".join([c for c in nfkd_form if not unicodedata.combining(c)])
 
 def to_one_hot_vector(nums, n_labels: int) -> np.ndarray:
     return np.eye(n_labels)[nums]
@@ -54,10 +58,10 @@ network = nn.network.Network([
     
     nn.layers.Dense(hidden_layer_size, hidden_layer_size),
     nn.activations.ReLU(),
-    
+
     nn.layers.Dense(hidden_layer_size, hidden_layer_size),
     nn.activations.ReLU(),
-    
+
     nn.layers.Dense(hidden_layer_size, hidden_layer_size),
     nn.activations.ReLU(),
     
@@ -68,11 +72,13 @@ network = nn.network.Network([
 try:
     network.load(str(directory / "char-network"))
 except FileNotFoundError:
-# if (True):
-#     network.load(str(directory / "char-network"))
 
     placers_per_message = 6
     min_message_size = 3
+
+    epochs = 3
+    batch_size = 16
+    learning_rate = 0.2
     
     print("Loading Data...")
     
@@ -80,11 +86,16 @@ except FileNotFoundError:
     # with open(directory / "Ubuntu-dialogue-corpus" / files[1], "r", encoding="utf8") as file:
     #     data = csv.reader(file.readlines())
     #     next(data, None)
-    #     messages = [row[5].lower().strip() + termination_char for row in data if len(row[5]) > min_message_size and all(min_char < ord(char) <= 0x007E for char in row[5])]
+    #     messages = [row[5].lower().strip() + end_line for row in data if len(row[5]) > min_message_size and all(min_char < ord(char) <= 0x007E for char in row[5])]
+
+    # with open(directory / "data.txt", "r", encoding="utf-8") as file:
+    #     messages = [line + end_line for line in file.readlines() if len(line) > min_message_size]
 
     with open(directory / "data.txt", "r", encoding="utf-8") as file:
-        messages = [line + end_line for line in file.readlines() if len(line) > min_message_size]
-    
+        data = csv.reader(file.readlines())
+        messages = [normalize(line[3]) + end_line for line in data if len(line) > min_message_size]
+        print(messages)
+        
     print("Formatting Data...")
 
     computer_readable_messages = [message_to_one_hot(message) for message in messages]
@@ -104,10 +115,16 @@ except FileNotFoundError:
             
     print("Training...")
 
-    network.train(X_train, y_train, batch_size=16, epochs=3, learning_rate=0.0862)
+    print(f"""
+          Using {len(computer_readable_messages)} messages to create {len(X_train)} data points to train on, repeated {epochs} times.
+          Training happens in batches of {batch_size} with a learning rate of {learning_rate:%}.
+          That is {X_train.nbytes * 1e+6} MB of data.
+        """)
+
+    network.train(X_train, y_train, batch_size=batch_size, epochs=epochs, learning_rate=learning_rate)
     network.dump(str(directory / "char-network"))
 
-CHOOSE_FROM_TOP = 2
+CHOOSE_FROM_TOP = 5
 
 if CHOOSE_FROM_TOP is None:
     print("Choose next character based on random choice with probabilities")
@@ -115,7 +132,7 @@ elif CHOOSE_FROM_TOP == 1:
     print("Choose next character based on highest probability")
 else:
     print(f"Choose next character based on random choice from top {CHOOSE_FROM_TOP} with probabilities")
-    
+print()    
 
 while True:
     message = input("CharGPN> ")
@@ -134,4 +151,4 @@ while True:
         print(char, end="")
 
         message += char
-    print("\n")
+    print()
