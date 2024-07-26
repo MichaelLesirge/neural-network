@@ -2,7 +2,7 @@
 
 import csv, time, os
 
-from util import *
+from network_util import *
 
 import numpy as np
 
@@ -11,20 +11,21 @@ MIN_MESSAGE_SIZE = 3
 
 EPOCHS = 3
 BATCH_SIZE = 16
-LEARNING_RATE = 0.002
+LEARNING_RATE = 0.0005
 
 OUTPUT_FOLDER = directory / "looped-train"
+TRAINING_DATA_PATH = directory / "data" / "data.txt"
 
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
 print("Loading Data...")
 
-LOAD_NETWORK_AT_START = directory / "char-network-first"
+LOAD_NETWORK_AT_START = directory / "char-network-a"
 
 if LOAD_NETWORK_AT_START is not None:
     network.load(str(LOAD_NETWORK_AT_START))
 
-with open(directory / "data.txt", "r", encoding="utf-8") as file:
+with open(TRAINING_DATA_PATH, "r", encoding="utf-8") as file:
     messages = [normalize(line).strip() for line in file.readlines()]
     messages = [message + END_LINE for message in messages if len(message) > MIN_MESSAGE_SIZE]
     
