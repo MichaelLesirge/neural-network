@@ -1,6 +1,6 @@
 # Quick project I assumed would fail so bad code quality
 
-import csv
+import csv, time, os
 
 from util import *
 
@@ -11,24 +11,22 @@ MIN_MESSAGE_SIZE = 3
 
 EPOCHS = 3
 BATCH_SIZE = 16
-LEARNING_RATE = 0.069
-    
+LEARNING_RATE = 0.002
+
+OUTPUT_FOLDER = directory / "looped-train"
+
+os.makedirs(OUTPUT_FOLDER, exist_ok=True)
+
 print("Loading Data...")
 
-network.load(str(directory / "char-network-first" ))
+LOAD_NETWORK_AT_START = directory / "char-network-first"
+
+if LOAD_NETWORK_AT_START is not None:
+    network.load(str(LOAD_NETWORK_AT_START))
 
 with open(directory / "data.txt", "r", encoding="utf-8") as file:
-    messages = [line + END_LINE for line in file.readlines() if len(line) > MIN_MESSAGE_SIZE]
-
-# files = ["dialogueText.csv", "dialogueText_196.csv", "dialogueText_301.csv"]
-# with open(directory / "Ubuntu-dialogue-corpus" / files[1], "r", encoding="utf8") as file:
-#     data = csv.reader(file.readlines())
-#     next(data, None)
-#     messages = [row[5].lower().strip() + end_line for row in data if len(row[5]) > min_message_size and all(min_char < ord(char) <= 0x007E for char in row[5])]
-# with open(directory / "data.txt", "r", encoding="utf-8") as file:
-#     data = csv.reader(file.readlines())
-#     messages = [normalize(line[3]) + end_line for line in data if len(line) > min_message_size]
-#     print(messages)
+    messages = [normalize(line).strip() for line in file.readlines()]
+    messages = [message + END_LINE for message in messages if len(message) > MIN_MESSAGE_SIZE]
     
 print("Formatting Data...")
 
@@ -43,8 +41,12 @@ print(f"""
         Training happens in batches of {BATCH_SIZE} with a learning rate of {LEARNING_RATE:%}.
     """)
 
-for i in range(500):
-    print(f"Round {i:,}")
+print("Training in loop...")
+print("Stop at any round and view result")
+print()
+
+for i in range(100):
+    print(f"Round {i:,}. Beginning at {time.ctime(time.time())}")
 
     for message_index, message in enumerate(computer_readable_messages):
         for place_index in range(DATA_POINTS_PER_MESSAGE):
@@ -55,9 +57,6 @@ for i in range(500):
             X_train[train_index] = format_one_hot_messages(message[:rand_index])
             y_train[train_index] = message[rand_index]
 
-            
-    print("Training...")
-
     network.train(X_train, y_train, batch_size=BATCH_SIZE, epochs=EPOCHS, learning_rate=LEARNING_RATE)
 
-    network.dump(str(directory / "mass-train" / f"char-network-v{i}"))
+    network.dump(str(OUTPUT_FOLDER / f"char-network-v{i}"))
