@@ -12,7 +12,7 @@ class Score:
     playerName: str
 
 
-class ScoreManager(ABC):
+class HighScoreManager(ABC):
 
     @abstractmethod
     def save_score(self, score: Score) -> None:
@@ -27,7 +27,7 @@ class ScoreManager(ABC):
         pass
 
 
-class JSONFileHighScoreStorage(ScoreManager):
+class JSONFileHighScoreStorage(HighScoreManager):
     def __init__(self, file_path: str):
         self.file_path = file_path
         self._load_scores()

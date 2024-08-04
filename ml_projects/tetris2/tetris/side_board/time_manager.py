@@ -1,3 +1,4 @@
+from ..game_events import Event
 from . import Manager
 
 class TimeManager(Manager):
@@ -6,6 +7,9 @@ class TimeManager(Manager):
     
     def reset(self) -> None:
         self.frame = 0
+    
+    def handle_event(self, event: dict[Event, object]) -> None:
+        return super().handle_event(event)
     
     def tick(self):
         self.frame += 1

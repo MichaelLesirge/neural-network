@@ -6,9 +6,9 @@ from .refill_queue import (
     LessRepeatRandomQueue,
     ShuffledBagQueue,
 )
-from .scores.scores_manager import ScoreManager, JSONFileHighScoreStorage
+from .scores.scores_manager import HighScoreManager, JSONFileHighScoreStorage
 from .tetromino import TetrominoShape, Tetromino
-from .side_board import LevelManager
+from .side_board import LevelManager, ScoreManger, TimeManager
 from .game_actions import Action
 
 __all__ = [
@@ -19,8 +19,11 @@ __all__ = [
     FullRandomQueue,
     LessRepeatRandomQueue,
     ShuffledBagQueue,
-    ScoreManager,
+    HighScoreManager,
     JSONFileHighScoreStorage,
     TetrominoShape,
     Tetromino,
+    LevelManager,
+    ScoreManger,
+    TimeManager
 ]

@@ -1,3 +1,4 @@
+from ..game_events import Event
 from . import Manager
 
 class LevelManager(Manager):
@@ -7,6 +8,9 @@ class LevelManager(Manager):
 
     def reset(self) -> None:
         self.level = 0
+    
+    def handle_event(self, event: dict[Event, object]) -> None:
+        return super().handle_event(event)
 
     def get_level(self) -> int:
         return self.level

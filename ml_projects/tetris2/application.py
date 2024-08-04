@@ -6,20 +6,15 @@ from tetris import (
     ShuffledBagQueue,
     TetrominoShape,
     LevelManager,
+    ScoreManger,
+    TimeManager,
     Action,
 )
 
 DTYPE = np.uint8
 NULL_VALUE = 0
 
-board_size = (10, 20)
-board = Grid.empty(board_size, null_value=NULL_VALUE, dtype=DTYPE)
-
-visible_queue_size = 3
-
-lines_for_next_level = 10
-line_clear_scores = [0, 40, 100, 300, 1200]
-move_action_scores = {Action.SOFT_DROP: 1, Action.HARD_DROP: 2}
+board = Grid.empty(shape=(10, 20), null_value=NULL_VALUE, dtype=DTYPE)
 
 tetromino_shapes = [
     TetrominoShape(
@@ -87,15 +82,18 @@ tetromino_shapes = [
     ),
 ]
 
-piece_queue = ShuffledBagQueue(tetromino_shapes, visible_queue_size)
+piece_queue = ShuffledBagQueue(tetromino_shapes, visible_size=3)
 
-level_score_manager = LevelManager(
-    lines_for_next_level,
-    line_clear_scores,
-    move_action_scores,
+level_manager = LevelManager(
+    lines_for_next_level = 10,
 )
 
-game_manager = TetrisGameManager(board, piece_queue, level_score_manager)
+score_manager = ScoreManger(
+    [0, 40, 100, 300, 1200]
+    {Action.SOFT_DROP: 1, Action.HARD_DROP: 2}
+)
+
+game_manager = TetrisGameManager(board, piece_queue, level_manager)
 
 def main() -> None:
     import random

@@ -1,3 +1,3 @@
-from .scores_manager import Score, ScoreManager, JSONFileHighScoreStorage
+from .scores_manager import Score, HighScoreManager, JSONFileHighScoreStorage
 
-__all__ = [Score, ScoreManager, JSONFileHighScoreStorage]
+__all__ = [Score, HighScoreManager, JSONFileHighScoreStorage]
