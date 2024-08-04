@@ -1,66 +1,67 @@
-from typing import Generator
+from typing import Generator, Self
 
 import numpy as np
 
 CoordinatePair = tuple[int, int]
 WidthHeightPair = tuple[int, int]
 
-Int = np.uint8
-
-
-def find_corners(
-    grid: np.ndarray, empty: Int = 0
-) -> tuple[np.ndarray, (int, int, int, int)]:
-    empty_positions = np.where(grid != empty)
+def find_corners(grid: np.ndarray, null_value=0) -> tuple[CoordinatePair, CoordinatePair]:
+    empty_positions = np.where(grid != null_value)
     y_start = min(empty_positions[0])
     y_end = max(empty_positions[0]) + 1
     x_start = min(empty_positions[1])
     x_end = max(empty_positions[1]) + 1
-    return (
-        x_start,
-        x_end,
-        y_start,
-        y_end,
-    )
+    return ((x_start, y_start), (x_end, y_end))
 
 
 class Grid:
-    def __init__(self, size: WidthHeightPair, empty: Int = 0) -> None:
-        width, height = size
-        self.grid = np.empty((height, width), dtype=Int)
-        self.empty = empty
+    def __init__(self, grid: np.ndarray, null_value=0) -> None:
+        self.grid = grid
+        self.null_value = null_value
         self.clear()
 
+    @classmethod
+    def empty(cls, shape: WidthHeightPair, null_value=0, dtype=np.uint8) -> Self:
+        width, height = shape
+        new = cls(np.empty((height, width), dtype=dtype), null_value)
+        new.clear()
+        return new
+
+    @classmethod
+    def empty_like(cls, prototype: Self) -> Self:
+        new = cls(np.empty_like(prototype.get_grid_array()), prototype.get_null_value())
+        new.clear()
+        return new
+
     def clear(self) -> None:
-        self.grid.fill(self.empty)
+        self.grid.fill(self.null_value)
 
     def get_grid_array(self) -> np.ndarray:
         return self.grid
+
+    def get_null_value(self) -> np.ndarray:
+        return self.null_value
 
     def insert(self, position: CoordinatePair, subgrid: np.ndarray) -> None:
         """Put subgrid at specified position in main grid, EMPTY values will not be set"""
 
         x, y = position
 
-        x_start, x_end, y_start, y_end = find_corners(
-            subgrid
-        )
+        ((x_start, y_start), (x_end, y_end)) = find_corners(subgrid)
 
         subgrid = subgrid[y_start:y_end, x_start:x_end]
         x, y = x + x_start, y + y_start
         width, height = x_end - x_start, y_end - y_start
 
         view = self.grid[y : y + height, x : x + width]
-        mask = subgrid != self.empty
+        mask = subgrid != self.null_value
         view[mask] = subgrid[mask]
 
     def insert_if_empty(self, position: CoordinatePair, subgrid: np.ndarray) -> bool:
         """if subgrid does not overlap, insert it and return true"""
         x, y = position
 
-        x_start, x_end, y_start, y_end = find_corners(
-            subgrid
-        )
+        ((x_start, y_start), (x_end, y_end)) = find_corners(subgrid)
 
         subgrid = subgrid[y_start:y_end, x_start:x_end]
         x, y = x + x_start, y + y_start
@@ -71,7 +72,7 @@ class Grid:
         if view.shape != subgrid.shape:
             return False
 
-        mask = subgrid != self.empty
+        mask = subgrid != self.null_value
 
         # Check to see if there is any overlap
         if np.logical_and(view[mask], subgrid[mask]).any():
@@ -95,9 +96,7 @@ class Grid:
         """check if subgrid overlaps with anything in grid at specified position"""
         x, y = position
 
-        x_start, x_end, y_start, y_end = find_corners(
-            subgrid
-        )
+        ((x_start, y_start), (x_end, y_end)) = find_corners(subgrid)
 
         subgrid = subgrid[y_start:y_end, x_start:x_end]
         x, y = x + x_start, y + y_start
@@ -108,7 +107,7 @@ class Grid:
         if view.shape != subgrid.shape:
             return True
 
-        mask = subgrid != self.empty
+        mask = subgrid != self.null_value
 
         # Check to see if there is any overlap
         return np.logical_and(view[mask], subgrid[mask]).any()
@@ -123,7 +122,7 @@ class Grid:
                 "".join(
                     (
                         full_tile_template_str % item
-                        if (item != self.empty)
+                        if (item != self.null_value)
                         else empty_tile_str
                     )
                     for item in row
@@ -139,7 +138,7 @@ class Grid:
         return self.grid.shape[1]
 
     def copy(self):
-        return self.__class__(self.grid.copy(), self.empty)
+        return self.__class__(self.grid.copy(), self.null_value)
 
     def __iter__(self) -> Generator[tuple[int, CoordinatePair], None, None]:
         for row in range(self.get_height()):

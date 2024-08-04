@@ -8,9 +8,12 @@ from .refill_queue import (
 )
 from .scores.scores_manager import ScoreManager, JSONFileHighScoreStorage
 from .tetromino import TetrominoShape, Tetromino
+from .side_board import LevelManager
+from .game_actions import Action
 
 __all__ = [
     TetrisGameManager,
+    Action,
     Grid,
     RefillingQueue,
     FullRandomQueue,

@@ -2,9 +2,9 @@ import typing
 
 import pygame
 
-Runnable = typing.Callable[[], None]
+from._common import Coordinate
 
-xyPair = tuple[int, int] | pygame.Vector2
+Runnable = typing.Callable[[], None]
 
 def _run(actions: list[Runnable]) -> None:
     for action in actions:
@@ -43,12 +43,12 @@ class ToggleButton:
     def add_disabled_action(self, func: Runnable) -> None:
         self.on_disabled_actions.append(func)
 
-    def is_over(self, position: xyPair) -> bool:
+    def is_over(self, position: Coordinate) -> bool:
         if self.position is None:
             return False
         return pygame.Vector2(position).distance_to(self.position) <= self.radius
 
-    def update(self, mouse_position: xyPair, mouse_down: bool = False) -> None:
+    def update(self, mouse_position: Coordinate, mouse_down: bool = False) -> None:
         
         was_hovered = self.is_hovered
         self.is_hovered = self.is_over(mouse_position)
@@ -68,7 +68,7 @@ class ToggleButton:
         image = pygame.transform.scale_by(image, 1 + (-0.2 if self.is_clicked else 0) + (0.1 if self.is_hovered else 0))
         return image
     
-    def put_at_position(self, surface: pygame.Surface, position: xyPair, circumference: int):
+    def put_at_position(self, surface: pygame.Surface, position: Coordinate, circumference: int):
         self.position = pygame.Vector2(position)
         self.radius = circumference / 2
         self.size = pygame.Vector2(circumference, circumference)

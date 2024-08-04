@@ -1,10 +1,7 @@
 import pygame
 from pygame import Vector2
 
-xyPair = tuple[int, int] | Vector2
-ColorValue = tuple[int, int, int] | str
-
-State = tuple
+from ._common import Coordinate, Size, ColorValue
 
 class Align:
     START = 0
@@ -16,22 +13,23 @@ class GridContext:
     def __init__(
         self,
         surface: pygame.Surface,
-        grid_size: int,
+        grid_size: Size,
         *,
         position: Vector2 = None,
         size: Vector2 = None
     ) -> None:
         
         self.surface = surface
-        self.grid_pixel_size = grid_size
+
+        self.grid_pixel_size = pygame.Vector2(grid_size)
 
         if position is None:
             position = Vector2(0, 0)
 
         if size is None:
             size = Vector2(
-                self.surface.get_width() // self.grid_pixel_size,
-                self.surface.get_height() // self.grid_pixel_size,
+                self.surface.get_width() // self.grid_pixel_size.x,
+                self.surface.get_height() // self.grid_pixel_size.y,
             )
         
         self.position = position
@@ -41,55 +39,63 @@ class GridContext:
 
     @classmethod
     def create_from_rows(cls, surface: pygame.Surface, num_of_rows: int):
-        return cls(surface, round(surface.get_height() / num_of_rows))
+        size = round(surface.get_height() / num_of_rows)
+        return cls(surface, (size, size))
 
     @classmethod
     def create_from_cols(cls, surface: pygame.Surface, num_of_cols: int):
-        return cls(surface, round(surface.get_width() / num_of_cols))
+        size = round(surface.get_width() / num_of_cols)
+        return cls(surface, (size, size))
 
     @classmethod
-    def create_from_smallest_size(cls, surface: pygame.Surface, size: xyPair):
-        cols, rows = size
-        return cls(surface, round(min(surface.get_width() / cols, surface.get_height() / rows)))
+    def create_from_smallest_rows_and_cols(cls, surface: pygame.Surface, shape: Size):
+        num_of_cols, num_of_rows = shape
+        size = round(min(surface.get_width() / num_of_cols, surface.get_height() / num_of_rows))
+        return cls(surface, (size, size))
+
+    @classmethod
+    def create_from_rows_and_cols(cls, surface: pygame.Surface, shape: Size):
+        num_of_cols, num_of_rows = shape
+        return cls(surface, (round(surface.get_width() / num_of_cols), round(surface.get_height() / num_of_rows)))
 
     # --- Size Conversion ---
 
-    def to_pixel_relative(self, position: xyPair) -> Vector2:
+    def to_pixel_relative(self, size: Size) -> Vector2:
         """Convert grid coordinate to pixel location on surface"""
 
-        if isinstance(position, (Vector2)):
-            return position * self.grid_pixel_size
+        if isinstance(size, (Vector2)): 
+            return size * self.grid_pixel_size.elementwise()
 
-        return self.to_pixel_relative(Vector2(position))
+        return self.to_pixel_relative(Vector2(size))
 
-    def to_grid_realtive(self, position: xyPair) -> Vector2:
+    def to_grid_relative(self, size: Size) -> Vector2:
         """Convert pixel locations on surface to grid coordinate"""
-        if isinstance(position, (Vector2)):
-            return position / self.grid_pixel_size
+        if isinstance(size, (Vector2)):
+            return size / self.grid_pixel_size.elementwise()
 
-        return self.to_grid_realtive(Vector2(position))
+        return self.to_grid_relative(Vector2(size))
 
     # --- Position Conversion ---
 
-    def to_pixel_relative_position(self, position: xyPair) -> Vector2:
+    def to_pixel_relative_position(self, position: Coordinate) -> Vector2:
         """Convert grid coordinate to pixel location on surface"""
 
         if isinstance(position, (Vector2)):
-            return (position + self.position) * self.grid_pixel_size
+            return (position + self.position) * self.grid_pixel_size.elementwise()
 
         return self.to_pixel_relative_position(Vector2(position))
 
-    def to_grid_realtive_position(self, position: xyPair) -> Vector2:
+    def to_grid_relative_position(self, position: Coordinate) -> Vector2:
         """Convert pixel locations on surface to grid coordinate"""
         if isinstance(position, (Vector2)):
-            return position / self.grid_pixel_size - self.position
+            return position / self.grid_pixel_size.elementwise() - self.position
 
-        return self.to_grid_realtive_position(Vector2(position))
+        return self.to_grid_relative_position(Vector2(position))
 
     def with_focused_window(
         self,
-        position: xyPair,
-        size: xyPair,
+        position: Coordinate,
+        size: Size,
         *,
         alignX=Align.START,
         alignY=Align.START,
@@ -97,19 +103,19 @@ class GridContext:
         position = Vector2(position)
 
         if position.x < 0:
-            position.x = self.get_grid_size().x + position.x
+            position.x = self.get_size().x + position.x
         if position.y < 0:
-            position.y = self.get_grid_size().y + position.y
+            position.y = self.get_size().y + position.y
 
         if size is None:
-            size = self.get_grid_size() - position
+            size = self.get_size() - position
             
         size = Vector2(size)
 
         if size.x < 0:
-            size.x = self.get_grid_size().x + size.x
+            size.x = self.get_size().x + size.x
         if size.y < 0:
-            size.y = self.get_grid_size().y + size.y
+            size.y = self.get_size().y + size.y
 
         position.x += self.position.x
         position.y += self.position.y
@@ -121,23 +127,13 @@ class GridContext:
 
     # --- Pixel Surface Getters ---
 
-    def get_square_pixels(self) -> int:
-        """Get size of indivual square"""
+    def get_pixels_cell_size(self) -> Vector2:
+        """Get pixel size of individual grid cell"""
         return self.grid_pixel_size
-
-    def get_pixels_left_top(self) -> Vector2:
-        return self.to_pixel_relative(self.position)
-
-    def get_pixels_size(self) -> Vector2:
-        return self.to_pixel_relative(self.size)
 
     # --- Grid Getters ---
 
-    def get_grid_top_left(self) -> Vector2:
-        """Get width and height of focused grid"""
-        return Vector2(self.position)
-
-    def get_grid_size(self) -> Vector2:
+    def get_size(self) -> Vector2:
         """Get width and height of focused grid"""
         return Vector2(self.size)
 
@@ -149,7 +145,7 @@ class GridContext:
             self.surface,
             color,
             pygame.Rect(
-                self.get_pixels_left_top(),
+                self.to_pixel_relative(self.position),
                 self.to_pixel_relative(self.size),
             ),
         )
@@ -162,8 +158,8 @@ class GridContext:
             self.surface,
             color,
             pygame.Rect(
-                self.get_pixels_left_top() - (offset, offset),
-                self.get_pixels_size() + (offset * 2, offset * 2),
+                self.to_pixel_relative(self.position) - (offset, offset),
+                self.to_pixel_relative(self.size) + (offset * 2, offset * 2),
             ),
             width=abs(pixels_thickness),
         )
@@ -171,7 +167,7 @@ class GridContext:
     def blit(
         self,
         source: pygame.Surface,
-        destination: xyPair,
+        destination: Coordinate,
         *,
         alignX=Align.START,
         alignY=Align.START,

@@ -1,8 +1,4 @@
 import numpy as np
-from numpy.typing import NDArray
-
-N = np.uint8
-
 
 def rotate(grid: np.ndarray) -> np.ndarray:
     return np.flip(np.rot90(grid))
@@ -11,12 +7,12 @@ def rotate(grid: np.ndarray) -> np.ndarray:
 class TetrominoShape:
     MAX_ORIENTATIONS = 4
 
-    def __init__(self, name_char: str, shape: NDArray, empty: N = 0) -> None:
+    def __init__(self, name_char: str, shape: np.ndarray, null_value = 0, dtype = np.uint8) -> None:
 
         self.key = ord(name_char)
-        self.empty = empty
+        self.null_value = null_value
 
-        shape_array = np.where(shape, self.key, self.empty).astype(N)
+        shape_array = np.where(shape, self.key, self.null_value).astype(dtype)
 
         self.orientations: list[np.ndarray] = []
 
@@ -42,7 +38,7 @@ class TetrominoShape:
     def get_thumbnail_grid_array(self) -> np.ndarray:
         grid = self.get_grid_array(0)
 
-        empty_positions = np.where(grid != self.empty)
+        empty_positions = np.where(grid != self.null_value)
         trimmed_grid = grid[
             min(empty_positions[0]) : max(empty_positions[0]) + 1,
             min(empty_positions[1]) : max(empty_positions[1]) + 1,

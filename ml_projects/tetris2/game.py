@@ -1,4 +1,3 @@
-
 # Presenter
 class Game:
     pass
