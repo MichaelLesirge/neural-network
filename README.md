@@ -1,12 +1,13 @@
 # Neural Network from scratch in Python
 
-<img align="right" alt="Neural network code" src="https://github.com/michael-lesirge/neural-network/assets/100492377/24a82054-6954-4676-8360-aabab90802f4" width = 400>
+<img align="right" alt="Neural network code" src="https://github.com/michael-lesirge/neural-network/assets/100492377/24a82054-6954-4676-8360-aabab90802f4" width = 500>
 <p>
 Very basic neural network module that I made in Python using NumPy. It allows you to create neural networks and train them with a simple API, inspired by TensorFlow's Keras.
 
 I tried to keep a clean and extendable project structure, allowing for new additions of layers to be added easily. I have currently implemented dense layers, multiple activation functions, multiple loss functions, and a network class to bring them all together.
 
 This project was mostly made with the goal of actually understanding how neural networks and deep learning works, and just to say I did it from scratch.
+
 </p>
 
 <br clear="right"/>
