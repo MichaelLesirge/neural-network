@@ -8,7 +8,7 @@ The following are in order of how good I think they were as projects
 
 ## Character Predictions [ml_projects/charter-continue](https://github.com/MichaelLesirge/neural-network/tree/main/ml_projects/charter-continue)
 <p>This is a demo of the model trained to predict the next character. It was based on a variety of text files I found on the internet, including the Shrek and Bee Movie script, the entirety of the Bible and Harry Potter, all Shakespeare's works, and some other random stuff I found. To interact (as shown in the demo) you start typing out some characters, and it keeps on guessing what will come next until it guesses a new line character (\n) which terminates the message. I am pretty happy it even generates words but it is definitely overfit on the data.</p>
-<img alt="using predict_next_char.py in console GIF" src="https://github.com/user-attachments/assets/0d81e016-1437-4f90-8977-b2fdd4d0897c">
+<img alt="using predict_next_char.py in console GIF" src="https://github.com/user-attachments/assets/c5f4ac51-284a-4c2a-b576-8992a8bbb47b">
 
 ## Tetris (In Progress) [ml_projects/tetris](https://github.com/MichaelLesirge/neural-network/tree/main/ml_projects/tetris)
 <p>This was my first time attempting anything with reinforcement learning. I created a DQN agent to try and play tetris. I liked the Tetris clone I made, but my AI for the game was subpar (a handwritten AI would do much better). I want to come back to this though (tetris2) and do it better.</p>
