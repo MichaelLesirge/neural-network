@@ -50,3 +50,20 @@ network = nn.network.Network([
 ], loss=nn.losses.CategoricalCrossEntropy())
 ```
 
+## More Demos of Model
+GIFs of trying out network B with predict_next_char. Mostly got gibberish but it is still kinda funny to see the results.
+![Prompts With "I", Extra GIF of Network B](https://github.com/user-attachments/assets/f42a3b63-10f9-471b-b98a-e0af302b012b)
+![More Random Prompts, Extra GIF of Network B](https://github.com/user-attachments/assets/f442066e-3133-4ba7-95f4-a2e4e525d07e)
+![More Longer Prompts, Extra GIF of Network B](https://github.com/user-attachments/assets/96c6e834-903b-4f0d-9db6-d60163a16c02)
+
+
+
+
+
+
+
+
+
+
+
+
