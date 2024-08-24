@@ -11,6 +11,8 @@ from tetris import (
     Action,
 )
 
+from game import Game
+
 DTYPE = np.uint8
 NULL_VALUE = 0
 
@@ -82,30 +84,19 @@ tetromino_shapes = [
     ),
 ]
 
-piece_queue = ShuffledBagQueue(tetromino_shapes, visible_size=3)
+piece_queue = ShuffledBagQueue(tetromino_shapes, visible_size = 3)
 
 level_manager = LevelManager(
     lines_for_next_level = 10,
 )
 
 score_manager = ScoreManger(
-    [0, 40, 100, 300, 1200]
-    {Action.SOFT_DROP: 1, Action.HARD_DROP: 2}
+    for_line_clear = [0, 40, 100, 300, 1200],
+    for_action = {Action.SOFT_DROP: 1, Action.HARD_DROP: 2}
 )
 
-game_manager = TetrisGameManager(board, piece_queue, level_manager)
+time_manager = TimeManager(
+    fps = 60
+)
 
-def main() -> None:
-    import random
-
-    for i in range(10):
-        action = random.choice(list(Action))
-        print(i, action)
-        game_manager.step([action])
-        gb = game_manager.board.copy()
-        gb.insert(game_manager.falling_tetromino.get_position(), game_manager.falling_tetromino.get_grid_array())
-        print(gb)
-        print()
-
-if __name__ == "__main__":
-    main()
+game_manager = TetrisGameManager(board, piece_queue)

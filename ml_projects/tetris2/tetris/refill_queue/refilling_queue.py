@@ -14,6 +14,9 @@ class RefillingQueue(ABC, Generic[_T]):
         self.queue = []
         self.reset()
 
+    def get_view_size(self) -> int:
+        return self.visible_size
+
     def insert_at_start(self, items: list[_T]) -> None:
         self.queue = items + self.queue
 
