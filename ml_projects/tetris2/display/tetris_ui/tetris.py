@@ -7,7 +7,6 @@ from ._common import ColorValue, Size
 
 Grid = list[list[int]]
 
-
 def _get_grid_size(grid: Grid) -> pygame.Vector2:
     height = len(grid)
     width = height and len(grid[0])

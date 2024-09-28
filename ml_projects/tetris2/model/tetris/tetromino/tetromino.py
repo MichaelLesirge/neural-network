@@ -41,14 +41,14 @@ class Tetromino:
         self.x += dx
         self.y += dy
 
-    def rotate(self) -> None:
-        self.set_orientation(self.orientation + 1)
+    def rotate(self, rotations = 1) -> None:
+        self.set_orientation(self.orientation + rotations)
 
     def set_orientation(self, orientation: int) -> int:
         self.orientation = orientation % len(self.shape.orientations)
 
     def copy(self) -> Self:
-        return self.__class__(self.x, self.y, self.shape, self.orientation)
+        return self.__class__(self.shape, (self.x, self.y), self.orientation)
 
     def __iter__(self) -> Generator[tuple[int, CoordinatePair], None, None]:
         for row in range(self.get_height()):

@@ -13,11 +13,14 @@ class PygamePlayer(Player):
         pygame.K_c: Action.HOLD,
     }
 
-    def __init__(self, map: dict[int: Action]) -> None:
-        self.map = map
+    def __init__(self, control_map: dict[int: Action]) -> None:
+        pygame.init()
+
+        self.control_map = control_map
  
     def get_name(self) -> str:
         return "Human Player"
     
     def get_actions(self) -> list[Action]:
-        return [self.map[key] for key in pygame.key.get_pressed() if key in self.map]
+        pressed = pygame.key.get_pressed()
+        return [action for (key, action) in self.control_map.items() if pressed[key]]

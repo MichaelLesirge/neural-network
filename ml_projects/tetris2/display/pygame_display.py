@@ -1,5 +1,4 @@
 import pathlib
-import glob
 
 import numpy as np
 import pygame
@@ -29,7 +28,7 @@ def make_transparent(surface: pygame.Surface, opacity: float = 1) -> pygame.Surf
 
 class PygameDisplay(Display):
 
-    def __init__(self, tetromino_names: dict[str, int]) -> None:
+    def __init__(self, tetromino_names: dict[int, str]) -> None:
         pygame.init()
 
         self.title = "Tetris"
@@ -39,7 +38,6 @@ class PygameDisplay(Display):
         self.screen_width = 40
         self.screen_height = self.screen_width // 1.618
 
-        self.clock = pygame.time.Clock()
         self.screen = pygame.display.set_mode(
             (self.screen_width * start_grid_size.x, self.screen_height * start_grid_size.y),
             pygame.RESIZABLE,
@@ -69,9 +67,8 @@ class PygameDisplay(Display):
 
         self.tetromino_tiles = TetrominoTiles(
             {
-                tetromino_names[pathlib.Path(file).stem]: pygame.image.load(assets / "normal-tetromino" / file)
-                for file in glob.glob("*.png", root_dir = (assets / "normal-tetromino"))
-                if pathlib.Path(file).stem in tetromino_names
+                key: pygame.image.load(assets / "normal-tetromino" / value)
+                for key, value in tetromino_names.items()
             },
             pygame.image.load(assets / "normal-tetromino" / "default.png"),
             null_tile_value=0,
@@ -79,9 +76,8 @@ class PygameDisplay(Display):
 
         self.tetromino_ghost_tiles = TetrominoTiles(
             {
-                tetromino_names[pathlib.Path(file).stem]: pygame.image.load(assets / "ghost-tetromino" / file)
-                for file in glob.glob("*.png", root_dir = (assets / "ghost-tetromino"))
-                if pathlib.Path(file).stem in tetromino_names
+                key: pygame.image.load(assets / "ghost-tetromino" / value)
+                for key, value in tetromino_names.items()                
             },
             pygame.image.load(assets / "ghost-tetromino" / "default.png"),
             null_tile_value=0,
@@ -113,20 +109,20 @@ class PygameDisplay(Display):
 
         self.tetris.set_boards([
             (state.board, self.tetromino_tiles),
-            (state.ghost_board, self.tetromino_ghost_tiles),
-            (state.current_piece_board, self.tetromino_tiles.apply(lambda tile: make_transparent(tile, state.current_piece_percent_placed)))
+            (state.ghost_tetromino_board, self.tetromino_ghost_tiles),
+            (state.current_tetromino_board, self.tetromino_tiles.apply(lambda tile: make_transparent(tile, state.current_tetromino_percent_placed)))
         ])
 
         self.tetris.set_held_tetromino(
-            state.held_piece,
+            state.held_tetromino,
             (
                 self.tetromino_tiles.apply(gray_scale)
-                if state.held_piece_usable
+                if state.can_use_held_tetromino
                 else self.tetromino_tiles
             ),
         )
 
-        self.tetris.set_queued_tetromino(state.queue, self.tetromino_tiles)
+        self.tetris.set_queued_tetromino(state.tetromino_queue, self.tetromino_tiles)
 
         self.tetris.set_info(state.info)
 
@@ -134,7 +130,8 @@ class PygameDisplay(Display):
 
         mouse_position = pygame.mouse.get_pos()
         mouse_down = pygame.mouse.get_pressed()[0]
-        pressed = mouse_down and not was_mouse_down
         for button in self.buttons:
-            button.update(mouse_position, pressed)
-        was_mouse_down = mouse_down
+            button.update(mouse_position, mouse_down)
+            
+
+        pygame.display.flip()

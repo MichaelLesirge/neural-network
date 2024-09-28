@@ -6,17 +6,17 @@ import numpy as np
 class State:
     board: np.ndarray
 
-    current_piece_board: np.ndarray
-    current_piece_percent_placed: float
+    current_tetromino_board: np.ndarray
+    current_tetromino_percent_placed: float
 
-    ghost_board: np.ndarray
+    ghost_tetromino_board: np.ndarray
 
-    held_piece: np.ndarray
-    held_piece_usable: bool
+    held_tetromino: np.ndarray
+    can_use_held_tetromino: bool
 
-    queue: list[np.ndarray]
+    tetromino_queue: list[np.ndarray]
 
     info: dict[str, str]
     has_lost: bool
 
-    null_value: int
+    board_null_value: int

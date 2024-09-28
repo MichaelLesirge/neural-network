@@ -19,7 +19,7 @@ class ToggleButton:
         self.enable_image = enable_image
         self.disable_image = disable_image
         
-        self.enabled = self.is_clicked = self.is_hovered = False
+        self.was_mouse_down = self.enabled = self.is_pressed = self.is_hovered = False
 
         self.on_hovered_actions: list[Runnable] = []
         self.on_pressed_actions: list[Runnable] = []
@@ -56,16 +56,18 @@ class ToggleButton:
         if not was_hovered and self.is_hovered:
             _run(self.on_hovered_actions)
 
-        self.is_clicked = self.is_hovered and mouse_down
+        self.is_pressed = self.is_hovered and mouse_down
          
-        if self.is_clicked:
+        if self.is_pressed and not self.was_mouse_down:
             self.toggle_state()
             _run(self.on_pressed_actions)
+        
+        self.was_mouse_down = mouse_down
         
     def get_image(self) -> pygame.Surface:
         image = self.enable_image if self.enabled else self.disable_image
         image = pygame.transform.scale(image, self.size)
-        image = pygame.transform.scale_by(image, 1 + (-0.2 if self.is_clicked else 0) + (0.1 if self.is_hovered else 0))
+        image = pygame.transform.scale_by(image, 1 + (-0.2 if self.is_pressed else 0) + (0.1 if self.is_hovered else 0))
         return image
     
     def put_at_position(self, surface: pygame.Surface, position: Coordinate, circumference: int):

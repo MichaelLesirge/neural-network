@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from tetris import Action
+from game_actions import Action
 
 class Player(ABC):
 
