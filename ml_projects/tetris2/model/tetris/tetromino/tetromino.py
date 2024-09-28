@@ -50,7 +50,7 @@ class Tetromino:
     def copy(self) -> Self:
         return self.__class__(self.x, self.y, self.shape, self.orientation)
 
-    def __iter__(self) -> Generator[tuple[np.uint8, CoordinatePair], None, None]:
+    def __iter__(self) -> Generator[tuple[int, CoordinatePair], None, None]:
         for row in range(self.get_height()):
             for col in range(self.get_width()):
                 yield (self.get_grid_array()[row][col], (self.y + row, self.x + col))

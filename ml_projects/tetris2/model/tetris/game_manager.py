@@ -1,7 +1,8 @@
+from game_actions import Action
+
 from .grid import Grid
 from .refill_queue import RefillingQueue
 from .tetromino import TetrominoShape, Tetromino
-from .game_actions import Action
 
 # Model
 class TetrisGameManager:

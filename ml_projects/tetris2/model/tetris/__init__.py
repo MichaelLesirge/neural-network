@@ -9,11 +9,11 @@ from .refill_queue import (
 from .scores.scores_manager import HighScoreManager, JSONFileHighScoreStorage
 from .tetromino import TetrominoShape, Tetromino
 from .side_board import LevelManager, ScoreManger, TimeManager
-from .game_actions import Action
+from .game_events import Event
 
 __all__ = [
     TetrisGameManager,
-    Action,
+    Event,
     Grid,
     RefillingQueue,
     FullRandomQueue,

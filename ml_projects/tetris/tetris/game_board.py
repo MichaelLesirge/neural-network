@@ -87,7 +87,7 @@ class Tetris:
         self._create_inputs_cache()
 
     def reset(self) -> None:
-        self.grid = np.zeros((self.height, self.width), dtype=np.uint8)
+        self.grid = np.zeros((self.height, self.width))
         
         self._shape_queue = []
         self.fill_piece_queue()

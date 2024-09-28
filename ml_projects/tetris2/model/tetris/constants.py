@@ -1,6 +1,6 @@
 import numpy as np
 
-from tetris import (
+from . import (
     TetrisGameManager,
     Grid,
     ShuffledBagQueue,
@@ -8,15 +8,12 @@ from tetris import (
     LevelManager,
     ScoreManger,
     TimeManager,
-    Action,
+    Event,
 )
 
-from game import Game
-
-DTYPE = np.uint8
 NULL_VALUE = 0
 
-board = Grid.empty(shape=(10, 20), null_value=NULL_VALUE, dtype=DTYPE)
+board = Grid.empty(shape=(10, 20), null_value=NULL_VALUE)
 
 tetromino_shapes = [
     TetrominoShape(
@@ -27,7 +24,7 @@ tetromino_shapes = [
             [0, 0, 0, 0],
             [0, 0, 0, 0],
         ],
-        null_value=NULL_VALUE, dtype=DTYPE
+        null_value=NULL_VALUE
     ),
     TetrominoShape(
         "O",
@@ -35,7 +32,7 @@ tetromino_shapes = [
             [1, 1],
             [1, 1],
         ],
-        null_value=NULL_VALUE, dtype=DTYPE
+        null_value=NULL_VALUE
     ),
     TetrominoShape(
         "L",
@@ -44,7 +41,7 @@ tetromino_shapes = [
             [1, 1, 1],
             [0, 0, 0],
         ],
-        null_value=NULL_VALUE, dtype=DTYPE
+        null_value=NULL_VALUE
     ),
     TetrominoShape(
         "J",
@@ -53,7 +50,7 @@ tetromino_shapes = [
             [1, 1, 1],
             [0, 0, 0],
         ],
-        null_value=NULL_VALUE, dtype=DTYPE
+        null_value=NULL_VALUE
     ),
     TetrominoShape(
         "T",
@@ -62,7 +59,7 @@ tetromino_shapes = [
             [1, 1, 1],
             [0, 0, 0],
         ],
-        null_value=NULL_VALUE, dtype=DTYPE
+        null_value=NULL_VALUE
     ),
     TetrominoShape(
         "Z",
@@ -71,7 +68,7 @@ tetromino_shapes = [
             [0, 1, 1],
             [0, 0, 0],
         ],
-        null_value=NULL_VALUE, dtype=DTYPE
+        null_value=NULL_VALUE
     ),
     TetrominoShape(
         "S",
@@ -80,7 +77,7 @@ tetromino_shapes = [
             [1, 1, 0],
             [0, 0, 0],
         ],
-        null_value=NULL_VALUE, dtype=DTYPE
+        null_value=NULL_VALUE
     ),
 ]
 
@@ -92,7 +89,7 @@ level_manager = LevelManager(
 
 score_manager = ScoreManger(
     for_line_clear = [0, 40, 100, 300, 1200],
-    for_action = {Action.SOFT_DROP: 1, Action.HARD_DROP: 2}
+    for_events = {Event.SOFT_DROP: 1, Event.HARD_DROP: 2}
 )
 
 time_manager = TimeManager(

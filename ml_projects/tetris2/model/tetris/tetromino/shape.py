@@ -7,12 +7,14 @@ def rotate(grid: np.ndarray) -> np.ndarray:
 class TetrominoShape:
     MAX_ORIENTATIONS = 4
 
-    def __init__(self, name_char: str, shape: np.ndarray, null_value = 0, dtype = np.uint8) -> None:
+    def __init__(self, name: str, shape: np.ndarray, null_value = 0) -> None:
 
-        self.key = ord(name_char)
+        self.name = name
+        self.bytes = np.array(shape).tobytes()
+
         self.null_value = null_value
 
-        shape_array = np.where(shape, self.key, self.null_value).astype(dtype)
+        shape_array = np.where(shape, hash(self), self.null_value).astype(int)
 
         self.orientations: list[np.ndarray] = []
 
@@ -24,7 +26,7 @@ class TetrominoShape:
                 break
 
     def get_name(self) -> str:
-        return chr(self.key)
+        return self.name
 
     def get_grid_array(self, orientation=0) -> np.ndarray:
         return self.orientations[orientation]
@@ -48,3 +50,6 @@ class TetrominoShape:
 
     def __str__(self) -> str:
         return f"{self.__class__.__name__}({self.get_name()}, {self.get_grid_array()})"
+
+    def __hash__(self) -> int:
+        return hash((self.get_name(), self.bytes))
