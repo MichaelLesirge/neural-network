@@ -19,7 +19,7 @@ class TetrominoShape:
         TetrominoShape.ALL_SHAPES.append(self)
         TetrominoShape.SHAPE_ID_MAP[self.id] = self
 
-        shape = np.array(shape, dtype=np.uint8)
+        shape = np.array(shape, dtype=int)
 
         self.rotations: list[np.ndarray] = []
         for i in range(TetrominoShape.MAX_ROTATIONS):

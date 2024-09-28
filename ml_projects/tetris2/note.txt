@@ -7,4 +7,5 @@ Reward is simple like (score increase / 10) + (can_hold)
 - AI mode (Simple algorithm to move to suggested place and hard drop, Eval of position, speed controller)
 - Hard Coded AI as well (score with holes vs height), hard drop vs all locations
 
-View(Display, Agent)
+Model(My Game / Tetr / tetris.com) -> GameState -> View(Player(Human / Algorithm / Network), View(Text / Pygame))
+View -> Actions -> Model

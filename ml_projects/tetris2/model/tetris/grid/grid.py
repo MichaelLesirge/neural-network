@@ -21,7 +21,7 @@ class Grid:
         self.clear()
 
     @classmethod
-    def empty(cls, shape: WidthHeightPair, null_value=0, dtype=np.uint8) -> Self:
+    def empty(cls, shape: WidthHeightPair, null_value=0, dtype=int) -> Self:
         width, height = shape
         new = cls(np.empty((height, width), dtype=dtype), null_value)
         new.clear()
