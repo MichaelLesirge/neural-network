@@ -99,7 +99,7 @@ class TextPredictorApp:
             x1 = x0 + bar_width
             y1 = max_height
             self.canvas.create_rectangle(x0, y0, x1, y1, fill="blue")
-            self.canvas.create_text(x0 + bar_width / 2, y1 + 15, text=char, font=("Arial", 10))
+            self.canvas.create_text(x0 + bar_width / 2, y1 + 15, text=repr(char), font=("Arial", 10))
 
     def clear_bar_graph(self):
         self.canvas.delete("all")
