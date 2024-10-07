@@ -11,7 +11,7 @@ network.load(str(NETWORK_PATH))
 
 def predict_next_character_probs(message, n = 7):
     output = network.compute(format_one_hot_messages(message_to_one_hot(message)))[0]
-    top_indices = np.argsort(output)[-n:]
+    top_indices = np.argsort(output)[:-n-1:-1]
     top_probabilities = output[top_indices]
     normalized_probabilities = top_probabilities / top_probabilities.sum()
     return top_indices, normalized_probabilities
@@ -66,7 +66,7 @@ class TextPredictorApp:
         # Predicted word state
         self.predicted_word = ""
 
-    def key(self, event=None):
+    def key(self, event=None):        
         if event and event.char == "\t":
             self.text_box.insert(tk.END, self.predicted_word)
             return "break"
