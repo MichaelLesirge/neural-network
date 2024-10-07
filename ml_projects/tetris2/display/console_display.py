@@ -5,7 +5,6 @@ from .display import Display
 
 class ConsoleDisplay(Display):
 
-
     def __init__(self, row_template_str="[%s]", full_tile_template_str=" %s", empty_tile_str="  ") -> None:
         self.row_template_str = row_template_str
         self.full_tile_template_str = full_tile_template_str

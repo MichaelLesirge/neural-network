@@ -132,6 +132,12 @@ class TetrisGameManager:
             self.falling_tetromino.get_grid_array(),
         )
 
+        for action in actions:
+            match action:
+                case Action.LEFT: self.change_x(-1)
+                case Action.RIGHT: self.change_x(1)
+                case Action.SPIN: self.rotate(1)
+                
         if did_collide:
             self.falling_tetromino.move(dy=-1)
             did_collide = self.board.insert(
@@ -139,9 +145,3 @@ class TetrisGameManager:
                 self.falling_tetromino.get_grid_array(),
             )
             self.falling_tetromino = None
-
-        for action in actions:
-            match action:
-                case Action.LEFT: self.change_x(-1)
-                case Action.RIGHT: self.change_x(1)
-                case Action.SPIN: self.rotate(1)

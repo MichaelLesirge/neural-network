@@ -4,14 +4,11 @@ from display import PygameDisplay
 
 import pygame
 
-clock = pygame.time.Clock()
-
 model = BasicModel()
 
 player = PygamePlayer(PygamePlayer.DEFAULT_BINDINGS)
 
 display = PygameDisplay({})
-
 
 model.reset()
 while True:
@@ -20,4 +17,3 @@ while True:
     display.update(state)
 
     pygame.event.pump()
-    clock.tick()
