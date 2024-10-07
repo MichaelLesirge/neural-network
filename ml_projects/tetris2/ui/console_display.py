@@ -1,6 +1,5 @@
 import numpy as np
 
-from game_state import State
 from .display import Display
 
 class ConsoleDisplay(Display):
@@ -10,7 +9,7 @@ class ConsoleDisplay(Display):
         self.full_tile_template_str = full_tile_template_str
         self.empty_tile_str = empty_tile_str
     
-    def update(self, state: State) -> None:
+    def update(self, presenter) -> None:
         print(", ".join(f"{key}: {value}" for key, value in state.info.items()))
 
         combined_board = combined_board = np.where(

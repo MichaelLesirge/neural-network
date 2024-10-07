@@ -1,6 +1,8 @@
 import pygame
 
 from game_actions import Action
+from presenter import Presenter
+
 from .player import Player
 
 class PygamePlayer(Player):
@@ -21,6 +23,6 @@ class PygamePlayer(Player):
     def get_name(self) -> str:
         return "Human Player"
     
-    def get_actions(self) -> list[Action]:
+    def get_actions(self, presenter: Presenter) -> list[Action]:
         pressed = pygame.key.get_pressed()
         return [action for (key, action) in self.control_map.items() if pressed[key]]

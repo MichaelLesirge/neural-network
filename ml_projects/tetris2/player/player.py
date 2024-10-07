@@ -1,14 +1,12 @@
-from abc import ABC, abstractmethod
 from game_actions import Action
+from presenter import Presenter
 
-class Player(ABC):
+class Player:
 
-    @abstractmethod
     def get_name(self) -> str:
-        pass
+        return "Player"
 
-    @abstractmethod
-    def get_actions(self) -> list[Action]:
-        pass
+    def get_actions(self, presenter: Presenter) -> list[Action]:
+        return []
 
     

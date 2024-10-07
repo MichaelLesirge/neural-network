@@ -1,9 +1,11 @@
 import pygame
 
 from .grid import GridContext, Align
-from .tetromino import TetrominoTiles
+from .tiles import Tiles
 from .button import ToggleButton
 from ._common import ColorValue, Size
+
+from typing import Self
 
 Grid = list[list[int]]
 
@@ -69,22 +71,13 @@ class TetrisRenderer:
         self,
         grid: GridContext,
         tetromino: Grid,
-        tetromino_tiles: TetrominoTiles,
+        tetromino_tiles: Tiles,
         size: Size = (1, 1),
     ) -> None:
 
-        squares = tetromino_tiles.get_tetromino_tiles(
-            tetromino, size=grid.to_pixel_relative(size)
-        )
-
-        for y, row in enumerate(squares):
-            for x, square in enumerate(row):
-                if square:
-                    grid.blit(
-                        square,
-                        (x, y),
-                    )
-
+        for position in grid:
+            grid.blit(tetromino_tiles.get_tile(tetromino[position.y][position.x], size=grid.to_pixel_relative(size)), position)
+            
     def _draw_item_text(
         self,
         grid: GridContext,
@@ -176,7 +169,7 @@ class TetrisRenderer:
         self,
         grid: GridContext,
         tetrominoes: list[Grid],
-        tetromino_tiles: TetrominoTiles,
+        tetromino_tiles: Tiles,
     ) -> None:
         if len(tetrominoes) == 0:
             return
@@ -204,32 +197,34 @@ class TetrisRenderer:
         color: ColorValue = (255, 255, 255),
         background_color: ColorValue = (0, 0, 0),
         secondary_color: ColorValue = (50, 50, 50),
-    ):
+    ) -> Self:
         self.color = color
         self.secondary_color = secondary_color
         self.background_color = background_color
+        return self
 
-    def set_title(self, title: str = None, font: str = "Monospace", scale: float = 1):
+    def set_title(self, title: str = None, font: str = "Monospace", scale: float = 1) -> Self:
         self.title = self.__class__.__name__.title() if title is None else title
         self.title_font = font
         self.title_scale = scale
         return self
 
-    def set_outline(self, pixel_width: int = 1, color: ColorValue = None):
+    def set_outline(self, pixel_width: int = 1, color: ColorValue = None) -> Self:
         self.outline_thickness_pixels = pixel_width
         self.outline_color = color or self.color
+        return self
 
-    def set_text_settings(self, font: str = "Monospace", scale: float = 1):
+    def set_text_settings(self, font: str = "Monospace", scale: float = 1) -> Self:
         self.font = font
         self.text_scale = scale
         return self
 
-    def set_board_shape(self, shape: Size = (10, 20), cell_size=(1, 1)):
+    def set_board_shape(self, shape: Size = (10, 20), cell_size=(1, 1)) -> Self:
         self.board_shape = pygame.Vector2(shape)
         self.board_cell_size = pygame.Vector2(cell_size)
         return self
 
-    def set_boards(self, boards: list[tuple[Grid, TetrominoTiles]] = []):
+    def set_boards(self, boards: list[tuple[Grid, Tiles]] = []) -> Self:
         self.boards = boards
         for board, tetromino_tiles in self.boards:
             assert _get_grid_size(board) == self.board_shape, ValueError(
@@ -238,24 +233,24 @@ class TetrisRenderer:
         return self
 
     def set_queued_tetromino(
-        self, queue: list[Grid] = [], tetromino_tiles: TetrominoTiles = None
-    ):
+        self, queue: list[Grid] = [], tetromino_tiles: Tiles = None
+    ) -> Self:
         self.queued_tetromino = queue
         self.queued_tetromino_tiles = tetromino_tiles
         return self
 
     def set_held_tetromino(
-        self, held: Grid = None, tetromino_tiles: TetrominoTiles = None
-    ):
+        self, held: Grid = None, tetromino_tiles: Tiles = None
+    ) -> Self:
         self.held_tetromino = held
         self.held_tetromino_tiles = tetromino_tiles
         return self
 
-    def set_info(self, info: dict[str, str] = {}):
+    def set_info(self, info: dict[str, str] = {}) -> Self:
         self.info = info
         return self
 
-    def set_control_buttons(self, buttons: list[ToggleButton] = []) -> None:
+    def set_control_buttons(self, buttons: list[ToggleButton] = []) -> Self:
         self.buttons = buttons
         return self
 

@@ -1,3 +1,5 @@
+from typing import Self, Generator
+
 import pygame
 from pygame import Vector2
 
@@ -99,7 +101,7 @@ class GridContext:
         *,
         alignX=Align.START,
         alignY=Align.START,
-    ):  
+    ) -> Self:  
         position = Vector2(position)
 
         if position.x < 0:
@@ -180,3 +182,8 @@ class GridContext:
         y -= source.get_height() * alignY
 
         self.surface.blit(source, (x, y))
+
+    def __iter__(self) -> Generator[Vector2, None, None]:
+        for x in range(self.size.x):
+            for y in range(self.size.y):
+                yield pygame.Vector2(x, y)

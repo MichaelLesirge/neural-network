@@ -1,4 +1,3 @@
-from .game_manager import TetrisGameManager
 from .grid import Grid
 from .refill_queue import (
     RefillingQueue,
@@ -12,7 +11,6 @@ from .side_board import LevelManager, ScoreManger, TimeManager
 from .game_events import Event
 
 __all__ = [
-    TetrisGameManager,
     Event,
     Grid,
     RefillingQueue,
