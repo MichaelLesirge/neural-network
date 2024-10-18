@@ -24,7 +24,7 @@ Currently Implemented:
 TODO:
 - Convolutional, maxpool, and dropout layers for convolutional neural networks (CNNs)
 
-## MNIST [ml_projects/mnist](https://github.com/MichaelLesirge/neural-network/tree/main/ml_projects/mnist)
+## Handwritten Digit Classifier [ml_projects/mnist](https://github.com/MichaelLesirge/neural-network/tree/main/ml_projects/mnist)
 <p>This is a demo of a model trained to classify handwritten digits from the MNIST dataset. It correctly labels 96.45% of the test data, which I am pretty happy with. I made the drawing GUI with Tkinter and all additional plots/graphs with Matplotlib. This was the first real data I attempted to train my network with.</p>
 <img alt="python mnist drawing gui GIF" src="https://github.com/michael-lesirge/neural-network/assets/100492377/27856ede-a556-4ee0-bbe1-7aba370cb57e">
 
