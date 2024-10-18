@@ -6,7 +6,7 @@ Very basic neural network module that I made in Python using NumPy. It allows yo
 
 I tried to keep a clean and extendable project structure, allowing for new additions of layers to be added easily. I have currently implemented dense layers, multiple activation functions, multiple loss functions, and a network class to bring them all together.
 
-This project was mostly made with the goal of actually understanding how neural networks and deep learning works, and just to say I did it from scratch.
+This project was mostly made with the goal of getting a basic understanding how neural networks and deep learning works, and just to say I did it from scratch.
 
 </p>
 
