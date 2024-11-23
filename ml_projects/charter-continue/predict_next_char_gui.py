@@ -4,7 +4,8 @@ from network_util import *
 
 # Parameters for prediction behavior
 CHOOSE_N_CANDIDATES_FROM_TOP = 1
-NETWORK_PATH = directory / "char-network-b"
+NETWORK_PATH = directory / "char-network-code"
+# NETWORK_PATH = directory / "looped-train" / "char-network-v0"
 
 # Load the network model
 network.load(str(NETWORK_PATH))

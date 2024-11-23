@@ -23,12 +23,12 @@ def normalize(message: str) -> str:
 
 # --- Read Write ---
 
-with open(directory / "data.txt", "r", encoding="utf-8") as file:
-    data = csv.reader(file.readlines())
-    messages = [normalize(line[3]) for line in data if len(line) > 3]
+# with open(directory / "data.txt", "r", encoding="utf-8") as file:
+#     data = csv.reader(file.readlines())
+#     messages = [normalize(line[3]) for line in data if len(line) > 3]
 
-with open(directory / "data.txt", "w", encoding="utf-8") as file:
-    file.writelines(messages)
+# with open(directory / "data.txt", "w", encoding="utf-8") as file:
+#     file.writelines(messages)
     
 # --- Read Write ---
     
@@ -40,3 +40,22 @@ with open(directory / "data.txt", "w", encoding="utf-8") as file:
 
 # --- Read Write ---
 
+import os
+def get_python_files(path):
+    python_files = []
+    for root, _, files in os.walk(path):
+        for file in files:
+            if file.endswith('.py'):
+                file_path = os.path.join(root, file)
+                if ".venv" not in file_path:
+                    python_files.append(file_path)
+    return python_files
+
+data = []
+for path in get_python_files(directory.parent.parent.parent):
+    print(path)
+    with open(path, "r", encoding="utf-8") as file:
+        data.extend(file.readlines())
+
+with open(directory / "data.txt", "w", encoding="utf-8") as file:
+    file.writelines([line for line in data if len(line) > 4])

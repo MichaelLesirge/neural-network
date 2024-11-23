@@ -9,9 +9,9 @@ import numpy as np
 DATA_POINTS_PER_MESSAGE = 1
 MIN_MESSAGE_SIZE = 3
 
-EPOCHS = 3
+EPOCHS = 5
 BATCH_SIZE = 16
-LEARNING_RATE = 0.0005
+LEARNING_RATE = 0.0075
 
 OUTPUT_FOLDER = directory / "looped-train"
 TRAINING_DATA_PATH = directory / "data" / "data.txt"
@@ -20,7 +20,7 @@ os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
 print("Loading Data...")
 
-LOAD_NETWORK_AT_START = directory / "char-network-a"
+LOAD_NETWORK_AT_START = directory / "char-network-code"
 
 if LOAD_NETWORK_AT_START is not None:
     network.load(str(LOAD_NETWORK_AT_START))
@@ -61,3 +61,4 @@ for i in range(100):
     network.train(X_train, y_train, batch_size=BATCH_SIZE, epochs=EPOCHS, learning_rate=LEARNING_RATE)
 
     network.dump(str(OUTPUT_FOLDER / f"char-network-v{i}"))
+    print()
