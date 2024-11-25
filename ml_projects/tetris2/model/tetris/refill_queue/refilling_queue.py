@@ -26,7 +26,7 @@ class RefillingQueue(ABC, Generic[_T]):
         return value
 
     def view(self) -> list[_T]:
-        return self.queue[self.visible_size :]
+        return self.queue[-self.visible_size :]
 
     def reset(self) -> None:
         self.queue.clear()

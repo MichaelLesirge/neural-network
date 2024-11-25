@@ -1,4 +1,5 @@
 import pathlib
+from typing import Callable
 
 import numpy as np
 import pygame
@@ -6,7 +7,7 @@ import pygame
 from game_state import State
 
 from .display import Display
-from .tetris_ui import ToggleButton, TetrisRenderer, TetrominoTiles, GridContext
+from .tetris_ui import CircleToggleButton, TetrisRenderer, TetrominoTiles, GridContext, TextButton
 
 
 def gray_scale(surface: pygame.Surface) -> pygame.Surface:
@@ -25,11 +26,13 @@ def make_transparent(surface: pygame.Surface, opacity: float = 1) -> pygame.Surf
     new_surface.fill((255, 255, 255, alpha), None, pygame.BLEND_RGBA_MULT)
     return new_surface
 
-
 class PygameDisplay(Display):
+    ASSETS_PATH = pathlib.Path(__file__).parent / "tetris_ui" / "assets"
 
     def __init__(self, tetromino_names: dict[int, str]) -> None:
         pygame.init()
+
+        assets = self.ASSETS_PATH
 
         self.title = "Tetris"
 
@@ -45,29 +48,26 @@ class PygameDisplay(Display):
 
         pygame.display.set_caption(self.title)
 
-        assets = pathlib.Path(__file__).parent / "tetris_ui" / "assets"
-
-        pause_button = ToggleButton(
+        self.pause_button = CircleToggleButton(
             pygame.image.load(assets / "play.png"),
             pygame.image.load(assets / "pause.png"),
         )
 
-        pause_button.add_enabled_action(lambda: print("Pause"))
-        pause_button.add_disabled_action(lambda: print("Play"))
-
-        mute_button = ToggleButton(
+        self.mute_button = CircleToggleButton(
             pygame.image.load(assets / "mute_sound.png"),
             pygame.image.load(assets / "play_sound.png"),
         )
 
-        mute_button.add_enabled_action(lambda: print("Mute"))
-        mute_button.add_disabled_action(lambda: print("Play"))
+        self.set_up_music()     
+
+        self.resume_button = TextButton("Resume", (255, 255, 255), (50, 50, 50))
+        self.restart_button = TextButton("Restart", (255, 255, 255), (50, 50, 50))
 
         self.tetris = TetrisRenderer()
 
         self.tetromino_tiles = TetrominoTiles(
             {
-                key: pygame.image.load(assets / "normal-tetromino" / value)
+                key: pygame.image.load(assets / "normal-tetromino" / (value + ".png"))
                 for key, value in tetromino_names.items()
             },
             pygame.image.load(assets / "normal-tetromino" / "default.png"),
@@ -76,14 +76,14 @@ class PygameDisplay(Display):
 
         self.tetromino_ghost_tiles = TetrominoTiles(
             {
-                key: pygame.image.load(assets / "ghost-tetromino" / value)
+                key: pygame.image.load(assets / "ghost-tetromino" / (value + ".png"))
                 for key, value in tetromino_names.items()                
             },
             pygame.image.load(assets / "ghost-tetromino" / "default.png"),
             null_tile_value=0,
         )
 
-        self.buttons = [pause_button, mute_button]
+        self.control_buttons = [self.pause_button, self.mute_button]
 
         self.tetris.set_colors(
             color=(255, 255, 255),
@@ -96,12 +96,29 @@ class PygameDisplay(Display):
         #     background_color = "dark blue",
         # )
 
-        self.tetris.set_control_buttons(self.buttons)
+        self.tetris.set_control_buttons(self.control_buttons)
 
         self.tetris.set_title(self.title, font="Monospace", scale=2)
         self.tetris.set_text_settings("Berlin Sans FB", scale=1)
 
         self.tetris.set_outline(3)
+
+    def set_up_music(self) -> None:
+        pygame.mixer.music.load(self.ASSETS_PATH / "tetris.mp3") 
+        pygame.mixer.music.play(-1, 0, 1000 * 10)
+
+        self.mute_button.add_enabled_action(lambda: pygame.mixer.music.pause())
+        self.mute_button.add_disabled_action(lambda: pygame.mixer.music.unpause())
+
+    def add_pause_button_action(self, enable_action: Callable, disable_action: Callable) -> None:
+        self.pause_button.add_enabled_action(enable_action)
+        self.pause_button.add_disabled_action(disable_action)
+
+        self.resume_button.add_pressed_action(self.pause_button.disable)
+
+    def add_restart_button_action(self, action: Callable) -> None:
+        self.restart_button.add_pressed_action(action)
+        self.restart_button.add_pressed_action(self.pause_button.disable)
 
     def update(self, state: State) -> None:
 
@@ -109,16 +126,16 @@ class PygameDisplay(Display):
 
         self.tetris.set_boards([
             (state.board, self.tetromino_tiles),
+            (state.current_tetromino_board, self.tetromino_tiles),
             (state.ghost_tetromino_board, self.tetromino_ghost_tiles),
-            (state.current_tetromino_board, self.tetromino_tiles.apply(lambda tile: make_transparent(tile, state.current_tetromino_percent_placed)))
         ])
 
         self.tetris.set_held_tetromino(
             state.held_tetromino,
             (
-                self.tetromino_tiles.apply(gray_scale)
+                self.tetromino_tiles
                 if state.can_use_held_tetromino
-                else self.tetromino_tiles
+                else self.tetromino_tiles.apply(gray_scale)
             ),
         )
 
@@ -130,8 +147,13 @@ class PygameDisplay(Display):
 
         mouse_position = pygame.mouse.get_pos()
         mouse_down = pygame.mouse.get_pressed()[0]
-        for button in self.buttons:
+        for button in self.control_buttons:
             button.update(mouse_position, mouse_down)
-            
+        for button in [self.resume_button, self.restart_button]:
+            button.update(mouse_position, mouse_down)
+
+        self.tetris.set_game_over_menu(state.game_over, state.verbose_info.get("score", 0), state.verbose_info.get("high_score", 0), self.restart_button)
+        self.tetris.set_pause_menu(state.game_paused, self.resume_button, self.restart_button)
+
 
         pygame.display.flip()

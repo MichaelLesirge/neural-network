@@ -1,8 +1,11 @@
+from typing import Callable
+
 import pygame
 
 from .grid import GridContext, Align
 from .tetromino import TetrominoTiles
-from .button import ToggleButton
+from .circle_button import CircleToggleButton
+from .text_button import TextButton
 from ._common import ColorValue, Size
 
 Grid = list[list[int]]
@@ -26,12 +29,14 @@ class TetrisRenderer:
         self.set_queued_tetromino()
         self.set_text_settings()
         self.set_title()
+        self.set_game_over_menu(False)
+        self.set_pause_menu(False)
 
     # --- Stateless drawing methods ----
 
     def _draw_items_box(
         self, grid: GridContext, padding=1, title: str = None
-    ) -> GridContext:
+    ) -> "GridContext":
         grid.fill(self.secondary_color)
         grid.outline(self.outline_thickness_pixels, self.outline_color)
 
@@ -133,31 +138,41 @@ class TetrisRenderer:
         info: dict[str, str],
         text_size: int,
         vertical_gap: int = 0,
+        margin_top: int = 0,
     ) -> None:
 
-        height = 0
+        height = margin_top
 
         box_size = pygame.Vector2(grid.get_size().x, text_size)
 
         for title, data in info.items():
-            self._draw_item_title(
-                grid.with_focused_window((0, height), box_size), title
-            )
-            height += box_size.y
 
-            self._draw_item_text(
-                grid.with_focused_window((0, height), box_size),
-                data,
-                self.color,
-                self.background_color,
-            )
-            height += box_size.y
+            if isinstance(data, TextButton):
+                data.put_at_position(
+                    grid.surface,
+                    grid.to_pixel_relative_position((0, height)),
+                    grid.to_pixel_relative((box_size.x, box_size.y * 2))
+                )
+                height += box_size.y * 2
+            else: 
+                self._draw_item_title(
+                    grid.with_focused_window((0, height), box_size), title
+                )
+                height += box_size.y
+
+                self._draw_item_text(
+                    grid.with_focused_window((0, height), box_size),
+                    data,
+                    self.color,
+                    self.background_color,
+                )
+                height += box_size.y
 
             height += vertical_gap
 
     def _draw_buttons(
-        self, grid: GridContext, buttons: list[ToggleButton]
-    ) -> ToggleButton:
+        self, grid: GridContext, buttons: list[CircleToggleButton]
+    ) -> None:
 
         if len(buttons) == 0:
             return
@@ -172,6 +187,25 @@ class TetrisRenderer:
                 grid.get_pixels_cell_size().y * 2,
             )
 
+    def _draw_text_buttons(
+        self, grid: GridContext, buttons: list[TextButton]
+    ) -> None:
+
+        if len(buttons) == 0:
+            return
+        
+
+        button_height = 3
+        y_split = grid.get_size().y / len(buttons)
+
+
+        for i, button in enumerate(buttons):
+            button.put_at_position(
+                grid.surface,
+                grid.to_pixel_relative_position((0, y_split * i + y_split / (2 * button_height))),
+                grid.to_pixel_relative((6, button_height)),
+            )
+
     def _draw_tetrominoes(
         self,
         grid: GridContext,
@@ -183,7 +217,7 @@ class TetrisRenderer:
 
         x = grid.get_size().x / 2
         y_split = grid.get_size().y / len(tetrominoes)
-
+    
         for i, tetromino in enumerate(tetrominoes):
 
             size = _get_grid_size(tetromino)
@@ -255,9 +289,20 @@ class TetrisRenderer:
         self.info = info
         return self
 
-    def set_control_buttons(self, buttons: list[ToggleButton] = []) -> None:
+    def set_control_buttons(self, buttons: list[CircleToggleButton] = []) -> None:
         self.buttons = buttons
         return self
+    
+    def set_pause_menu(self, should_draw: bool, resume: TextButton = None, restart: TextButton = None) -> None:
+        self.pause_menu = should_draw
+        self.pause_menu_resume = resume
+        self.pause_menu_restart = restart
+
+    def set_game_over_menu(self, should_draw: bool, score: int = 0, high_score: int = 0, restart: TextButton = None) -> None:
+        self.game_over_menu = should_draw
+        self.game_over_score = score
+        self.game_over_high_score = high_score
+        self.game_over_restart = restart
 
     def draw(
         self,
@@ -286,6 +331,45 @@ class TetrisRenderer:
 
         for board, tetromino_tiles in self.boards:
             self._draw_tetromino_grid(board_grid, board, tetromino_tiles)
+
+        # Game Over Menu
+        if self.game_over_menu:
+            inner_game_over_menu = self._draw_items_box(
+                board_grid.with_focused_window(
+                    (board_size / 2),
+                    (8, 12),
+                    alignX=Align.CENTER,
+                    alignY=Align.CENTER,
+                ),
+                title="game over",
+            )
+            self._draw_info(
+                inner_game_over_menu,
+                {
+                    "score": str(self.game_over_score),
+                    "high score": str(self.game_over_high_score),
+                    "button": self.game_over_restart
+                },
+                text_size=self.text_scale,
+                vertical_gap=1,
+                margin_top=1
+            )
+
+        # Pause Menu
+        if self.pause_menu and not self.game_over_menu:
+            inner_pause_menu: GridContext = self._draw_items_box(
+                board_grid.with_focused_window(
+                    (board_size / 2),
+                    (8, 10),
+                    alignX=Align.CENTER,
+                    alignY=Align.CENTER,
+                ),
+                title="paused",
+            )
+            self._draw_text_buttons(
+                inner_pause_menu,
+                [self.pause_menu_resume, self.pause_menu_restart]
+            )
 
         # Title
         inner_title_grid = grid.with_focused_window(

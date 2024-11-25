@@ -4,6 +4,7 @@ from . import Manager
 class TimeManager(Manager):
     def __init__(self, fps: int) -> None:
         self.fps = fps
+        self.reset()
     
     def reset(self) -> None:
         self.frame = 0
@@ -13,6 +14,12 @@ class TimeManager(Manager):
     
     def tick(self):
         self.frame += 1
+    
+    def get_fps(self) -> int:
+        return self.fps
+ 
+    def get_frame(self) -> int:
+        return self.frame
 
     def get_time_str(self) -> str:
         if self.fps == 0: return "Inf"
@@ -20,6 +27,3 @@ class TimeManager(Manager):
         seconds = self.frame / self.fps
         minutes, seconds = divmod(seconds, 60)
         return f"{minutes:.0f}:{seconds:0>2.0f}"
-
-    def get_fps(self) -> int:
-        return self.fps

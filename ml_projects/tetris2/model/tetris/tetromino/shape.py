@@ -14,7 +14,7 @@ class TetrominoShape:
 
         self.null_value = null_value
 
-        shape_array = np.where(shape, hash(self), self.null_value).astype(int)
+        shape_array = np.where(shape, hash(self), self.null_value)
 
         self.orientations: list[np.ndarray] = []
 
@@ -24,7 +24,7 @@ class TetrominoShape:
 
             if np.array_equal(shape_array, self.orientations[0]):
                 break
-
+        
     def get_name(self) -> str:
         return self.name
 
@@ -52,4 +52,4 @@ class TetrominoShape:
         return f"{self.__class__.__name__}({self.get_name()}, {self.get_grid_array()})"
 
     def __hash__(self) -> int:
-        return hash((self.get_name(), self.bytes))
+        return hash((self.get_name(), self.bytes)) % 2**16

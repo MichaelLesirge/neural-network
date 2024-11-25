@@ -17,6 +17,9 @@ class State:
     tetromino_queue: list[np.ndarray]
 
     info: dict[str, str]
-    has_lost: bool
+    verbose_info: dict[str, str]
+
+    game_over: bool
+    game_paused: bool
 
     board_null_value: int

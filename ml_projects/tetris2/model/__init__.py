@@ -1,7 +1,3 @@
-from .model import Model
-from .basic_model import BasicModel
+from .tetris import *
 
-__all__ = [
-    Model,
-    BasicModel
-]
+__all__ = []

@@ -6,24 +6,25 @@ from .refill_queue import (
     LessRepeatRandomQueue,
     ShuffledBagQueue,
 )
-from .scores.scores_manager import HighScoreManager, JSONFileHighScoreStorage
+from .scores.scores_manager import HighScoreManager, JSONFileHighScoreStorage, Score
 from .tetromino import TetrominoShape, Tetromino
 from .side_board import LevelManager, ScoreManger, TimeManager
 from .game_events import Event
 
 __all__ = [
-    TetrisGameManager,
-    Event,
-    Grid,
-    RefillingQueue,
-    FullRandomQueue,
-    LessRepeatRandomQueue,
-    ShuffledBagQueue,
-    HighScoreManager,
-    JSONFileHighScoreStorage,
-    TetrominoShape,
-    Tetromino,
-    LevelManager,
-    ScoreManger,
-    TimeManager
+    "TetrisGameManager",
+    "Event",
+    "Grid",
+    "RefillingQueue",
+    "FullRandomQueue",
+    "LessRepeatRandomQueue",
+    "ShuffledBagQueue",
+    "HighScoreManager",
+    "JSONFileHighScoreStorage",
+    "Score",
+    "TetrominoShape",
+    "Tetromino",
+    "LevelManager",
+    "ScoreManger",
+    "TimeManager",
 ]

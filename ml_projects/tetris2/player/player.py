@@ -7,8 +7,5 @@ class Player(ABC):
     def get_name(self) -> str:
         pass
 
-    @abstractmethod
-    def get_actions(self) -> list[Action]:
-        pass
 
     

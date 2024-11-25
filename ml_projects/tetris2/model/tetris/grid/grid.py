@@ -137,6 +137,14 @@ class Grid:
     def get_width(self) -> int:
         return self.grid.shape[1]
 
+    def find_full_lines(self) -> list[int]:
+        return [i for i, row in enumerate(self.grid) if all(row)]
+
+    def remove_full_lines(self, lines: list[int]) -> None:
+        for line in lines:
+            self.grid[1:line + 1, :] = self.grid[:line, :]
+            self.grid[0, :] = 0
+
     def copy(self):
         return self.__class__(self.grid.copy(), self.null_value)
 

@@ -10,7 +10,7 @@ def _run(actions: list[Runnable]) -> None:
     for action in actions:
         action()
 
-class ToggleButton:    
+class CircleToggleButton:    
     def __init__(self, enable_image: pygame.Surface, disable_image: pygame.Surface) -> None:
 
         self.position: pygame.Vector2 = None
