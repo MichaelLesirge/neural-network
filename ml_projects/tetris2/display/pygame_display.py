@@ -22,7 +22,7 @@ def gray_scale(surface: pygame.Surface) -> pygame.Surface:
 
 
 def make_transparent(surface: pygame.Surface, opacity: float = 1) -> pygame.Surface:
-    alpha = int(opacity * 255)
+    alpha = max(min(int(opacity * 255), 255), 0)
     new_surface = surface.copy()
     new_surface.fill((255, 255, 255, alpha), None, pygame.BLEND_RGBA_MULT)
     return new_surface

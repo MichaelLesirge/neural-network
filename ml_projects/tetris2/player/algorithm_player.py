@@ -24,7 +24,7 @@ class AlgorithmPlayer(Player):
         return "Algorithm Player"
     
     def moves_to_str(self, moves: list[Action]) -> None:
-        map = {Action.LEFT: "L", Action.RIGHT: "R", Action.SOFT_DROP: "-", Action.HARD_DROP: ".", Action.SPIN: "S", Action.NONE: "_"}
+        map = {Action.LEFT: "L", Action.RIGHT: "R", Action.SOFT_DROP: "-", Action.HARD_DROP: ".", Action.SPIN: "S", Action.NONE: "_", Action.HOLD: "H"}
         return "".join(map[move] for move in moves)
 
     def extract_tetromino(self, board: np.ndarray, expect_orientation: int = None, null_value: int = 0) -> Tetromino:
@@ -57,21 +57,25 @@ class AlgorithmPlayer(Player):
             orientation,
         )
 
-    def get_penalty(self, grid: Grid) -> float:
+    def get_penalty(self, grid: Grid, lines_removed = None) -> float:
         heights = grid.get_column_heights()
 
         holes = grid.get_number_of_holes()
         unfixableHoles = grid.get_number_of_surrounded_holes()
-        maxHeight = max(heights)
-        avgHeight = sum(heights) / len(heights)
+        max_height = max(heights)
+        avg_height = sum(heights) / len(heights)
         bumpiness = grid.get_heights_bumpiness()
 
+        full_lines = lines_removed or len(grid.find_full_lines())
+
         return (
-            30 * unfixableHoles
+            -(2 ** full_lines * 5)
+            + 2 * unfixableHoles
             + 15 * holes
-            + 5 * avgHeight
-            + 2 * maxHeight
+            + 5 * (avg_height ** 1.25)
+            + 2 * max_height
             + 0.1 * bumpiness
+            + (max_height > 17) * 50
             + 0
         )
 
@@ -91,9 +95,9 @@ class AlgorithmPlayer(Player):
             # print("\n".join(self.moves_to_str(moves) for moves in self.base_move_possibilities_cache[width]))
         return self.base_move_possibilities_cache[width]
     
-    def generate_deep_explore_moves(self, grid: Grid) -> list[list[Action]]:
+    def generate_deep_explore_moves(self, grid: Grid, n = 3) -> list[list[Action]]:
         return itertools.product(
-            [Action.LEFT, Action.RIGHT, Action.SPIN, Action.NONE], repeat=3
+            [Action.LEFT, Action.RIGHT, Action.SPIN, Action.NONE], repeat=n
         )
 
 
@@ -115,7 +119,7 @@ class AlgorithmPlayer(Player):
 
         start_height = play_board.get_falling_tetromino().get_position()[1]
 
-        if board_hash not in self.cache: 
+        if board_hash not in self.cache or start_height not in self.cache[board_hash]: 
             lowest_penalty = float("inf")
             lowest_penalty_moves = []
             
@@ -134,7 +138,11 @@ class AlgorithmPlayer(Player):
                     if not play_board_with_base.soft_drop():
                         break
                 
-                for deep_moves in self.generate_deep_explore_moves(grid):
+                play_board_with_base.hard_drop()
+                play_board_with_base.freeze()
+
+                
+                for deep_moves in self.generate_deep_explore_moves(grid, max(min(3, play_board.get_grid().get_number_of_holes()), 1)):
                     moves = used_base_moves[:-len(deep_moves)] + list(deep_moves)
                     used_moves = []
                     play_board_with_deep_moves = play_board.copy()
@@ -155,24 +163,36 @@ class AlgorithmPlayer(Player):
                     play_board_with_deep_moves.hard_drop()
                     play_board_with_deep_moves.freeze()
 
+                    full_lines = play_board_with_deep_moves.get_grid().find_full_lines()
+                    play_board_with_deep_moves.get_grid().remove_full_lines(full_lines)
+
                     while len(used_moves) > 0 and used_moves[-1] in (Action.NONE, Action.SOFT_DROP):
                         used_moves.pop()
                     used_moves.append(Action.HARD_DROP)
 
-                    penalty = self.get_penalty(play_board_with_deep_moves.get_grid())
+                    penalty = self.get_penalty(play_board_with_deep_moves.get_grid(), lines_removed=len(full_lines))
                     if lowest_penalty > penalty or (lowest_penalty == penalty and len(used_moves) < len(lowest_penalty_moves)):
                         lowest_penalty = penalty
                         lowest_penalty_moves = used_moves
                         lowest_penalty_end_height = end_height
+            
+            if lowest_penalty > self.get_penalty(play_board.get_grid()) + 20 and state.can_use_held_tetromino:
+                lowest_penalty_moves = [Action.HOLD]
                 
             self.cache[board_hash] = {height: [move] for height, move in zip(range(start_height, lowest_penalty_end_height + 1), lowest_penalty_moves)}
             print("best", lowest_penalty, {height: self.moves_to_str([move]) for height, move in zip(range(start_height, lowest_penalty_end_height + 1), lowest_penalty_moves)})
             print("\n")
+
+
+        for key in list(self.cache.keys()):
+            if key != board_hash:
+                del self.cache[key]
 
         if start_height in self.cache[board_hash]:
             result = self.cache[board_hash][start_height]
             if result == [Action.SPIN]:
                 self.expected_orientation[board_hash] = (self.expected_orientation.get(board_hash, 0) + 1) % TetrominoShape.MAX_ORIENTATIONS
             return [result.pop()] if len(result) > 0 else [Action.SOFT_DROP]
+        
 
         
