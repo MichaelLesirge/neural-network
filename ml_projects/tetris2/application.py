@@ -1,11 +1,12 @@
 import time
 import pathlib
+from enum import Enum, auto 
 
 import pygame
 
 from game_state import State
 
-from display import PygameDisplay
+from display import PygameDisplay, ConsoleDisplay, Color
 from player import PygamePlayer, AlgorithmPlayer
 from model import (
     TetrisGameManager,
@@ -20,14 +21,23 @@ from model import (
     Score,
 )
 
+class PlayerType(Enum):
+    HUMAN = auto()
+    ALGORITHM = auto()
+
+player_type = PlayerType.ALGORITHM
 
 NULL_VALUE = 0
 
-board = Grid.empty(shape=(10, 20), null_value=NULL_VALUE)
+BOARD_SHAPE = (10, 20)
+
+ITEMS_IN_QUEUE = 3
+
+board = Grid.empty(shape=BOARD_SHAPE, null_value=NULL_VALUE)
 
 tetromino_shapes = [
     TetrominoShape(
-        "I",
+        "I", Color.CYAN,
         [
             [0, 0, 0, 0],
             [1, 1, 1, 1],
@@ -37,7 +47,7 @@ tetromino_shapes = [
         null_value=NULL_VALUE,
     ),
     TetrominoShape(
-        "O",
+        "O", Color.YELLOW,
         [
             [1, 1],
             [1, 1],
@@ -45,7 +55,7 @@ tetromino_shapes = [
         null_value=NULL_VALUE,
     ),
     TetrominoShape(
-        "L",
+        "L", Color.ORANGE,
         [
             [0, 0, 1],
             [1, 1, 1],
@@ -54,7 +64,7 @@ tetromino_shapes = [
         null_value=NULL_VALUE,
     ),
     TetrominoShape(
-        "J",
+        "J", Color.BLUE,
         [
             [1, 0, 0],
             [1, 1, 1],
@@ -63,7 +73,7 @@ tetromino_shapes = [
         null_value=NULL_VALUE,
     ),
     TetrominoShape(
-        "T",
+        "T", Color.PURPLE,
         [
             [0, 1, 0],
             [1, 1, 1],
@@ -72,7 +82,7 @@ tetromino_shapes = [
         null_value=NULL_VALUE,
     ),
     TetrominoShape(
-        "Z",
+        "Z", Color.RED,
         [
             [1, 1, 0],
             [0, 1, 1],
@@ -81,7 +91,7 @@ tetromino_shapes = [
         null_value=NULL_VALUE,
     ),
     TetrominoShape(
-        "S",
+        "S", Color.GREEN,
         [
             [0, 1, 1],
             [1, 1, 0],
@@ -91,14 +101,14 @@ tetromino_shapes = [
     ),
 ]
 
-piece_queue = ShuffledBagQueue(tetromino_shapes, visible_size=3)
+piece_queue = ShuffledBagQueue(tetromino_shapes, visible_size=ITEMS_IN_QUEUE)
 
 level_manager = LevelManager(
     lines_for_next_level=10,
 )
 
 score_manager = ScoreManger(
-    for_line_clear=[0, 40, 100, 300, 1200],
+    for_line_clear=[0, 100, 300, 500, 800],
     for_events={Event.SOFT_DROP: 1, Event.HARD_DROP: 2},
 )
 
@@ -114,13 +124,12 @@ game_manager = TetrisGameManager(
     board, piece_queue, level_manager, score_manager, time_manager, wall_kick_positions
 )
 
-player_type = "ai"
-if player_type == "human":
+if player_type == PlayerType.HUMAN:
     player = PygamePlayer(PygamePlayer.DEFAULT_BINDINGS)
-elif player_type == "ai":
-    player = AlgorithmPlayer()
+elif player_type == PlayerType.ALGORITHM:
+    player = AlgorithmPlayer(tetromino_shapes, NULL_VALUE)
 
-display = PygameDisplay({hash(shape): shape.get_name() for shape in tetromino_shapes})
+display = PygameDisplay({hash(shape): shape.get_color() for shape in tetromino_shapes})
 display.add_pause_button_action(game_manager.pause, game_manager.unpause)
 display.add_restart_button_action(game_manager.reset)
 
@@ -152,9 +161,8 @@ while True:
     )
 
     if game_manager.is_game_over() and not was_game_over:
-        print("Score")
         high_score_manager.save_score(
-            Score(game_state.info.get("score", 0), time.ctime(), player.get_name())
+            Score(int(game_state.info.get("score", 0)), time.ctime(), player.get_name())
         )
     was_game_over = game_manager.is_game_over()
 

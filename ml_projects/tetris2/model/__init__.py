@@ -1,3 +1,2 @@
 from .tetris import *
-
-__all__ = []
+from .game_manager import TetrisGameManager

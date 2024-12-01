@@ -7,10 +7,14 @@ class LevelManager(Manager):
         self.reset()
 
     def reset(self) -> None:
-        self.level = 0
+        self.lines_cleared = 0
+        self.level = 1
     
     def handle_event(self, event: dict[Event, object]) -> None:
-        return super().handle_event(event)
+        for event, data in event.items():
+            if event == Event.LINE_CLEAR:
+                self.lines_cleared += data
+                self.level = self.lines_cleared // self.lines_for_next_level + 1
 
     def get_level(self) -> int:
         return self.level
@@ -28,3 +32,6 @@ class LevelManager(Manager):
         else: frame_interval = 1
 
         return frame_interval / 60
+    
+    def get_time_till_freeze_seconds(self) -> float:
+        return self.get_drop_interval_seconds()

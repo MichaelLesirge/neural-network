@@ -1,4 +1,5 @@
 import numpy as np
+from display import Color
 
 def rotate(grid: np.ndarray) -> np.ndarray:
     return np.flip(np.rot90(grid))
@@ -7,9 +8,11 @@ def rotate(grid: np.ndarray) -> np.ndarray:
 class TetrominoShape:
     MAX_ORIENTATIONS = 4
 
-    def __init__(self, name: str, shape: np.ndarray, null_value = 0) -> None:
+    def __init__(self, name: str, color: Color, shape: np.ndarray, null_value = 0) -> None:
 
         self.name = name
+        self.color = color
+
         self.bytes = np.array(shape).tobytes()
 
         self.null_value = null_value
@@ -27,9 +30,12 @@ class TetrominoShape:
         
     def get_name(self) -> str:
         return self.name
+    
+    def get_color(self) -> Color:
+        return self.color
 
     def get_grid_array(self, orientation=0) -> np.ndarray:
-        return self.orientations[orientation]
+        return self.orientations[orientation % len(self.orientations)]
 
     def get_width(self, orientation=0) -> int:
         return self.get_grid_array(orientation).shape[1]
@@ -37,8 +43,8 @@ class TetrominoShape:
     def get_height(self, orientation=0) -> int:
         return self.get_grid_array(orientation).shape[0]
 
-    def get_thumbnail_grid_array(self) -> np.ndarray:
-        grid = self.get_grid_array(0)
+    def get_thumbnail_grid_array(self, orientation=0) -> np.ndarray:
+        grid = self.get_grid_array(orientation)
 
         empty_positions = np.where(grid != self.null_value)
         trimmed_grid = grid[

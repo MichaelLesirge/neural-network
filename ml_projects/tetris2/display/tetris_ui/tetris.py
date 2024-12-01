@@ -82,12 +82,14 @@ class TetrisRenderer:
             tetromino, size=grid.to_pixel_relative(size)
         )
 
+        size_x, size_y = size
+
         for y, row in enumerate(squares):
             for x, square in enumerate(row):
                 if square:
                     grid.blit(
                         square,
-                        (x, y),
+                        (x * size_x, y * size_y),
                     )
 
     def _draw_item_text(

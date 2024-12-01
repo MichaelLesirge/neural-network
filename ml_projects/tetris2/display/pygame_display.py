@@ -1,4 +1,5 @@
 import pathlib
+import math
 from typing import Callable
 
 import numpy as np
@@ -8,7 +9,7 @@ from game_state import State
 
 from .display import Display
 from .tetris_ui import CircleToggleButton, TetrisRenderer, TetrominoTiles, GridContext, TextButton
-
+from .colors import Color
 
 def gray_scale(surface: pygame.Surface) -> pygame.Surface:
     array = pygame.surfarray.array3d(surface)
@@ -29,7 +30,7 @@ def make_transparent(surface: pygame.Surface, opacity: float = 1) -> pygame.Surf
 class PygameDisplay(Display):
     ASSETS_PATH = pathlib.Path(__file__).parent / "tetris_ui" / "assets"
 
-    def __init__(self, tetromino_names: dict[int, str]) -> None:
+    def __init__(self, tetromino_colors: dict[int, Color]) -> None:
         pygame.init()
 
         assets = self.ASSETS_PATH
@@ -65,21 +66,32 @@ class PygameDisplay(Display):
 
         self.tetris = TetrisRenderer()
 
+        default_png = "default.png"
+        color_png_map = {
+            Color.CYAN: "I.png",
+            Color.YELLOW: "O.png",
+            Color.PURPLE: "T.png",
+            Color.GREEN: "S.png",
+            Color.BLUE: "J.png",
+            Color.RED: "Z.png",
+            Color.ORANGE: "L.png",
+        }
+
         self.tetromino_tiles = TetrominoTiles(
             {
-                key: pygame.image.load(assets / "normal-tetromino" / (value + ".png"))
-                for key, value in tetromino_names.items()
+                key: pygame.image.load(assets / "normal-tetromino" / color_png_map.get(value, default_png))
+                for key, value in tetromino_colors.items()
             },
-            pygame.image.load(assets / "normal-tetromino" / "default.png"),
+            pygame.image.load(assets / "normal-tetromino" / default_png),
             null_tile_value=0,
         )
 
         self.tetromino_ghost_tiles = TetrominoTiles(
             {
-                key: pygame.image.load(assets / "ghost-tetromino" / (value + ".png"))
-                for key, value in tetromino_names.items()                
+                key: pygame.image.load(assets / "ghost-tetromino" / color_png_map.get(value, default_png))
+                for key, value in tetromino_colors.items()                
             },
-            pygame.image.load(assets / "ghost-tetromino" / "default.png"),
+            pygame.image.load(assets / "ghost-tetromino" / default_png),
             null_tile_value=0,
         )
 
@@ -126,7 +138,7 @@ class PygameDisplay(Display):
 
         self.tetris.set_boards([
             (state.board, self.tetromino_tiles),
-            (state.current_tetromino_board, self.tetromino_tiles),
+            (state.current_tetromino_board, self.tetromino_tiles.apply(lambda x: make_transparent(x, (1 - math.sin(state.current_tetromino_percent_placed * math.pi) * 0.5)))),
             (state.ghost_tetromino_board, self.tetromino_ghost_tiles),
         ])
 

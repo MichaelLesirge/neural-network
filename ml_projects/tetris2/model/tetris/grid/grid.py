@@ -7,6 +7,8 @@ WidthHeightPair = tuple[int, int]
 
 def find_corners(grid: np.ndarray, null_value=0) -> tuple[CoordinatePair, CoordinatePair]:
     empty_positions = np.where(grid != null_value)
+    if len(empty_positions[0]) == 0:
+        return
     y_start = min(empty_positions[0])
     y_end = max(empty_positions[0]) + 1
     x_start = min(empty_positions[1])
@@ -18,7 +20,6 @@ class Grid:
     def __init__(self, grid: np.ndarray, null_value=0) -> None:
         self.grid = grid
         self.null_value = null_value
-        self.clear()
 
     @classmethod
     def empty(cls, shape: WidthHeightPair, null_value=0, dtype=int) -> Self:
@@ -47,21 +48,33 @@ class Grid:
 
         x, y = position
 
-        ((x_start, y_start), (x_end, y_end)) = find_corners(subgrid)
+        corners = find_corners(subgrid, self.null_value)
+
+        if corners is None:
+            return
+
+        ((x_start, y_start), (x_end, y_end)) = corners
 
         subgrid = subgrid[y_start:y_end, x_start:x_end]
         x, y = x + x_start, y + y_start
         width, height = x_end - x_start, y_end - y_start
 
+
         view = self.grid[y : y + height, x : x + width]
         mask = subgrid != self.null_value
+
         view[mask] = subgrid[mask]
 
     def insert_if_empty(self, position: CoordinatePair, subgrid: np.ndarray) -> bool:
         """if subgrid does not overlap, insert it and return true"""
         x, y = position
 
-        ((x_start, y_start), (x_end, y_end)) = find_corners(subgrid)
+        corners = find_corners(subgrid, self.null_value)
+
+        if corners is None:
+            return True
+
+        ((x_start, y_start), (x_end, y_end)) = corners
 
         subgrid = subgrid[y_start:y_end, x_start:x_end]
         x, y = x + x_start, y + y_start
@@ -96,7 +109,12 @@ class Grid:
         """check if subgrid overlaps with anything in grid at specified position"""
         x, y = position
 
-        ((x_start, y_start), (x_end, y_end)) = find_corners(subgrid)
+        corners = find_corners(subgrid, self.null_value)
+
+        if corners is None:
+            return False
+
+        ((x_start, y_start), (x_end, y_end)) = corners
 
         subgrid = subgrid[y_start:y_end, x_start:x_end]
         x, y = x + x_start, y + y_start
@@ -112,31 +130,6 @@ class Grid:
         # Check to see if there is any overlap
         return np.logical_and(view[mask], subgrid[mask]).any()
 
-    def get_grid_string(
-        self, row_template_str="[%s]", full_tile_template_str=" %s", empty_tile_str="  "
-    ) -> str:
-
-        return "\n".join(
-            row_template_str
-            % (
-                "".join(
-                    (
-                        full_tile_template_str % item
-                        if (item != self.null_value)
-                        else empty_tile_str
-                    )
-                    for item in row
-                )
-            )
-            for row in self.grid
-        )
-
-    def get_height(self) -> int:
-        return self.grid.shape[0]
-
-    def get_width(self) -> int:
-        return self.grid.shape[1]
-
     def find_full_lines(self) -> list[int]:
         return [i for i, row in enumerate(self.grid) if all(row)]
 
@@ -144,6 +137,67 @@ class Grid:
         for line in lines:
             self.grid[1:line + 1, :] = self.grid[:line, :]
             self.grid[0, :] = 0
+
+    def get_number_of_surrounded_holes(self) -> int:
+        holes = 0
+
+        for col in range(self.grid.shape[1]):
+            has_seen_block = False
+            for row in range(self.grid.shape[0]):
+                if (not has_seen_block and self.grid[row, col]): has_seen_block = True
+                holes += has_seen_block and self.grid[row, col] == 0 and (col < 1 or self.grid[row, col - 1] != 0) and (col >= self.grid.shape[1] - 1 or self.grid[row, col + 1] != 0)
+        
+        return holes
+                    
+    def get_number_of_holes(self) -> int:
+        holes = 0
+
+        for col in self.grid.T:
+            has_seen_block = False
+            for value in col:
+                if (not has_seen_block and value): has_seen_block = True
+                holes += (has_seen_block) and value == 0
+        
+        return holes
+    
+    def get_column_heights(self) -> np.ndarray[int]:
+        mask = self.grid != 0
+        return self.grid.shape[0] - np.where(mask.any(axis=0), mask.argmax(axis=0), self.grid.shape[0])
+    
+    def get_heights_bumpiness(self) -> int:
+        heights = self.get_column_heights()
+        total_bumpiness = 0
+        for i, height in enumerate(heights[:-1]):
+            height_difference = height - heights[i + 1]
+            total_bumpiness += abs(height_difference)
+        return total_bumpiness
+
+    def get_grid_string(
+        self, full_tile_str="[]", empty_tile_str="  "
+    ) -> str:
+        
+        start_pad = "["
+        end_pad = "]"
+
+        return "\n".join(
+            start_pad + (
+                "".join(
+                    (
+                        full_tile_str
+                        if (item != self.null_value)
+                        else empty_tile_str
+                    )
+                    for item in row
+                )
+            ) + end_pad
+            for row in self.grid 
+        )
+
+    def get_height(self) -> int:
+        return self.grid.shape[0]
+
+    def get_width(self) -> int:
+        return self.grid.shape[1]
 
     def copy(self):
         return self.__class__(self.grid.copy(), self.null_value)

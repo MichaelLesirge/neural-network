@@ -1,7 +1,9 @@
+
 from typing import Generator, Self
 
 import numpy as np
 
+from display import Color
 from .shape import TetrominoShape
 
 CoordinatePair = tuple[int, int]
@@ -18,9 +20,15 @@ class Tetromino:
 
         self.goto(start_position)
         self.set_orientation(orientation)
+    
+    def get_shape_type(self) -> TetrominoShape:
+        return self.shape
 
     def get_name(self) -> str:
         return self.shape.get_name()
+    
+    def get_color(self) -> Color:
+        return self.shape.get_color()
 
     def get_height(self) -> int:
         return self.get_grid_array().shape[1]
@@ -33,6 +41,9 @@ class Tetromino:
 
     def get_position(self) -> CoordinatePair:
         return (self.x, self.y)
+    
+    def get_orientation(self) -> int:
+        return self.orientation
 
     def goto(self, position: CoordinatePair) -> int:
         self.x, self.y = position

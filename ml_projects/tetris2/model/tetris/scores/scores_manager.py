@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, field
 from typing import Optional
 import heapq
 import json
@@ -7,9 +7,9 @@ import json
 
 @dataclass(slots=True, frozen=True, order=True)
 class Score:
-    score: int
-    time: float
-    playerName: str
+    score: int = field(compare=True)
+    time: str = field(compare=False)
+    playerName: str = field(compare=False)
 
 
 class HighScoreManager(ABC):
