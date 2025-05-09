@@ -16,6 +16,7 @@ def setup():
     pyautogui.sleep(3)
     pyautogui.leftClick(966, 442)
     pyautogui.sleep(4)
+    pyautogui.moveTo(LEFT_PX - CELL_SIZE_PX, TOP_PX - CELL_SIZE_PX)
 
 def left():
     pyautogui.keyDown('left')
@@ -35,9 +36,9 @@ def rotate():
 def hold():
     pyautogui.keyDown('c')
 
-LEFT = 815
-TOP = 218
-CELL_SIZE = 32
+LEFT_PX = 815
+TOP_PX = 218
+CELL_SIZE_PX = 32
 
 BOARD_WIDTH = 10
 BOARD_HEIGHT = 20
@@ -49,10 +50,7 @@ def get_board():
     board = np.zeros((BOARD_HEIGHT, BOARD_WIDTH))
     for row in range(BOARD_HEIGHT):
         for col in range(BOARD_WIDTH):
-            color = pyautogui.pixel(LEFT + col * CELL_SIZE, TOP + row * CELL_SIZE)
+            color = pyautogui.pixel(LEFT_PX + col * CELL_SIZE_PX, TOP_PX + row * CELL_SIZE_PX)
             board[row, col] = get_luminance(color) > 15
             
     return board
-
-setup()
-print(get_board())
