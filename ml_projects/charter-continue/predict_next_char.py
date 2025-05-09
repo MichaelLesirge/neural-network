@@ -13,7 +13,7 @@ CHOOSE_N_CANDIDATES_FROM_TOP = 2
 USE_PROBABILITIES = True
 
 # Path to saved network weights and biases. You do not need to include file extension
-NETWORK_PATH = directory / "char-network-code"
+NETWORK_PATH = directory / "char-network-c"
 # NETWORK_PATH = directory / "looped-train" / "char-network-v0"
 
 def main() -> None:
