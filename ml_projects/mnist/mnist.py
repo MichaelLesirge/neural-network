@@ -3,8 +3,6 @@ print("Loading modules...")
 import pathlib
 import sys
 
-"""Result: unsurprising just always predicts the most common letter, e"""
-
 directory = pathlib.Path(__file__).parent.absolute()
 sys.path.append(str(directory.parent.parent))
 
@@ -118,7 +116,6 @@ except FileNotFoundError:
 def draw_dot(array: np.ndarray, row: int, col: int, value: float) -> None:
     if -1 < row < np.size(array, 1) and -1 < col < np.size(array, 0):
         array[row, col] = min(array[row, col] + ((1 - value) * 255), 255)
-
 
 def draw_blob(array, row, col, value):
     draw_dot(array, row, col, value)
