@@ -30,32 +30,44 @@ layer_size = 2**8
 
 # --- Define neural network and get params for it ---
 
-def shift_up(array: np.ndarray) -> np.ndarray:
-    indices = np.argwhere(array > 0)
-    
-    if len(indices) == 0:
+def trim_zeros_2d(array: np.ndarray) -> np.ndarray:
+    zeros = np.where(array != 0)
+    if zeros[0].size == 0 or zeros[1].size == 0:
         return array
-
-    min_row, min_col = indices.min(axis=0)
-
-    row_shift = -min_row
-    col_shift = -min_col
-
-    shifted_array = np.roll(array, row_shift, axis=0)
-    shifted_array = np.roll(shifted_array, col_shift, axis=1)
+    min_row, max_row = np.min(zeros[0]), np.max(zeros[0])
+    min_col, max_col = np.min(zeros[1]), np.max(zeros[1])
+    return array[min_row:max_row+1, min_col:max_col+1]
     
-    return shifted_array
- 
-def apply_all(arrays: np.ndarray, func) -> np.ndarray:
-    if arrays.ndim < 3: return func(arrays)
-    
-    new = np.empty_like(arrays)
-    for i, array in enumerate(arrays): new[i] = func(array)
-    return new
+
+def pad_to_square_2d(array: np.ndarray) -> np.ndarray:
+    max_dim = max(array.shape)
+    new_array = np.zeros((max_dim, max_dim), dtype=array.dtype)
+    new_array[:array.shape[0], :array.shape[1]] = array
+    return new_array
+
+def interpolate_2d(array: np.ndarray, new_shape: tuple[int, int]) -> np.ndarray:
+    new_array = np.zeros(new_shape, dtype=array.dtype)
+    row_scale = new_shape[0] / array.shape[0]
+    col_scale = new_shape[1] / array.shape[1]
+
+    for i in range(new_shape[0]):
+        for j in range(new_shape[1]):
+            new_array[i, j] = array[int(i/row_scale), int(j/col_scale)]
+    return new_array
+
+def apply_all(arrays: np.ndarray, func, shape) -> np.ndarray:
+    if arrays.ndim == 2:
+        return func(arrays)
+    if arrays.ndim == 3:
+        new = np.ones(shape, dtype=arrays.dtype)
+        for i, array in enumerate(arrays): new[i] = func(array)
+        return new
+    raise ValueError(f"Invalid number of dimensions: {arrays.ndim}")
 
 def preprocess(inputs):
     inputs = inputs.astype(np.float64) / 255
-    inputs = apply_all(inputs, shift_up)
+
+    inputs = apply_all(inputs, lambda x: interpolate_2d(pad_to_square_2d(trim_zeros_2d(x)), (small_drawing_height, small_drawing_width)), (inputs.shape[0], small_drawing_width, small_drawing_height))
 
     return inputs
 
@@ -117,20 +129,18 @@ def draw_dot(array: np.ndarray, row: int, col: int, value: float) -> None:
     if -1 < row < np.size(array, 1) and -1 < col < np.size(array, 0):
         array[row, col] = min(array[row, col] + ((1 - value) * 255), 255)
 
-def draw_blob(array, row, col, value):
-    draw_dot(array, row, col, value)
-
-    value_edge = 1 - (1-value) / 5
-    draw_dot(array, row+1, col, value_edge)
-    draw_dot(array, row, col+1, value_edge)
-    draw_dot(array, row-1, col, value_edge)
-    draw_dot(array, row, col-1, value_edge)
-
-    value_corner = 1 - (1-value) / 10
-    draw_dot(array, row+1, col+1, value_corner)
-    draw_dot(array, row-1, col+1, value_corner)
-    draw_dot(array, row+1, col-1, value_corner)
-    draw_dot(array, row-1, col-1, value_corner)
+def draw_circle(array, row, col, value, radius=10, *, _pens={}) -> None:
+    if radius not in _pens:
+        x, y = np.indices((radius * 2 + 1, radius * 2 + 1))
+        circle = np.sqrt((x - radius)**2 + (y - radius)**2) / np.sqrt(2 * radius**2)
+        _pens[radius] = (1 - circle) * 255
+    
+    # array[row - radius:row + radius + 1, col - radius:col + radius + 1] = np.clip(
+    #         array[row - radius:row + radius + 1, col - radius:col + radius + 1] + 
+    #         _pens[radius].astype(array.dtype) * (1 - value), 0, 255)
+    array[row - radius:row + radius + 1, col - radius:col + radius + 1] = np.maximum(
+            array[row - radius:row + radius + 1, col - radius:col + radius + 1],
+            _pens[radius].astype(array.dtype) * (1 - value))
 
 
 def draw_line(array: np.ndarray, row1: int, col1: int, row2: int, col2: int):
@@ -148,7 +158,7 @@ def draw_line(array: np.ndarray, row1: int, col1: int, row2: int, col2: int):
 
     current_col, current_row = col1, row1
     while True:
-        draw_blob(array, current_row, current_col,
+        draw_circle(array, current_row, current_col,
                   np.abs(error - col_distance + row_distance) / distance_change)
 
         last_error = error
@@ -158,7 +168,7 @@ def draw_line(array: np.ndarray, row1: int, col1: int, row2: int, col2: int):
             if current_col == col2:
                 break
             if (last_error + row_distance) < distance_change:
-                draw_blob(array, current_row + row_change, current_col,
+                draw_circle(array, current_row + row_change, current_col,
                           np.abs(last_error + row_distance) / distance_change)
             error -= row_distance
             current_col += col_change
@@ -167,18 +177,20 @@ def draw_line(array: np.ndarray, row1: int, col1: int, row2: int, col2: int):
             if current_row == row2:
                 break
             if (col_distance - last_error) < distance_change:
-                draw_blob(array, current_row, last_col + col_change,
+                draw_circle(array, current_row, last_col + col_change,
                           np.abs(col_distance - last_error) / distance_change)
             error += col_distance
             current_row += row_change
 
 
 class DrawingDisplay:
-    def __init__(self, canvas: tk.Canvas, save_size: tuple[int, int], on_update=lambda pixels: None, on_reset=lambda: None) -> None:
+    def __init__(self, canvas: tk.Canvas, save_size: tuple[int, int] = None, on_update=lambda pixels: None, on_reset=lambda: None) -> None:
         self.canvas = canvas
         self.canvas.config(cursor="crosshair")
         self.canvas_width, self.canvas_height = self.canvas.winfo_reqheight(), self.canvas.winfo_reqwidth()
 
+        if save_size is None:
+            save_size = (self.canvas_height, self.canvas_width)
         self.pixel_array = np.zeros(save_size, dtype=int)
 
         self.canvas.bind("<B1-Motion>", self.draw)
@@ -205,7 +217,7 @@ class DrawingDisplay:
             event.x+size, event.y+size, event.x-size, event.y-size, fill="black", tags="line")
 
         row, col = self.scale_for_save(event.x, event.y)
-        draw_blob(self.pixel_array, row, col, 0)
+        draw_circle(self.pixel_array, row, col, 0)
 
         self.on_update(self.pixel_array)
 
@@ -229,19 +241,16 @@ class DrawingDisplay:
 
     def clear_canvas(self) -> None:
         self.pixel_array = np.zeros_like(self.pixel_array)
+        self.previous_draw_point = None
         self.canvas.delete(tk.ALL)
         self.on_reset()
 
     def show_graph(self) -> None:
-        pixels = self.pixel_array
-        plt.imshow(pixels, cmap="Greys")
-        print("\n".join((" ".join(str(pixel).ljust(3) for pixel in row)) for row in self.pixel_array), "\n")
+        plt.imshow(self.pixel_array, cmap="Greys")
         plt.show()
         
     def show_processed_graph(self) -> None:
-        pixels = preprocess(self.pixel_array)
-        plt.imshow(pixels, cmap="Greys")
-        print("\n".join((" ".join(str(round(pixel, 3)).ljust(5) for pixel in row)) for row in pixels), "\n")
+        plt.imshow(preprocess(self.pixel_array), cmap="Greys")
         plt.show()
 
     def place_buttons(self) -> None:
@@ -366,14 +375,14 @@ def main():
         # do neural network stuff here
         output = network.compute(np.array([pixels]))[0]
 
-        print(", ".join(f"{num}: {chance:.5%}" for num, chance in enumerate(output)))
+        # print(", ".join(f"{num}: {chance:.5%}" for num, chance in enumerate(output)))
         
         network_info.update(output)
         guess_info.update(output)
 
 
     drawing_board = DrawingDisplay(
-        drawing_canvas, (small_drawing_width, small_drawing_height), update, reset)
+        drawing_canvas, on_update=update, on_reset=reset)
     drawing_board.place_buttons()
 
     reset()
