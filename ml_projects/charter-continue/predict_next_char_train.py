@@ -1,6 +1,6 @@
 # Quick project I assumed would fail so bad code quality
 
-import csv, time, os
+import time, os
 
 from network_util import *
 
@@ -9,18 +9,18 @@ import numpy as np
 DATA_POINTS_PER_MESSAGE = 1
 MIN_MESSAGE_SIZE = 3
 
-EPOCHS = 5
+EPOCHS = 3
 BATCH_SIZE = 16
 LEARNING_RATE = 0.0075
 
 OUTPUT_FOLDER = directory / "looped-train"
-TRAINING_DATA_PATH = directory / "data" / "data.txt"
+TRAINING_DATA_PATH = directory / "data" / "dataset" / "data.txt"
 
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
 print("Loading Data...")
 
-LOAD_NETWORK_AT_START = directory / "char-network-code"
+LOAD_NETWORK_AT_START = None
 
 if LOAD_NETWORK_AT_START is not None:
     network.load(str(LOAD_NETWORK_AT_START))

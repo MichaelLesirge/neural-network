@@ -1,4 +1,7 @@
+import typing
+
 from network_util import *
+
 
 # How many candidates to consider for next character, chooses from highest ranked charters.
 # If this value is one, then only the highest ranked character is over picked
@@ -12,9 +15,16 @@ CHOOSE_N_CANDIDATES_FROM_TOP = 2
 # If False, all caudates are treated equally
 USE_PROBABILITIES = True
 
+# todo, let user choose
+
 # Path to saved network weights and biases. You do not need to include file extension
-NETWORK_PATH = directory / "char-network-c"
-# NETWORK_PATH = directory / "looped-train" / "char-network-v0"
+NETWORK_PATH = directory / "char-network-code"
+# NETWORK_PATH = directory / "char-network-news"
+NETWORK_PATH = directory / "looped-train" / "char-network-v1"
+
+TERMINATION_LAMBDA: typing.Callable[[str], bool]
+TERMINATION_LAMBDA = lambda msg: len(msg) > 2 and msg.endswith(tuple(TERMINATION_CHARS))
+# TERMINATION_LAMBDA = lambda msg: msg.count(".") >= 3
 
 def main() -> None:
      
@@ -33,12 +43,9 @@ def main() -> None:
     while True:
         message = input("CharGPN> ")
 
-        print(message, end="")
+        print(message, end="", flush=True)
 
-        # while (len(message) == 0 or message[-1] not in TERMINATION_CHARS) and (message.count(".") < 3):
-        # while (len(message) == 0 or message.count(END_LINE) < 3):
-        # while (len(message) == 0 or message[-1] not in TERMINATION_CHARS):
-        while (len(message) < 2 or message[-2] not in ".\n"):
+        while not TERMINATION_LAMBDA(message):
             output = network.compute(format_one_hot_messages(message_to_one_hot(message)))[0]
 
             top_indices = np.argsort(output)[-(CHOOSE_N_CANDIDATES_FROM_TOP if CHOOSE_N_CANDIDATES_FROM_TOP is not None else len(output)):]
@@ -47,7 +54,7 @@ def main() -> None:
             selected = np.random.choice(top_indices, p=normalized_probabilities)
 
             char = num_to_lower_char(selected)
-            print(char, end="")
+            print(char, end="", flush=True)
 
             message += char
 
