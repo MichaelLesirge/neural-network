@@ -1,5 +1,4 @@
-*.zip
-venv_check.py
+ml_projects/charter-continue/data/dataset
 
 # vscode git ignore from https://github.com/github/gitignore/blob/main/Global/VisualStudioCode.gitignore
 
