@@ -1,4 +1,4 @@
-# Charter Continue
+# Character Prediction
 
 <p>
 The goal of this was to train a simple neural network to predict the next character in a string, using my own neural network library in this repo. On my first attempt after training it only returned the letter E, most likely due to it being the most common letter in the English language, but with a few more layers and different training data, it was able to form words in a way that was readable, and to my surprise even sometimes made some sense.

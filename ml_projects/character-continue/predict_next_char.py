@@ -3,7 +3,7 @@ import typing
 from network_util import *
 
 
-# How many candidates to consider for next character, chooses from highest ranked charters.
+# How many candidates to consider for next character, chooses from highest ranked characters.
 # If this value is one, then only the highest ranked character is over picked
 # If a number is picked it will pick that many (N) highest ranked numbers
 # You can set to util.NUMBER_OF_CHARS_IN_RANGE to make every result a candidate
