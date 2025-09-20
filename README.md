@@ -4,7 +4,7 @@
 <p>
 Very basic neural network module that I made in Python using NumPy. It allows you to create neural networks and train them with a simple API, inspired by TensorFlow's Keras.
 
-I tried to keep a clean and extendable project structure, allowing for new additions of layers to be added easily. I have currently implemented dense layers, multiple activation functions (including ReLU and sigmoid), multiple loss functions (including MSE and CategoricalCrossEntropy), and a network class to bring them all together.
+I tried to keep a clean and extendable project structure, allowing for new additions of layers to be added easily. I have currently implemented dense layers, multiple activation functions, multiple loss functions, and a network class to bring them all together.
 
 This project was mostly made with the goal of getting a basic understanding how neural networks and deep learning works, and just to say I did it from scratch.
 
