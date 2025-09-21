@@ -180,9 +180,6 @@ class AlgorithmPlayer(Player):
                 lowest_penalty_moves = [Action.HOLD]
                 
             self.cache[board_hash] = {height: [move] for height, move in zip(range(start_height, lowest_penalty_end_height + 1), lowest_penalty_moves)}
-            print("best", lowest_penalty, {height: self.moves_to_str([move]) for height, move in zip(range(start_height, lowest_penalty_end_height + 1), lowest_penalty_moves)})
-            print("\n")
-
 
         for key in list(self.cache.keys()):
             if key != board_hash:
