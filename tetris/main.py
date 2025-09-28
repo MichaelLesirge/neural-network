@@ -29,6 +29,8 @@ SIDE_RIGHT_X = GAME_X + GAME_WIDTH + SIDE_PANEL_GAP
 
 SIDE_PANEL_MARGIN = TETRIS_SQUARE_SIZE
 
+SUB_SIDE_PANEL_WIDTH = SIDE_PANEL_WIDTH - (SIDE_PANEL_MARGIN * 2)
+
 OUTLINE_WIDTH = 3
 
 # Other Window Data
@@ -108,6 +110,11 @@ def main() -> None:
                                 pygame.image.load(MEDIA_PATH / "mute_sound.png"),
                                 pygame.image.load(MEDIA_PATH / "play_sound.png"),
                                 button_size)
+            
+    ai_enabled_button = ToggleButtonText(screen, (SIDE_LEFT_X - SIDE_PANEL_WIDTH + SIDE_PANEL_MARGIN + SUB_SIDE_PANEL_WIDTH / 2, GAME_Y + 50),
+                                "AI ON",
+                                "AI OFF",
+                                pygame.font.SysFont("Monospace", 20, True, False))
         
     clock = pygame.time.Clock()
         
@@ -122,7 +129,7 @@ def main() -> None:
     has_quit_game = False
     game_going = True
     
-    used_ai_control = using_ai_control = False
+    used_ai_control = False
     
     fps_speed_level = 0
     fps_change_percent = 10
@@ -130,7 +137,7 @@ def main() -> None:
     while game_going and (not has_quit_game):                
         screen.fill(BACKGROUND_COLOR)
         
-        prefix = ("(AI)" if using_ai_control else "")
+        prefix = ("(AI)" if ai_enabled_button.get_state() else "")
         title = title_font.render(WINDOW_NAME + prefix, True, MAIN_COLOR) 
         screen.blit(title, (SCREEN_WIDTH // 2 - title.get_width() // 2, 0))
          
@@ -147,7 +154,7 @@ def main() -> None:
                 if event.key == pygame.K_c:         moves.append(Move.HOLD)
                 if event.key == pygame.K_p:         pause_button.toggle_state()
                 if event.key == pygame.K_m:         mute_button.toggle_state()
-                if event.key == pygame.K_a:         using_ai_control = not using_ai_control
+                if event.key == pygame.K_a:         ai_enabled_button.toggle_state()
                 if event.key == pygame.K_LEFT:
                     moves.append(Move.LEFT)
                     left_down_clock = KEY_REPEAT_DELAY
@@ -180,7 +187,7 @@ def main() -> None:
         
         if pressing_down_arrow: moves.append(Move.SOFT_DROP)   
         
-        if using_ai_control:            
+        if ai_enabled_button.get_state():           
             moves.clear()
             
             if up: fps_speed_level += 1
@@ -232,9 +239,14 @@ def main() -> None:
         
         blit_with_outline(screen, info_side_panel, (SIDE_LEFT_X, GAME_Y))
         
+        ai_enabled_side_panel = render_info_panel(
+            {"AI ENABLED": pygame.Surface((ai_enabled_button.enable.get_size()[0] * 2, ai_enabled_button.enable.get_size()[1]))},
+            font=font, width=SUB_SIDE_PANEL_WIDTH, margin=(0, SIDE_PANEL_MARGIN)
+        )
+
         ai_info_side_panel = render_info_panel(
             {key: display_info[key] for key in ["reward", "ai_reward"]},
-            font=font, width=SIDE_PANEL_WIDTH - (SIDE_PANEL_MARGIN * 2), margin=(0, SIDE_PANEL_MARGIN)
+            font=font, width=SUB_SIDE_PANEL_WIDTH, margin=(0, SIDE_PANEL_MARGIN)
         )
 
         fps_percent = 1 + (fps_speed_level * (fps_change_percent / 100))
@@ -242,12 +254,13 @@ def main() -> None:
 
         fps_panel = render_info_panel(
             {"fps": format(clock.get_fps(), ".2f"), "speed": format(fps_percent, ".0%")},
-            font=font, width=SIDE_PANEL_WIDTH - (SIDE_PANEL_MARGIN * 2), margin=(0, SIDE_PANEL_MARGIN)
+            font=font, width=SUB_SIDE_PANEL_WIDTH, margin=(0, SIDE_PANEL_MARGIN)
         )
         
+        blit_with_outline(screen, ai_enabled_side_panel, (SIDE_LEFT_X - SIDE_PANEL_WIDTH + SIDE_PANEL_MARGIN, GAME_Y))
         if used_ai_control:
-            blit_with_outline(screen, ai_info_side_panel, (SIDE_LEFT_X - SIDE_PANEL_WIDTH + SIDE_PANEL_MARGIN, GAME_Y))
-            blit_with_outline(screen, fps_panel, (SIDE_LEFT_X - SIDE_PANEL_WIDTH + SIDE_PANEL_MARGIN, GAME_Y + SIDE_PANEL_GAP + ai_info_side_panel.get_height()))
+            blit_with_outline(screen, ai_info_side_panel, (SIDE_LEFT_X - SIDE_PANEL_WIDTH + SIDE_PANEL_MARGIN, GAME_Y + SIDE_PANEL_GAP + ai_enabled_side_panel.get_height()))
+            blit_with_outline(screen, fps_panel, (SIDE_LEFT_X - SIDE_PANEL_WIDTH + SIDE_PANEL_MARGIN, GAME_Y + SIDE_PANEL_GAP + ai_enabled_side_panel.get_height() + SIDE_PANEL_GAP + ai_info_side_panel.get_height()))
 
         next_side_panel = render_info_panel(
             {"next": render_shapes(info["piece_queue"], TETRIS_SQUARE_SIZE)},
@@ -268,8 +281,9 @@ def main() -> None:
             font=font, width=SIDE_PANEL_WIDTH, margin=SIDE_PANEL_MARGIN
         )
         blit_with_outline(screen, control_side_bar, (SIDE_LEFT_X, GAME_Y + GAME_HEIGHT - control_side_bar.get_height()))
-        pause_button.draw()
-        mute_button.draw()
+
+        for button in ToggleButton.all_buttons:
+            button.draw()
          
         if pause_button.get_state():
             screen.blit(paused_text, (SCREEN_WIDTH // 2 - paused_text.get_width() // 2, SCREEN_HEIGHT // 2 - paused_text.get_height() // 2))
@@ -479,6 +493,16 @@ class ToggleButton:
         
     def get_state(self) -> bool: return self.state
 
+class ToggleButtonText(ToggleButton):
+    def __init__(self, screen: pygame.Surface, position: tuple[int, int], enable_text: str, disable_text: str, font: pygame.font.Font) -> None:
+        super().__init__(screen, position, BLANK_SURFACE, BLANK_SURFACE, 0)
+        self.enable = font.render(enable_text, True, "green", BACKGROUND_COLOR)
+        self.disable = font.render(disable_text, True, "red", BACKGROUND_COLOR)
+
+    def is_over(self, pos: tuple[int, int]) -> bool:
+        rect = pygame.Rect(self.x - self.enable.get_width() // 2, self.y - self.enable.get_height() // 2, self.enable.get_width(), self.enable.get_height())
+        return rect.collidepoint(pos)
+    
 if __name__ == "__main__":
     print("""\033[32m
 [][][][][] [][][][] [][][][][] [][][][]  [][][]   [][][]  
