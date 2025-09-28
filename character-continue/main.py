@@ -18,13 +18,15 @@ USE_PROBABILITIES = True
 # todo, let user choose
 
 # Path to saved network weights and biases. You do not need to include file extension
-NETWORK_PATH = directory / "char-network-code"
-# NETWORK_PATH = directory / "char-network-news"
-NETWORK_PATH = directory / "looped-train" / "char-network-v1"
+NETWORK_PATH = directory / "char-network-c"
+# NETWORK_PATH = directory / "looped-train" / "char-network-v1"
 
 TERMINATION_LAMBDA: typing.Callable[[str], bool]
-TERMINATION_LAMBDA = lambda msg: len(msg) > 2 and msg.endswith(tuple(TERMINATION_CHARS))
-# TERMINATION_LAMBDA = lambda msg: msg.count(".") >= 3
+
+TERMINATION_LAMBDA_TERM = lambda msg: len(msg) > 2 and msg.endswith(tuple(TERMINATION_CHARS))
+TERMINATION_LAMBDA_SENTENCES = lambda msg: msg.count(".") >= 3
+
+TERMINATION_LAMBDA = lambda msg: TERMINATION_LAMBDA_TERM(msg) or TERMINATION_LAMBDA_SENTENCES(msg)
 
 def main() -> None:
      
