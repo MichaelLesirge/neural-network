@@ -50,14 +50,17 @@ network = nn.network.Network([
 ], loss=nn.losses.CategoricalCrossEntropy())
 ```
 
+## GUI Demo
+Simple GUI I created to show what the neural network was predicitng. Kinda interesting to see just the chances of the next char.
+The word prediction just exstends the text by the next character until a space is reached (or the char limit of 24).
+![GUI Demo](https://github.com/user-attachments/assets/875a289e-9dd9-482d-ae94-4d76ff3c7a85)
+
+
 ## More Demos of Model
 GIFs of trying out network B with predict_next_char. Mostly got gibberish but it is still kinda funny to see the results.
 ![Prompts With "I", Extra GIF of Network B](https://github.com/user-attachments/assets/f42a3b63-10f9-471b-b98a-e0af302b012b)
 ![More Random Prompts, Extra GIF of Network B](https://github.com/user-attachments/assets/f442066e-3133-4ba7-95f4-a2e4e525d07e)
 ![More Longer Prompts, Extra GIF of Network B](https://github.com/user-attachments/assets/96c6e834-903b-4f0d-9db6-d60163a16c02)
-
-
-
 
 
 
