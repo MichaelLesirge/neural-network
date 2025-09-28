@@ -19,7 +19,7 @@ def predict_next_character_probs(message, n = 7):
     normalized_probabilities = top_probabilities / top_probabilities.sum()
     return top_indices, normalized_probabilities
 
-def predict_next_word(message, max_len = 28):
+def predict_next_word(message, max_len = 24):
 
     word = ""
 
@@ -82,7 +82,7 @@ class TextPredictorApp:
         self.update_bar_graph(top_indices, probabilities)
 
         self.predicted_word = predict_next_word(current_message)
-        self.predicted_word_label.config(text=f"Word Prediction: {repr(self.predicted_word)}")
+        self.predicted_word_label.config(text=f"Word Prediction: {repr("_") if self.predicted_word.isspace() else repr(self.predicted_word)}")
 
     def update_bar_graph(self, top_indices, probabilities):
         # Clear previous graph
@@ -103,6 +103,7 @@ class TextPredictorApp:
             x1 = x0 + bar_width
             y1 = max_height
             self.canvas.create_rectangle(x0, y0, x1, y1, fill="blue")
+            if char.isspace(): char = "␣"
             self.canvas.create_text(x0 + bar_width / 2, y1 + 15, text=repr(char), font=("Arial", 10))
 
     def clear_bar_graph(self):
