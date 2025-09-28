@@ -82,7 +82,7 @@ class TextPredictorApp:
         self.update_bar_graph(top_indices, probabilities)
 
         self.predicted_word = predict_next_word(current_message)
-        self.predicted_word_label.config(text=f"Prediction: {repr(self.predicted_word)}")
+        self.predicted_word_label.config(text=f"Word Prediction: {repr(self.predicted_word)}")
 
     def update_bar_graph(self, top_indices, probabilities):
         # Clear previous graph
