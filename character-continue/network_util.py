@@ -4,7 +4,7 @@ import unicodedata
 import numpy as np
 
 directory = pathlib.Path(__file__).parent.absolute()
-sys.path.append(str(directory.parent.parent))
+sys.path.append(str(directory.parent))
 
 import neural_network as nn
 

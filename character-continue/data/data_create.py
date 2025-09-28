@@ -52,7 +52,7 @@ def get_python_files(path):
     return python_files
 
 data = []
-for path in get_python_files(directory.parent.parent.parent):
+for path in get_python_files(directory.parent.parent):
     print(path)
     with open(path, "r", encoding="utf-8") as file:
         data.extend(file.readlines())

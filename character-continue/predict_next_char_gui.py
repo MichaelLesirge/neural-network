@@ -10,6 +10,8 @@ NETWORK_PATH = directory / "char-network-c"
 # Load the network model
 network.load(str(NETWORK_PATH))
 
+print(f"Loaded network from {NETWORK_PATH}")
+
 def predict_next_character_probs(message, n = 7):
     output = network.compute(format_one_hot_messages(message_to_one_hot(message)))[0]
     top_indices = np.argsort(output)[:-n-1:-1]
@@ -70,6 +72,7 @@ class TextPredictorApp:
     def key(self, event=None):        
         if event and event.char == "\t":
             self.text_box.insert(tk.END, self.predicted_word)
+            self.update_prediction()
             return "break"
 
     def update_prediction(self, event=None):
