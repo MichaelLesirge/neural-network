@@ -1,0 +1,11 @@
+Some guys poems: https://github.com/rufuspollock-okfn/openmilton/blob/master/miltondata/texts/poems.txt
+Best Selling Book (Lol): https://raw.githubusercontent.com/mxw/grmr/master/src/finaltests/bible.txt
+South Park Script: https://raw.githubusercontent.com/BobAdamsEE/SouthParkData/master/All-seasons.csv
+Bee Movie Script: https://courses.cs.washington.edu/courses/cse163/20wi/files/lectures/L04/bee-movie.txt
+Shrek Script: https://notability.com/g/AMZ261xtCIQlc5DMaa6Ov
+Star Wars Movies: https://www.kaggle.com/code/mdbabin96/starter-star-wars-movie-scripts-83a050a7-e
+
+News Headline: https://www.kaggle.com/datasets/rmisra/news-category-dataset
+
+- Other Stuff to try -
+https://github.com/niderhoff/nlp-datasets?tab=readme-ov-file

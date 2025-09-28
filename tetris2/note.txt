@@ -1,0 +1,11 @@
+Train DQN off all x positions and hard drop states as that's what it is good at. (Input is: Board (After Hard Drop), Piece Queue, Current Piece, Held Piece. Choose from: Piece hard dropped at each x at each rotation or Current board with next Current Piece (hold))
+Reward is simple like (score increase / 10) + (can_hold)
+
+3 modes:
+- Player mode
+- Assist mode (outline for where the best spot for piece is, Eval of position)
+- AI mode (Simple algorithm to move to suggested place and hard drop, Eval of position, speed controller)
+- Hard Coded AI as well (score with holes vs height), hard drop vs all locations
+
+Model(My Game / Tetr / tetris.com) -> GameState -> View(Player(Human / Algorithm / Network), View(Text / Pygame))
+View -> Actions -> Model
