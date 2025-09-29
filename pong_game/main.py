@@ -3,13 +3,13 @@ from time import sleep
 import pygame
 
 from ball import Ball
-from player import AiPaddle, HumanPaddle, WallPaddle
-from utils import RelativeRectPoint
-
+from player import Paddle, BallFollowPaddle, HumanPaddle, WallPaddle
+from utils import RPoint
+from choose import Chooser
+from button import Button
 
 def make_screen_size(size_px: int, aspect_ration: float, horizontal: bool = True) -> tuple[int, int]:
     return int(size_px * ((aspect_ration * (horizontal)) or 1)), int(size_px * ((aspect_ration * (not horizontal)) or 1))
-
 
 class GameConstants:
     BACKGROUND_COLOR = "black"
@@ -42,14 +42,48 @@ class PaddleConstants:
     
     TOP_AREA_SIZE = 1
 
+class MenuConstants:
+    START_BUTTON_LOCATION = 0.5, 0.7
+
+    OPTIONS_LOCATION = 0.25, 0.2
+
+    BUTTON_SIZE = 0.3, 0.1
+    BUTTON_GAP = 0.05
+
+LEFT_PLAYER_TYPES = {
+    "Human": lambda screen: HumanPaddle(
+        RPoint(screen, PaddleConstants.START_LOCATION, reverse_x=False),
+        RPoint(screen, PaddleConstants.PADDLE_SIZE),
+        pygame.K_q, pygame.K_a
+    ),
+    "Simple AI": lambda screen: BallFollowPaddle(
+        RPoint(screen, PaddleConstants.START_LOCATION, reverse_x=False),
+        RPoint(screen, PaddleConstants.PADDLE_SIZE),
+    ),
+    "Wall": lambda screen: WallPaddle(
+        RPoint(screen, PaddleConstants.START_LOCATION, reverse_x=False),
+        RPoint(screen, PaddleConstants.PADDLE_SIZE),
+    ),
+}
+
+RIGHT_PLAYER_TYPES = {
+    "Human": lambda screen: HumanPaddle(
+        RPoint(screen, PaddleConstants.START_LOCATION, reverse_x=True),
+        RPoint(screen, PaddleConstants.PADDLE_SIZE),
+        pygame.K_p, pygame.K_l
+    ),
+    "Simple AI": lambda screen: BallFollowPaddle(
+        RPoint(screen, PaddleConstants.START_LOCATION, reverse_x=True),
+        RPoint(screen, PaddleConstants.PADDLE_SIZE),
+    ),
+    "Wall": lambda screen: WallPaddle(
+        RPoint(screen, PaddleConstants.START_LOCATION, reverse_x=True),
+        RPoint(screen, PaddleConstants.PADDLE_SIZE),
+    ),
+}
 
 def main() -> None:
     pygame.init()
-    print()
-    
-    print("1 for Human, 2 for AI, 3 for Wall")
-    right_player_type = input("Right Player Type: ").lower().strip()
-    
     screen = pygame.display.set_mode(
         make_screen_size(size_px=400, aspect_ration=16/10, horizontal=True), 
         flags = pygame.RESIZABLE
@@ -60,76 +94,61 @@ def main() -> None:
 
     font = pygame.font.Font('freesansbold.ttf', 32)
 
+    start_game_button = Button("Start Game", RPoint(screen, MenuConstants.START_BUTTON_LOCATION), RPoint(screen, MenuConstants.BUTTON_SIZE))
+    start_game_button_group = pygame.sprite.GroupSingle(start_game_button)
+
+    left_player_chooser = Chooser(screen, LEFT_PLAYER_TYPES.keys(), RPoint(screen, MenuConstants.OPTIONS_LOCATION, reverse_x=False), RPoint(screen, MenuConstants.BUTTON_SIZE), MenuConstants.BUTTON_GAP)
+    right_player_chooser = Chooser(screen, RIGHT_PLAYER_TYPES.keys(), RPoint(screen, MenuConstants.OPTIONS_LOCATION, reverse_x=True), RPoint(screen, MenuConstants.BUTTON_SIZE), MenuConstants.BUTTON_GAP)
+
+    menu_elements = (start_game_button_group, left_player_chooser, right_player_chooser)
+
+    menu_screen_player_type = "Wall"
+
+    left_player: Paddle = RIGHT_PLAYER_TYPES[menu_screen_player_type](screen)
+    right_player: Paddle = LEFT_PLAYER_TYPES[menu_screen_player_type](screen)
+
+    paddle_group = pygame.sprite.Group(left_player, right_player)
+    
     ball = Ball(
-        BallConstants.SIZE, RelativeRectPoint(screen, BallConstants.START_LOCATION),
+        BallConstants.SIZE, RPoint(screen, BallConstants.START_LOCATION),
         BallConstants.START_SLOPE, BallConstants.START_VELOCITY,  BallConstants.MAX_VELOCITY
     )
+    ball_group = pygame.sprite.GroupSingle(ball)
 
-    left_player = HumanPaddle(
-        RelativeRectPoint(screen, PaddleConstants.START_LOCATION, reverse_x=False),
-        RelativeRectPoint(screen, PaddleConstants.PADDLE_SIZE),
-        pygame.K_q, pygame.K_a
-    )
+    has_game_started = False
 
-    if right_player_type in ("2", "ai"):
-        right_player = AiPaddle(
-            RelativeRectPoint(screen, PaddleConstants.START_LOCATION, reverse_x=True),
-            RelativeRectPoint(screen, PaddleConstants.PADDLE_SIZE),
-        )
-    elif right_player_type in ("3", "wall"):
-        right_player = WallPaddle(
-            RelativeRectPoint(screen, PaddleConstants.START_LOCATION, reverse_x=True),
-            RelativeRectPoint(screen, PaddleConstants.PADDLE_SIZE),
-        )
-    else:
-        right_player = HumanPaddle(
-            RelativeRectPoint(screen, PaddleConstants.START_LOCATION, reverse_x=True),
-            RelativeRectPoint(screen, PaddleConstants.PADDLE_SIZE),
-            pygame.K_p, pygame.K_l
-        )
-    
-    players = pygame.sprite.Group([left_player, right_player])  # type: ignore
-    
-    all_sprites = pygame.sprite.Group([*players, ball])  # type: ignore
-
-    def draw_score() -> None:
-        left_player_score_font = font.render(str(left_player.score), True, GameConstants.MAP_ITEM_COLOR)
-        screen.blit(
-            left_player_score_font,
-            RelativeRectPoint(screen, GameConstants.SCORE_LOCATION, reverse_x=False).point_centered_for(left_player_score_font)
-        )
-        
-        right_player_score_font = font.render(str(right_player.score), True, GameConstants.MAP_ITEM_COLOR)
-        screen.blit(
-            right_player_score_font,
-            RelativeRectPoint(screen, GameConstants.SCORE_LOCATION, reverse_x=True).point_centered_for(right_player_score_font)
-        )
-        
-    frame = 0
-    
     while not pygame.event.get(pygame.QUIT):
-        frame += 1
         
-        if frame % 2 == 0:
-            screen.fill(GameConstants.BACKGROUND_COLOR)
+        screen.fill(GameConstants.BACKGROUND_COLOR)
     
         pygame.draw.line(screen, GameConstants.MAP_ITEM_COLOR,
-                RelativeRectPoint(screen, GameConstants.LINE_LOCATION, reverse_y=False).point,
-                RelativeRectPoint(screen, GameConstants.LINE_LOCATION, reverse_y=True).point)
+                RPoint(screen, GameConstants.LINE_LOCATION, reverse_y=False).point,
+                RPoint(screen, GameConstants.LINE_LOCATION, reverse_y=True).point)
         
+        if not start_game_button.get():
+            versus_text = font.render("VS", True, GameConstants.MAP_ITEM_COLOR, GameConstants.BACKGROUND_COLOR)
+            screen.blit(versus_text, versus_text.get_rect(center=RPoint(screen, (0.5, 0.4)).point))
+        
+        paddle_group.update()
+        ball_group.update()
 
-        all_sprites.update()
+        if start_game_button.get() and not has_game_started:
+            menu_elements = ()
+            left_player = LEFT_PLAYER_TYPES[left_player_chooser.get()](screen)
+            right_player = RIGHT_PLAYER_TYPES[right_player_chooser.get()](screen)
+            paddle_group = pygame.sprite.Group(left_player, right_player)
+            has_game_started = True
+
+        for element in menu_elements:
+            element.update(pygame.mouse.get_pos(), pygame.mouse.get_pressed()[0])
          
-        for player in players:
+        for player in paddle_group:
             player.rect.clamp_ip(screen.get_rect()) 
         
-        if isinstance(left_player, AiPaddle):
-            left_player.find_next_move(ball, screen)
-            
-        if isinstance(right_player, AiPaddle):
-            right_player.find_next_move(ball, screen)
+        left_player.find_next_move(ball, screen)
+        right_player.find_next_move(ball, screen)
 
-        collisions = pygame.sprite.spritecollide(ball, players, False)
+        collisions = pygame.sprite.spritecollide(ball, paddle_group, False)
         if collisions:
             collision_paddle = collisions[0].rect
             if abs(ball.rect.right - collision_paddle.left) < ball.max_velocity or abs(ball.rect.left - collision_paddle.right) < ball.max_velocity:
@@ -153,9 +172,24 @@ def main() -> None:
             # ball hit top or bottom
             ball.bounce_y()
 
-        draw_score()
+        left_player_score_font = font.render(str(left_player.score), True, GameConstants.MAP_ITEM_COLOR)
+        screen.blit(
+            left_player_score_font,
+            RPoint(screen, GameConstants.SCORE_LOCATION, reverse_x=False).point_centered_for(left_player_score_font)
+        )
+        
+        right_player_score_font = font.render(str(right_player.score), True, GameConstants.MAP_ITEM_COLOR)
+        screen.blit(
+            right_player_score_font,
+            RPoint(screen, GameConstants.SCORE_LOCATION, reverse_x=True).point_centered_for(right_player_score_font)
+        )
 
-        all_sprites.draw(screen)
+        paddle_group.draw(screen)
+        ball_group.draw(screen)
+
+        for menu_item in menu_elements:
+            menu_item.draw(screen)
+
         pygame.display.update()
 
         clock.tick(GameConstants.FRAMERATE)

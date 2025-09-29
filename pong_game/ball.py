@@ -1,9 +1,9 @@
 import pygame
 
-from utils import RelativeRectPoint
+from utils import RPoint
 
 class Ball(pygame.sprite.Sprite):
-    def __init__(self, size: int, start_position: RelativeRectPoint, start_slope: tuple[int, int], start_velocity: int, max_velocity: int) -> None:
+    def __init__(self, size: int, start_position: RPoint, start_slope: tuple[int, int], start_velocity: int, max_velocity: int) -> None:
         super().__init__()   
         self.image = pygame.Surface((size, size))
         self.image.fill("white")
@@ -17,8 +17,7 @@ class Ball(pygame.sprite.Sprite):
         self.start_slope = start_slope
         self.to_starting_position()
         
-    
-    def set_new_motion(self, position: RelativeRectPoint, slope: tuple[int, int]) -> None:
+    def set_new_motion(self, position: RPoint, slope: tuple[int, int]) -> None:
         self.velocity = self.start_velocity
         
         self.rect.center = position.point

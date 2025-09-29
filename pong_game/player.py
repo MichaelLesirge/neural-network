@@ -1,7 +1,7 @@
 import pygame
 
 from ball import Ball
-from utils import RelativeRectPoint
+from utils import RPoint
 
 
 class Constants:
@@ -9,7 +9,7 @@ class Constants:
     COLOR = "white"
 
 class Paddle(pygame.sprite.Sprite):
-    def __init__(self, start_position: RelativeRectPoint, size: RelativeRectPoint) -> None:
+    def __init__(self, start_position: RPoint, size: RPoint) -> None:
         super().__init__()
         
         self.start_position = start_position
@@ -23,7 +23,12 @@ class Paddle(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
                 
         self.rect.centery = self.start_position.y
-        
+
+        self.direction = 0
+
+    def find_next_move(self, ball: Ball, screen: pygame.Surface) -> None:
+        pass
+
     def add_score(self) -> None:
         self.score += 1
                     
@@ -35,47 +40,39 @@ class Paddle(pygame.sprite.Sprite):
     
     def update(self) -> None:
         self.rect.centerx = self.start_position.x
+        
+        if self.direction > 0:
+            self.go_up()
+        elif self.direction < 0:
+            self.go_down()
 
 class HumanPaddle(Paddle):
-    def __init__(self, start_position: RelativeRectPoint, size: RelativeRectPoint, up_key, down_key) -> None:
+    def __init__(self, start_position: RPoint, size: RPoint, up_key, down_key) -> None:
         super().__init__(start_position, size)
             
         self.up_key = up_key
         self.down_key = down_key
-        
-    def update(self) -> None:
-        super().update()
-                
+    
+    def find_next_move(self, ball, screen):
         keys = pygame.key.get_pressed()
-        
-        if keys[self.up_key]: self.go_up()
-        if keys[self.down_key]: self.go_down()
-        
-        
+        self.direction = keys[self.up_key] - keys[self.down_key]
 
-class AiPaddle(Paddle):
-    def __init__(self, start_position: RelativeRectPoint, size: RelativeRectPoint) -> None:
+class BallFollowPaddle(Paddle):
+    def __init__(self, start_position: RPoint, size: RPoint) -> None:
         super().__init__(start_position, size)
         self.action = None
     
     def find_next_move(self, ball: Ball, screen: pygame.Surface) -> None:
-        y = self.rect.centery
-        ball_y = ball.rect.centery
+        current_y = self.rect.centery
+        target_y = ball.rect.centery
         
-        difference = y - ball_y
-        
-        if difference > 5:
-            self.action = self.go_up
-        elif difference < 5:
-            self.action = self.go_down
-        else:
-            self.action = None
+        self.direction = current_y - target_y
     
     def update(self) -> None:
         super().update()
         if self.action: self.action()
 
 class WallPaddle(Paddle):
-    def __init__(self, start_position: RelativeRectPoint, size: RelativeRectPoint) -> None:
+    def __init__(self, start_position: RPoint, size: RPoint) -> None:
         size._y = 1
         super().__init__(start_position, size)  
