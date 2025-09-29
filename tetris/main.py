@@ -111,7 +111,7 @@ def main() -> None:
                                 pygame.image.load(MEDIA_PATH / "play_sound.png"),
                                 button_size)
             
-    ai_enabled_button = ToggleButtonText(screen, (SIDE_LEFT_X - SIDE_PANEL_WIDTH + SIDE_PANEL_MARGIN + SUB_SIDE_PANEL_WIDTH / 2, GAME_Y + 50),
+    ai_enabled_button = ToggleButtonText(screen, (SIDE_LEFT_X - SIDE_PANEL_WIDTH + SIDE_PANEL_MARGIN + SUB_SIDE_PANEL_WIDTH / 2, GAME_Y + 63),
                                 "AI ON",
                                 "AI OFF",
                                 pygame.font.SysFont("Monospace", 20, True, False))
@@ -240,7 +240,7 @@ def main() -> None:
         blit_with_outline(screen, info_side_panel, (SIDE_LEFT_X, GAME_Y))
         
         ai_enabled_side_panel = render_info_panel(
-            {"AI ENABLED": pygame.Surface((ai_enabled_button.enable.get_size()[0] * 2, ai_enabled_button.enable.get_size()[1]))},
+            {"AI ENABLED": pygame.Surface((ai_enabled_button.enable.get_size()[0], ai_enabled_button.enable.get_size()[1] * 2))},
             font=font, width=SUB_SIDE_PANEL_WIDTH, margin=(0, SIDE_PANEL_MARGIN)
         )
 
