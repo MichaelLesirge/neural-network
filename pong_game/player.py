@@ -5,7 +5,7 @@ from utils import RPoint
 
 
 class Constants:
-    SPEED = 5
+    SPEED = 3
     COLOR = "white"
 
 class Paddle(pygame.sprite.Sprite):
@@ -76,3 +76,28 @@ class WallPaddle(Paddle):
     def __init__(self, start_position: RPoint, size: RPoint) -> None:
         size._y = 1
         super().__init__(start_position, size)  
+
+class BallPredictionPaddle(Paddle):
+    def __init__(self, start_position: RPoint, size: RPoint) -> None:
+        super().__init__(start_position, size)
+        self.predicted_y = start_position.y
+    
+    def find_next_move(self, ball: Ball, screen: pygame.Surface) -> None:
+        if ball.x_velocity == 0:
+            self.predicted_y = ball.rect.centery
+        else:
+            time_to_reach_paddle = abs((self.rect.left - ball.rect.right) / ball.x_velocity)
+            predicted_y = ball.rect.centery + ball.y_velocity * time_to_reach_paddle
+            
+            screen_height = screen.get_height()
+            if predicted_y < 0:
+                predicted_y = -predicted_y
+            elif predicted_y > screen_height:
+                predicted_y = screen_height - (predicted_y - screen_height)
+            
+            self.predicted_y = predicted_y
+
+        current_y = self.rect.centery
+        target_y = self.predicted_y
+
+        self.direction = current_y - target_y

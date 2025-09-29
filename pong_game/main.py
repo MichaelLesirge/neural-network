@@ -3,7 +3,7 @@ from time import sleep
 import pygame
 
 from ball import Ball
-from player import Paddle, BallFollowPaddle, HumanPaddle, WallPaddle
+from player import Paddle, BallFollowPaddle, HumanPaddle, WallPaddle, BallPredictionPaddle
 from utils import RPoint
 from choose import Chooser
 from button import Button
@@ -43,7 +43,7 @@ class PaddleConstants:
     TOP_AREA_SIZE = 1
 
 class MenuConstants:
-    START_BUTTON_LOCATION = 0.5, 0.7
+    START_BUTTON_LOCATION = 0.5, 0.8
 
     OPTIONS_LOCATION = 0.25, 0.2
 
@@ -56,7 +56,11 @@ LEFT_PLAYER_TYPES = {
         RPoint(screen, PaddleConstants.PADDLE_SIZE),
         pygame.K_q, pygame.K_a
     ),
-    "Simple AI": lambda screen: BallFollowPaddle(
+    "Follow AI": lambda screen: BallFollowPaddle(
+        RPoint(screen, PaddleConstants.START_LOCATION, reverse_x=False),
+        RPoint(screen, PaddleConstants.PADDLE_SIZE),
+    ),
+    "Predictive AI": lambda screen: BallPredictionPaddle(
         RPoint(screen, PaddleConstants.START_LOCATION, reverse_x=False),
         RPoint(screen, PaddleConstants.PADDLE_SIZE),
     ),
@@ -72,7 +76,11 @@ RIGHT_PLAYER_TYPES = {
         RPoint(screen, PaddleConstants.PADDLE_SIZE),
         pygame.K_p, pygame.K_l
     ),
-    "Simple AI": lambda screen: BallFollowPaddle(
+    "Follow AI": lambda screen: BallFollowPaddle(
+        RPoint(screen, PaddleConstants.START_LOCATION, reverse_x=True),
+        RPoint(screen, PaddleConstants.PADDLE_SIZE),
+    ),
+    "Predictive AI": lambda screen: BallPredictionPaddle(
         RPoint(screen, PaddleConstants.START_LOCATION, reverse_x=True),
         RPoint(screen, PaddleConstants.PADDLE_SIZE),
     ),
