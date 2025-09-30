@@ -97,7 +97,6 @@ def main() -> None:
     )
 
     quit_game_button = Button(screen, "Quit Game", MenuConstants.START_BUTTON_LOCATION - RelVec2(0, 0.15), MenuConstants.BUTTON_SIZE)
-    quit_game_button.add_toggle_listener(lambda btn: pygame.event.post(pygame.event.Event(pygame.QUIT)))
 
     # Game elements
     left_player = left_players["Wall"]
@@ -116,7 +115,16 @@ def main() -> None:
     has_game_started = False
     has_game_finished = False
 
-    while not pygame.event.get(pygame.QUIT):
+    going = True
+
+    while going:
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                going = False
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_RETURN:
+                    start_game_button.set(True)
 
         screen.fill(GameConstants.BACKGROUND_COLOR)
     
@@ -207,6 +215,9 @@ def main() -> None:
             start_game_button.set_name("Play Again?")
 
             menu_buttons.add(start_game_button, quit_game_button)
+
+        if quit_game_button.get():
+            pygame.event.post(pygame.event.Event(pygame.QUIT))
 
         left_player_score_font = font.render(str(left_player.score), True, GameConstants.MAP_ITEM_COLOR)
         right_player_score_font = font.render(str(right_player.score), True, GameConstants.MAP_ITEM_COLOR)
