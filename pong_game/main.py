@@ -61,14 +61,6 @@ def main() -> None:
     # Menu elements
     start_game_button = Button(screen, "Start Game", MenuConstants.START_BUTTON_LOCATION, MenuConstants.BUTTON_SIZE)
 
-    # left_buttons = []
-    # right_buttons = []
-    # button_location = MenuConstants.OPTIONS_LOCATION
-    # for name in player_types.keys():
-    #     left_buttons.append(Button(screen, name, button_location, MenuConstants.BUTTON_SIZE))
-    #     right_buttons.append(Button(screen, name, button_location.mirrored(), MenuConstants.BUTTON_SIZE))
-    #     button_location = button_location + RelVec2(0, MenuConstants.BUTTON_SIZE.y + 0.05)
-
     left_players = {
         "WASD": HumanPaddle(screen, PaddleConstants.START_LOCATION, PaddleConstants.PADDLE_SIZE, pygame.K_w, pygame.K_s),
         "Wall": WallPaddle(screen, PaddleConstants.START_LOCATION, PaddleConstants.PADDLE_SIZE),
@@ -103,7 +95,6 @@ def main() -> None:
     )
 
     # Game elements
-
     left_player = left_players["Wall"]
     right_player = right_players["Wall"]
 
