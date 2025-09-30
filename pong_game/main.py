@@ -199,7 +199,9 @@ def main() -> None:
             has_game_started = False
 
             ball_group.empty()
+
             ball.velocity_times(0)
+            ball.set_position(RelVec2(0.5, 0.5))
 
             start_game_button.set(False)
             start_game_button.set_name("Play Again?")

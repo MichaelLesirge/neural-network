@@ -78,10 +78,8 @@ class HumanPaddle(Paddle):
 class BallFollowPaddle(Paddle):
 
     def find_next_move(self, ball: Ball, screen: pygame.Surface) -> None:
-        current_y = self.rect.centery
-        target_y = ball.rect.centery
-        
-        self.direction = current_y - target_y
+        paddle_position = RelVec2.from_pixels(screen, self.rect.center)
+        self.direction = paddle_position.y - ball.position.y
     
 class WallPaddle(Paddle):
     def __init__(self, screen: pygame.Surface, start_position: RelVec2, size: RelVec2) -> None:
@@ -92,11 +90,14 @@ class BallPredictionPaddle(Paddle):
     HISTORY_Y = []
 
     def find_next_move(self, ball: Ball, screen: pygame.Surface) -> None:
+        
+        paddle_position = RelVec2.from_pixels(screen, self.rect.center)
+        
         if ball.velocity.x == 0:
-            predicted_y = ball.rect.centery
+            predicted_y = ball.position.y
         else:
-            time_to_reach_paddle = abs((self.rect.centerx - ball.rect.centerx) / ball.velocity.x)
-            predicted_y = ball.rect.centery + ball.velocity.y * time_to_reach_paddle
+            time_to_reach_paddle = abs((paddle_position.x - ball.position.x) / ball.velocity.x)
+            predicted_y = ball.position.y + ball.velocity.y * time_to_reach_paddle
             
             screen_height = screen.get_height()
             if predicted_y < 0:
@@ -106,11 +107,11 @@ class BallPredictionPaddle(Paddle):
             
             self.predicted_y = predicted_y
 
-        current_y = self.rect.centery
+        current_y = paddle_position.y
 
         self.direction = current_y - predicted_y
 
-        BallPredictionPaddle.HISTORY_X.append([self.rect.centerx, self.rect.centery, ball.rect.centerx, ball.rect.centery, ball.velocity.x, ball.velocity.y])
+        BallPredictionPaddle.HISTORY_X.append([paddle_position.x, paddle_position.y, ball.position.x, ball.velocity.x, ball.position.y, ball.velocity.y])
         BallPredictionPaddle.HISTORY_Y.append(self.direction)
 
 class AIPaddle(Paddle):
