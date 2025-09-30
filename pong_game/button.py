@@ -16,7 +16,7 @@ class Button(pygame.sprite.Sprite):
         self.position = position
         self.size = size
 
-        self.state = self.is_clicked = self.is_hovered = False
+        self.state = self.is_pressed = self.is_hovered = False
         
         self.image = self.generate_image()
         self.rect = self.image.get_rect(center=self.position.to_pixels(self.screen))
@@ -35,19 +35,20 @@ class Button(pygame.sprite.Sprite):
         pygame.draw.rect(image, self.OUTLINE_COLOR, image.get_rect(), 3)
 
         image.blit(text_surface, text_surface.get_rect(center=image.get_rect().center))
-        image = pygame.transform.scale_by(image, 1 + (-0.1 if self.is_clicked else 0) + (0.05 if self.is_hovered else 0))
+        image = pygame.transform.scale_by(image, 1 + (-0.2 if self.is_pressed else 0) + (0.1 if self.is_hovered else 0))
 
         return image
 
     def update(self, mouse_pos: tuple[int, int], mouse_down: bool = False) -> None:
         self.is_hovered = self.rect.collidepoint(mouse_pos)
 
-        was_clicked = self.is_clicked
-        self.is_clicked = self.is_hovered and mouse_down
+        was_clicked = self.is_pressed
+        self.is_pressed = self.is_hovered and mouse_down
 
-        if self.is_clicked and not was_clicked:
+        # Detect button release
+        if was_clicked and not self.is_pressed and self.is_hovered:
             self.toggle()
-
+        
         self.image = self.generate_image()
         self.rect = self.image.get_rect(center=self.position.to_pixels(self.screen))
 

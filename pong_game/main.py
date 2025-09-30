@@ -43,13 +43,6 @@ class MenuConstants:
     SCORE_LOCATION = RelVec2(0.45, 0.05)
     VERSUS_LOCATION = RelVec2(0.5, 0.4)
 
-player_types = {
-    "Human": HumanPaddle,
-    "Follower AI": BallFollowPaddle,
-    "Prediction AI": BallPredictionPaddle,
-    "Wall": WallPaddle,
-}
-
 def main() -> None:
 
     # Initialization
@@ -68,13 +61,37 @@ def main() -> None:
     # Menu elements
     start_game_button = Button(screen, "Start Game", MenuConstants.START_BUTTON_LOCATION, MenuConstants.BUTTON_SIZE)
 
-    left_buttons = []
-    right_buttons = []
-    button_location = MenuConstants.OPTIONS_LOCATION
-    for name in player_types.keys():
-        left_buttons.append(Button(screen, name, button_location, MenuConstants.BUTTON_SIZE))
-        right_buttons.append(Button(screen, name, button_location.mirrored(), MenuConstants.BUTTON_SIZE))
-        button_location = button_location + RelVec2(0, MenuConstants.BUTTON_SIZE.y + 0.05)
+    # left_buttons = []
+    # right_buttons = []
+    # button_location = MenuConstants.OPTIONS_LOCATION
+    # for name in player_types.keys():
+    #     left_buttons.append(Button(screen, name, button_location, MenuConstants.BUTTON_SIZE))
+    #     right_buttons.append(Button(screen, name, button_location.mirrored(), MenuConstants.BUTTON_SIZE))
+    #     button_location = button_location + RelVec2(0, MenuConstants.BUTTON_SIZE.y + 0.05)
+
+    left_players = {
+        "WASD": HumanPaddle(screen, PaddleConstants.START_LOCATION, PaddleConstants.PADDLE_SIZE, pygame.K_w, pygame.K_s),
+        "Wall": WallPaddle(screen, PaddleConstants.START_LOCATION, PaddleConstants.PADDLE_SIZE),
+        "Follower": BallFollowPaddle(screen, PaddleConstants.START_LOCATION, PaddleConstants.PADDLE_SIZE),
+        "Predictor": BallPredictionPaddle(screen, PaddleConstants.START_LOCATION, PaddleConstants.PADDLE_SIZE),
+    }
+
+    right_players = {
+        "Arrows": HumanPaddle(screen, PaddleConstants.START_LOCATION.mirrored(), PaddleConstants.PADDLE_SIZE, pygame.K_UP, pygame.K_DOWN),
+        "Wall": WallPaddle(screen, PaddleConstants.START_LOCATION.mirrored(), PaddleConstants.PADDLE_SIZE),
+        "Follower": BallFollowPaddle(screen, PaddleConstants.START_LOCATION.mirrored(), PaddleConstants.PADDLE_SIZE),
+        "Predictor": BallPredictionPaddle(screen, PaddleConstants.START_LOCATION.mirrored(), PaddleConstants.PADDLE_SIZE),
+    }
+
+    left_buttons = [
+        Button(screen, name, MenuConstants.OPTIONS_LOCATION + RelVec2(0, i * (MenuConstants.BUTTON_SIZE.y + 0.05)), MenuConstants.BUTTON_SIZE)
+        for i, name in enumerate(left_players.keys())
+    ]
+
+    right_buttons = [
+        Button(screen, name, MenuConstants.OPTIONS_LOCATION.mirrored() + RelVec2(0, i * (MenuConstants.BUTTON_SIZE.y + 0.05)), MenuConstants.BUTTON_SIZE)
+        for i, name in enumerate(right_players.keys())
+    ]
 
     left_player_chooser = Chooser(left_buttons)
     right_player_chooser = Chooser(right_buttons)
@@ -87,8 +104,9 @@ def main() -> None:
 
     # Game elements
 
-    left_player: Paddle = WallPaddle(screen, PaddleConstants.START_LOCATION, PaddleConstants.PADDLE_SIZE)
-    right_player: Paddle = WallPaddle(screen, PaddleConstants.START_LOCATION.mirrored(), PaddleConstants.PADDLE_SIZE)
+    left_player = left_players["Wall"]
+    right_player = right_players["Wall"]
+
     player_group = pygame.sprite.Group(left_player, right_player)
     
     ball = Ball(screen, BallConstants.SIZE, BallConstants.MAX_VELOCITY)
@@ -124,10 +142,9 @@ def main() -> None:
 
         if start_game_button.get() and not has_game_started:
             menu_buttons.empty()
-            player_group.empty()
 
-            left_player = player_types[left_player_chooser.get()](screen, PaddleConstants.START_LOCATION, PaddleConstants.PADDLE_SIZE)
-            right_player = player_types[right_player_chooser.get()](screen, PaddleConstants.START_LOCATION.mirrored(), PaddleConstants.PADDLE_SIZE)
+            left_player = left_players[left_player_chooser.get()]
+            right_player = right_players[right_player_chooser.get()]
 
             player_group = pygame.sprite.Group(left_player, right_player)
 

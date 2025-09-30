@@ -62,15 +62,11 @@ class Paddle(pygame.sprite.Sprite):
             self.go_down()
 
 class HumanPaddle(Paddle):
-    def __init__(self, screen: pygame.Surface, start_position: RelVec2, size: RelVec2) -> None:
+    def __init__(self, screen: pygame.Surface, start_position: RelVec2, size: RelVec2, up_key: int, down_key: int) -> None:
         super().__init__(screen, start_position, size)
             
-        if start_position.x < 0.5:
-            self.up_key = pygame.K_w
-            self.down_key = pygame.K_s
-        else:
-            self.up_key = pygame.K_UP
-            self.down_key = pygame.K_DOWN
+        self.up_key = up_key
+        self.down_key = down_key
     
     def find_next_move(self, ball, screen):
         keys = pygame.key.get_pressed()
