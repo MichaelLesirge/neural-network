@@ -1,49 +1,43 @@
 import pygame
+import math
 
-from utils import RPoint
+from utils import ScreenRelativeVector2 as RelVec2
 
 class Ball(pygame.sprite.Sprite):
-    def __init__(self, size: int, start_position: RPoint, start_slope: tuple[int, int], start_velocity: int, max_velocity: int) -> None:
-        super().__init__()   
+    def __init__(self, surface: pygame.Surface, size: int, max_velocity: float) -> None:
+        super().__init__()
+
+        self.screen = surface
+
         self.image = pygame.Surface((size, size))
         self.image.fill("white")
         
         self.rect = self.image.get_rect() 
 
-        self.start_velocity = start_velocity
+        self.position = RelVec2()
+        self.velocity = RelVec2()
+
         self.max_velocity = max_velocity
-        
-        self.start_position = start_position
-        self.start_slope = start_slope
-        self.to_starting_position()
-        
-    def set_new_motion(self, position: RPoint, slope: tuple[int, int]) -> None:
-        self.velocity = self.start_velocity
-        
-        self.rect.center = position.point
-        self.y_change, self.x_change = slope
     
-    def to_starting_position(self, to_reverse_side = False):
-        self.set_new_motion(self.start_position.flip(flip_x=to_reverse_side), (self.start_slope[0], self.start_slope[1] * (-1 if to_reverse_side else 1)))
-        
-    def bounce_y(self) -> None:
-        self.y_change *= -1
+    def set_position(self, position: RelVec2) -> None:
+        self.position = position.copy()
 
+    def set_velocity(self, velocity: RelVec2) -> None:
+        self.velocity = velocity.copy()
+        
     def bounce_x(self) -> None:
-        self.x_change *= -1
-    
-    @property
-    def x_velocity(self) -> int:
-        return int(self.x_change * self.velocity)
-    
-    @property
-    def y_velocity(self) -> int:
-        return int(self.y_change * self.velocity)
+        self.velocity.x = -self.velocity.x
 
-    def add_velocity(self, amount: float) -> None:
-        self.velocity = min(self.velocity + amount, self.max_velocity)
+    def bounce_y(self) -> None:
+        self.velocity.y = -self.velocity.y
+    
+    def velocity_times(self, coefficient: float) -> None:
+        self.velocity *= coefficient
 
     def update(self) -> None:
-        self.rect.centerx += self.x_velocity
-        self.rect.centery += self.y_velocity
+        
+        self.velocity.clamp_magnitude_ip(self.max_velocity)
+        self.position += self.velocity
+
+        self.rect.center = self.position.to_pixels(self.screen)
         
