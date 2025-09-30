@@ -20,10 +20,10 @@ class Ball(pygame.sprite.Sprite):
         self.max_velocity = max_velocity
     
     def set_position(self, position: RelVec2) -> None:
-        self.position = position.copy()
+        self.position = RelVec2(position)
 
     def set_velocity(self, velocity: RelVec2) -> None:
-        self.velocity = velocity.copy()
+        self.velocity = RelVec2(velocity)
         
     def bounce_x(self) -> None:
         self.velocity.x = -self.velocity.x
@@ -38,7 +38,7 @@ class Ball(pygame.sprite.Sprite):
         
         if self.velocity.magnitude() > self.max_velocity:
             self.velocity.clamp_magnitude_ip(self.max_velocity)
-            
+
         self.position += self.velocity
 
         self.rect.center = self.position.to_pixels(self.screen)

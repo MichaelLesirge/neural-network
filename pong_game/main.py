@@ -32,8 +32,10 @@ class BallConstants:
     BOUNCE_SPEED_COEFFICIENT = 1.02
 
 class PaddleConstants:
+    PADDLE_PERCENTAGE_OF_SCREEN = 15
+
     START_LOCATION = RelVec2(0.06, 0.5)
-    PADDLE_SIZE = RelVec2(0.005, 0.15)
+    PADDLE_SIZE = RelVec2(0.005, PADDLE_PERCENTAGE_OF_SCREEN / 100)
     
 class MenuConstants:
     START_BUTTON_LOCATION = RelVec2(0.5, 0.8)
@@ -115,7 +117,7 @@ def main() -> None:
     has_game_finished = False
 
     while not pygame.event.get(pygame.QUIT):
-        
+
         screen.fill(GameConstants.BACKGROUND_COLOR)
     
         pygame.draw.line(screen, GameConstants.MAP_ITEM_COLOR, 
@@ -182,7 +184,7 @@ def main() -> None:
         elif ball.rect.left > screen.get_rect().right and has_game_started:
             # ball went over right side of wall
             ball.set_position(BallConstants.START_LOCATION.mirrored())
-            ball.set_velocity(pygame.Vector2(-BallConstants.START_VELOCITY.x, BallConstants.START_VELOCITY.y))
+            ball.set_velocity(RelVec2(-BallConstants.START_VELOCITY.x, BallConstants.START_VELOCITY.y))
             left_player.add_score()
             print("Right Player Scored")
 
