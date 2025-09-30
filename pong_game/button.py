@@ -55,16 +55,19 @@ class Button(pygame.sprite.Sprite):
     def add_toggle_listener(self, callback) -> None:
         self.on_toggle.append(callback)
 
+    def get_name(self):
+        return self.name
+    
+    def set_name(self, name: str) -> None:
+        self.name = name
+
     def toggle(self) -> None:
         self.state = not self.state
         for callback in self.on_toggle:
             callback(self)
 
-    def set_state(self, state: bool) -> None:
+    def set(self, state: bool) -> None:
         self.state = state
-
-    def get_name(self):
-        return self.name
 
     def get(self) -> bool:
         return self.state

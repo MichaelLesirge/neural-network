@@ -39,6 +39,9 @@ class Paddle(pygame.sprite.Sprite):
     def find_next_move(self, ball: Ball, screen: pygame.Surface) -> None:
         pass
 
+    def reset_score(self) -> None:
+        self.score = 0
+
     def add_score(self) -> None:
         self.score += 1
                     

@@ -11,7 +11,7 @@ class Chooser:
     
     def select(self, button: Button) -> None:
         for other_button in self.options:
-            other_button.set_state(other_button == button)
+            other_button.set(other_button == button)
 
     def get(self):
         for button in self.options:

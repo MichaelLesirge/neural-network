@@ -18,7 +18,7 @@ class GameConstants:
     WINDOW_SIZE = make_screen_size(size_px=600, aspect_ration=(1+5**0.5)/2)
     FRAMERATE = 60
 
-    SCORE_TO_WIN = 10
+    SCORE_TO_WIN = 1
 
     SCORE_LOCATION = RelVec2(0.45, 0.05)
 
@@ -61,14 +61,14 @@ def main() -> None:
     # Menu elements
     start_game_button = Button(screen, "Start Game", MenuConstants.START_BUTTON_LOCATION, MenuConstants.BUTTON_SIZE)
 
-    left_players = {
+    left_players: dict[str, Paddle] = {
         "WASD": HumanPaddle(screen, PaddleConstants.START_LOCATION, PaddleConstants.PADDLE_SIZE, pygame.K_w, pygame.K_s),
         "Wall": WallPaddle(screen, PaddleConstants.START_LOCATION, PaddleConstants.PADDLE_SIZE),
         "Follower": BallFollowPaddle(screen, PaddleConstants.START_LOCATION, PaddleConstants.PADDLE_SIZE),
         "Predictor": BallPredictionPaddle(screen, PaddleConstants.START_LOCATION, PaddleConstants.PADDLE_SIZE),
     }
 
-    right_players = {
+    right_players: dict[str, Paddle] = {
         "Arrows": HumanPaddle(screen, PaddleConstants.START_LOCATION.mirrored(), PaddleConstants.PADDLE_SIZE, pygame.K_UP, pygame.K_DOWN),
         "Wall": WallPaddle(screen, PaddleConstants.START_LOCATION.mirrored(), PaddleConstants.PADDLE_SIZE),
         "Follower": BallFollowPaddle(screen, PaddleConstants.START_LOCATION.mirrored(), PaddleConstants.PADDLE_SIZE),
@@ -94,6 +94,9 @@ def main() -> None:
         start_game_button
     )
 
+    quit_game_button = Button(screen, "Quit Game", MenuConstants.START_BUTTON_LOCATION - RelVec2(0, 0.15), MenuConstants.BUTTON_SIZE)
+    quit_game_button.add_toggle_listener(lambda btn: pygame.event.post(pygame.event.Event(pygame.QUIT)))
+
     # Game elements
     left_player = left_players["Wall"]
     right_player = right_players["Wall"]
@@ -102,13 +105,14 @@ def main() -> None:
     
     ball = Ball(screen, BallConstants.SIZE, BallConstants.MAX_VELOCITY)
     ball_group = pygame.sprite.GroupSingle(ball)
+    
+    ball.set_position(BallConstants.START_LOCATION)
+    ball.set_velocity(BallConstants.START_VELOCITY)
 
     # Main loop
 
     has_game_started = False
-
-    ball.set_position(BallConstants.START_LOCATION)
-    ball.set_velocity(BallConstants.START_VELOCITY)
+    has_game_finished = False
 
     while not pygame.event.get(pygame.QUIT):
         
@@ -120,29 +124,41 @@ def main() -> None:
             width=3
         )
         
-        if not start_game_button.get():
+        if not has_game_started and not has_game_finished:
             versus_text = font.render("VS", True, GameConstants.MAP_ITEM_COLOR, GameConstants.BACKGROUND_COLOR)
             screen.blit(versus_text, versus_text.get_rect(center=MenuConstants.VERSUS_LOCATION.to_pixels(screen)))
-        
+
+        if has_game_finished:
+            win_text = "Left Player Wins!" if left_player.score >= GameConstants.SCORE_TO_WIN else "Right Player Wins!"
+            win_font = font.render(win_text, True, GameConstants.MAP_ITEM_COLOR, GameConstants.BACKGROUND_COLOR)
+            screen.blit(win_font, win_font.get_rect(center=RelVec2(0.5, 0.3).to_pixels(screen)))
+
+        if start_game_button.get() and not has_game_started:
+            print("Game Started")
+            menu_buttons.empty()
+            player_group.empty()
+
+            left_player = left_players[left_player_chooser.get()]
+            right_player = right_players[right_player_chooser.get()]
+
+            player_group.add(left_player, right_player)
+            ball_group.add(ball)
+
+            left_player.reset_score()
+            right_player.reset_score()
+
+            ball.set_position(BallConstants.START_LOCATION)
+            ball.set_velocity(BallConstants.START_VELOCITY)
+
+            has_game_started = True
+            has_game_finished = False
+
         menu_buttons.update(pygame.mouse.get_pos(), pygame.mouse.get_pressed()[0])
         player_group.update()
         ball_group.update()
 
         left_player.find_next_move(ball, screen)
         right_player.find_next_move(ball, screen)
-
-        if start_game_button.get() and not has_game_started:
-            menu_buttons.empty()
-
-            left_player = left_players[left_player_chooser.get()]
-            right_player = right_players[right_player_chooser.get()]
-
-            player_group = pygame.sprite.Group(left_player, right_player)
-
-            ball.set_position(BallConstants.START_LOCATION)
-            ball.set_velocity(BallConstants.START_VELOCITY)
-
-            has_game_started = True
 
         collisions = pygame.sprite.spritecollide(ball, player_group, False)
 
@@ -156,21 +172,37 @@ def main() -> None:
 
             ball.velocity_times(BallConstants.BOUNCE_SPEED_COEFFICIENT)
         
-        if ball.rect.right < screen.get_rect().left:
+        if ball.rect.right < screen.get_rect().left and has_game_started:
             # ball went over left side of wall
             ball.set_position(BallConstants.START_LOCATION)
             ball.set_velocity(BallConstants.START_VELOCITY)
             right_player.add_score()
+            print("Left Player Scored")
         
-        elif ball.rect.left > screen.get_rect().right:
+        elif ball.rect.left > screen.get_rect().right and has_game_started:
             # ball went over right side of wall
             ball.set_position(BallConstants.START_LOCATION.mirrored())
             ball.set_velocity(pygame.Vector2(-BallConstants.START_VELOCITY.x, BallConstants.START_VELOCITY.y))
             left_player.add_score()
+            print("Right Player Scored")
 
         if ball.rect.top < screen.get_rect().top or ball.rect.bottom > screen.get_rect().bottom:
             # ball hit top or bottom
             ball.bounce_y()
+
+        if (left_player.score >= GameConstants.SCORE_TO_WIN or right_player.score >= GameConstants.SCORE_TO_WIN) and not has_game_finished:
+            print("Game Finished", has_game_finished)
+
+            has_game_finished = True
+            has_game_started = False
+
+            ball_group.empty()
+            ball.velocity_times(0)
+
+            start_game_button.set(False)
+            start_game_button.set_name("Play Again?")
+
+            menu_buttons.add(start_game_button, quit_game_button)
 
         left_player_score_font = font.render(str(left_player.score), True, GameConstants.MAP_ITEM_COLOR)
         right_player_score_font = font.render(str(right_player.score), True, GameConstants.MAP_ITEM_COLOR)

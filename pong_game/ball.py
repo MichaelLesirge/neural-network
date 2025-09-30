@@ -36,7 +36,9 @@ class Ball(pygame.sprite.Sprite):
 
     def update(self) -> None:
         
-        self.velocity.clamp_magnitude_ip(self.max_velocity)
+        if self.velocity.magnitude() > self.max_velocity:
+            self.velocity.clamp_magnitude_ip(self.max_velocity)
+            
         self.position += self.velocity
 
         self.rect.center = self.position.to_pixels(self.screen)
