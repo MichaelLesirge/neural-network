@@ -18,7 +18,7 @@ class GameConstants:
     WINDOW_SIZE = make_screen_size(size_px=600, aspect_ration=(1+5**0.5)/2)
     FRAMERATE = 60
 
-    SCORE_TO_WIN = 1
+    SCORE_TO_WIN = 10
 
     SCORE_LOCATION = RelVec2(0.45, 0.05)
 
