@@ -34,8 +34,8 @@ Here are a few projects I have created that make use of the neural network. I th
 <p>This is a demo of a model trained to classify handwritten digits from the MNIST dataset. It correctly labels 96.45% of the test data, which I am pretty happy with. I made the drawing GUI with Tkinter and all additional plots/graphs with Matplotlib. This was the first real data I attempted to train my network with.</p>
 <img alt="MNIST drawing GUI GIF" src="https://github.com/michael-lesirge/neural-network/assets/100492377/27856ede-a556-4ee0-bbe1-7aba370cb57e">
 
-## Tetris (In Progress) [tetris](https://github.com/MichaelLesirge/neural-network/tree/main/tetris)
-<p>This was my first time attempting anything with reinforcement learning. I created a DQN agent to try and play Tetris. I liked the Tetris clone I made, but my AI for the game was subpar (a handwritten AI would do much better). I want to come back to this though (tetris2) and do it better. Currenly it has no incentive to play quickly and it learned hard drop may cause it to lose faster, so gameplay is a bit slow.</p>
+## Tetris [tetris](https://github.com/MichaelLesirge/neural-network/tree/main/tetris)
+<p>This was my first time attempting anything with reinforcement learning. I created a DQN agent to try and play Tetris. I liked the Tetris clone I made, and decided to try and add an AI. I want to come back to this though (tetris2) and do it better. Currently it has no incentive to play quickly and it learned hard drop may cause it to lose faster, so gameplay is a bit slow, but it still gets there in the end.</p>
 <img alt="AI playing Tetris" src="https://github.com/user-attachments/assets/709f2d4e-c8f9-4eb4-bb8a-06664031d181">
 
 ## Character Predictions [character-continue](https://github.com/MichaelLesirge/neural-network/tree/main/character-continue)
