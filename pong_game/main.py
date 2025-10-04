@@ -1,8 +1,9 @@
+import random
+
 import pygame
 
-
 from ball import Ball
-from player import Paddle, BallFollowPaddle, HumanPaddle, WallPaddle, BallPredictionPaddle
+from player import Paddle, BallFollowPaddle, HumanPaddle, WallPaddle, BallPredictionPaddle, AIPaddle
 from choose import Chooser
 from button import Button
 from utils import ScreenRelativeVector2 as RelVec2
@@ -66,15 +67,17 @@ def main() -> None:
     left_players: dict[str, Paddle] = {
         "WASD": HumanPaddle(screen, PaddleConstants.START_LOCATION, PaddleConstants.PADDLE_SIZE, pygame.K_w, pygame.K_s),
         "Wall": WallPaddle(screen, PaddleConstants.START_LOCATION, PaddleConstants.PADDLE_SIZE),
-        "Follower": BallFollowPaddle(screen, PaddleConstants.START_LOCATION, PaddleConstants.PADDLE_SIZE),
+        # "Follower": BallFollowPaddle(screen, PaddleConstants.START_LOCATION, PaddleConstants.PADDLE_SIZE),
         "Predictor": BallPredictionPaddle(screen, PaddleConstants.START_LOCATION, PaddleConstants.PADDLE_SIZE),
+        "AI": AIPaddle(screen, PaddleConstants.START_LOCATION, PaddleConstants.PADDLE_SIZE),
     }
 
     right_players: dict[str, Paddle] = {
         "Arrows": HumanPaddle(screen, PaddleConstants.START_LOCATION.mirrored(), PaddleConstants.PADDLE_SIZE, pygame.K_UP, pygame.K_DOWN),
         "Wall": WallPaddle(screen, PaddleConstants.START_LOCATION.mirrored(), PaddleConstants.PADDLE_SIZE),
-        "Follower": BallFollowPaddle(screen, PaddleConstants.START_LOCATION.mirrored(), PaddleConstants.PADDLE_SIZE),
+        # "Follower": BallFollowPaddle(screen, PaddleConstants.START_LOCATION.mirrored(), PaddleConstants.PADDLE_SIZE),
         "Predictor": BallPredictionPaddle(screen, PaddleConstants.START_LOCATION.mirrored(), PaddleConstants.PADDLE_SIZE),
+        "AI": AIPaddle(screen, PaddleConstants.START_LOCATION.mirrored(), PaddleConstants.PADDLE_SIZE),
     }
 
     left_buttons = [
@@ -167,8 +170,8 @@ def main() -> None:
         player_group.update()
         ball_group.update()
 
-        left_player.find_next_move(ball, screen)
-        right_player.find_next_move(ball, screen)
+        left_player.find_next_move(ball)
+        right_player.find_next_move(ball)
 
         collisions = pygame.sprite.spritecollide(ball, player_group, False)
 
@@ -185,14 +188,14 @@ def main() -> None:
         if ball.rect.right < screen.get_rect().left and has_game_started:
             # ball went over left side of wall
             ball.set_position(BallConstants.START_LOCATION)
-            ball.set_velocity(BallConstants.START_VELOCITY)
+            ball.set_velocity(BallConstants.START_VELOCITY + RelVec2(random.random(), random.random()) / 1000)
             right_player.add_score()
             print("Left Player Scored")
         
         elif ball.rect.left > screen.get_rect().right and has_game_started:
             # ball went over right side of wall
             ball.set_position(BallConstants.START_LOCATION.mirrored())
-            ball.set_velocity(RelVec2(-BallConstants.START_VELOCITY.x, BallConstants.START_VELOCITY.y))
+            ball.set_velocity((BallConstants.START_VELOCITY + RelVec2(random.random(), random.random()) / 1000).mirrored_velocity())
             left_player.add_score()
             print("Right Player Scored")
 
@@ -232,6 +235,6 @@ def main() -> None:
         pygame.display.update()
 
         clock.tick(GameConstants.FRAMERATE)
-
+    
 if __name__ == "__main__":
     main()

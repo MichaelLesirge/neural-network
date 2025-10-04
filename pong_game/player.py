@@ -36,7 +36,7 @@ class Paddle(pygame.sprite.Sprite):
 
         self.direction = 0
 
-    def find_next_move(self, ball: Ball, screen: pygame.Surface) -> None:
+    def find_next_move(self, ball: Ball) -> None:
         pass
 
     def reset_score(self) -> None:
@@ -51,6 +51,10 @@ class Paddle(pygame.sprite.Sprite):
     def go_down(self) -> None:
         self.rect.y += Constants.SPEED
     
+    @property
+    def position(self) -> RelVec2:
+        return RelVec2.from_pixels(self.screen, self.rect.center)
+
     def update(self) -> None:
 
         self.image = pygame.Surface(self.size.to_pixels(self.screen))
@@ -63,6 +67,14 @@ class Paddle(pygame.sprite.Sprite):
             self.go_up()
         elif self.direction < 0:
             self.go_down()
+    
+    @staticmethod
+    def inputs_to_array(paddle: "Paddle", ball: Ball) -> np.ndarray:
+        return np.array([
+            *paddle.position.xy,
+            *ball.position.xy,
+            *ball.velocity.xy
+        ])
 
 class HumanPaddle(Paddle):
     def __init__(self, screen: pygame.Surface, start_position: RelVec2, size: RelVec2, up_key: int, down_key: int) -> None:
@@ -71,73 +83,67 @@ class HumanPaddle(Paddle):
         self.up_key = up_key
         self.down_key = down_key
     
-    def find_next_move(self, ball, screen):
+    def find_next_move(self, ball):
         keys = pygame.key.get_pressed()
         self.direction = keys[self.up_key] - keys[self.down_key]
 
 class BallFollowPaddle(Paddle):
 
-    def find_next_move(self, ball: Ball, screen: pygame.Surface) -> None:
-        paddle_position = RelVec2.from_pixels(screen, self.rect.center)
-        self.direction = paddle_position.y - ball.position.y
+    def find_next_move(self, ball: Ball) -> None:
+        self.direction = self.position.y - ball.position.y
     
 class WallPaddle(Paddle):
     def __init__(self, screen: pygame.Surface, start_position: RelVec2, size: RelVec2) -> None:
         super().__init__(screen, start_position, RelVec2(size.x, 1.0))
 
 class BallPredictionPaddle(Paddle):
-    HISTORY_X = []
-    HISTORY_Y = []
 
-    def find_next_move(self, ball: Ball, screen: pygame.Surface) -> None:
+    @staticmethod
+    def determine_direction(paddle_x, paddle_y, ball_x, ball_y, ball_vx, ball_vy) -> float:
+        if ball_vx == 0:
+            return paddle_y - ball_y
+        time_to_reach_paddle = abs((paddle_x - ball_x) / ball_vx)
+        predicted_y = ball_y + ball_vy * time_to_reach_paddle
         
-        paddle_position = RelVec2.from_pixels(screen, self.rect.center)
-        
-        if ball.velocity.x == 0:
-            predicted_y = ball.position.y
-        else:
-            time_to_reach_paddle = abs((paddle_position.x - ball.position.x) / ball.velocity.x)
-            predicted_y = ball.position.y + ball.velocity.y * time_to_reach_paddle
-            
-            screen_height = screen.get_height()
-            if predicted_y < 0:
-                predicted_y = -predicted_y
-            elif predicted_y > screen_height:
-                predicted_y = screen_height - (predicted_y - screen_height)
-            
-            self.predicted_y = predicted_y
+        predicted_y = predicted_y % 2.0
+        if predicted_y > 1.0:
+            predicted_y = 2.0 - predicted_y
 
-        current_y = paddle_position.y
+        return paddle_y - predicted_y
 
-        self.direction = current_y - predicted_y
-
-        BallPredictionPaddle.HISTORY_X.append([paddle_position.x, paddle_position.y, ball.position.x, ball.velocity.x, ball.position.y, ball.velocity.y])
-        BallPredictionPaddle.HISTORY_Y.append(self.direction)
+    def find_next_move(self, ball: Ball) -> None:
+        inputs = Paddle.inputs_to_array(self, ball)
+        self.direction = BallPredictionPaddle.determine_direction(*inputs.tolist())
 
 class AIPaddle(Paddle):
 
+    NETWORK_FILE = directory / "paddle_model"
+
+    TRAINING_DATA_X_FILE = directory / "training_data_x.npy"
+    TRAINING_DATA_Y_FILE = directory / "training_data_y.npy"
+
+    X_INPUT = 6
+    Y_OUTPUT = 1
+
+    MODEL = nn.network.Network(
+        [
+            nn.layers.Dense(X_INPUT, 16),
+            nn.activations.Tanh(),
+            nn.layers.Dense(16, 8),
+            nn.activations.Tanh(),
+            nn.layers.Dense(8, Y_OUTPUT),
+        ],
+        loss=nn.losses.MSE()
+    )
+
     def __init__(self, screen: pygame.Surface, start_position: RelVec2, size: RelVec2) -> None:
         super().__init__(screen, start_position, size)
+        try:
+            self.MODEL.load(str(AIPaddle.NETWORK_FILE))
+        except FileNotFoundError:
+            print("No pre-trained model found, please see train.py to train the model.")
 
-        self.model = nn.network.Network(
-            [
-                nn.layers.Dense(4, 6),
-                nn.activations.ReLU(),
-                nn.layers.Dense(6, 1),
-            ],
-            loss=nn.losses.MSE()
-        )
-
-    @staticmethod
-    def create_inputs(paddle: Paddle, ball: Ball, screen: pygame.Surface) -> np.ndarray:
-        return np.array([
-            paddle.rect.centerx / screen.get_width(),
-            paddle.rect.centery / screen.get_height(),
-            ball.rect.centerx / screen.get_width(),
-            ball.rect.centery / screen.get_height(),
-            ball.x_velocity / ball.max_velocity,
-            ball.y_velocity / ball.max_velocity,
-        ]).reshape(-1, 6)
-
-    def find_next_move(self, ball: Ball, screen: pygame.Surface) -> None:
-        pass
+    def find_next_move(self, ball: Ball) -> None:
+        inputs = Paddle.inputs_to_array(self, ball).reshape(1, -1)
+        output = self.MODEL.compute(inputs)
+        self.direction = output[0][0]
