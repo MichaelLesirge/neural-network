@@ -27,6 +27,7 @@ BALANCE_TRAINING_SIGNS = True
 
 def create_data(n: int):
     X_test = np.random.rand(n, AIPaddle.X_INPUT)
+    X_test[:, -2:] = (X_test[:, -2:] * 2 - 1)
     y_test = FUNCTION_MODIFIER(np.array([FUNCTION(*x) for x in X_test]).reshape(-1, 1))
     return X_test, y_test
 
@@ -48,14 +49,6 @@ def main() -> None:
         # Training data generation
 
         X_train, y_train = create_data(TRAIN_N)
-
-        pos_indices = np.where(y_train > 0)[0]
-        neg_indices = np.where(y_train < 0)[0]
-        diff = len(pos_indices) - len(neg_indices)
-        if diff != 0 and BALANCE_TRAINING_SIGNS:
-            drop_indices = np.random.choice(pos_indices if diff > 0 else neg_indices, abs(diff), replace=False)
-            X_train = np.delete(X_train, drop_indices, axis=0)
-            y_train = np.delete(y_train, drop_indices, axis=0)
 
         # Training
 
