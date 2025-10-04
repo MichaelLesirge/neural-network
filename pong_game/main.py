@@ -1,5 +1,6 @@
-import pygame
+import random
 
+import pygame
 
 from ball import Ball
 from player import Paddle, BallFollowPaddle, HumanPaddle, WallPaddle, BallPredictionPaddle, AIPaddle
@@ -187,14 +188,14 @@ def main() -> None:
         if ball.rect.right < screen.get_rect().left and has_game_started:
             # ball went over left side of wall
             ball.set_position(BallConstants.START_LOCATION)
-            ball.set_velocity(BallConstants.START_VELOCITY)
+            ball.set_velocity(BallConstants.START_VELOCITY + RelVec2(random.random(), random.random()) / 1000)
             right_player.add_score()
             print("Left Player Scored")
         
         elif ball.rect.left > screen.get_rect().right and has_game_started:
             # ball went over right side of wall
             ball.set_position(BallConstants.START_LOCATION.mirrored())
-            ball.set_velocity(RelVec2(-BallConstants.START_VELOCITY.x, BallConstants.START_VELOCITY.y))
+            ball.set_velocity((BallConstants.START_VELOCITY + RelVec2(random.random(), random.random()) / 1000).mirrored_velocity())
             left_player.add_score()
             print("Right Player Scored")
 

@@ -123,7 +123,7 @@ class AIPaddle(Paddle):
     TRAINING_DATA_Y_FILE = directory / "training_data_y.npy"
 
     X_INPUT = 6
-    Y_OUTPUT = 3
+    Y_OUTPUT = 1
 
     MODEL = nn.network.Network(
         [
@@ -133,7 +133,7 @@ class AIPaddle(Paddle):
             nn.activations.Tanh(),
             nn.layers.Dense(8, Y_OUTPUT),
         ],
-        loss=nn.losses.CategoricalCrossEntropy(categorical_labels=True)
+        loss=nn.losses.MSE()
     )
 
     def __init__(self, screen: pygame.Surface, start_position: RelVec2, size: RelVec2) -> None:
