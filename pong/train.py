@@ -2,13 +2,13 @@ from pygame.math import Vector2 as Vec2
 
 from main import BallConstants
 
-from player import AIPaddle, AIPaddleSmall, BallPredictionPaddle
+from player import AIPaddle, BallPredictionPaddle
 
 import numpy as np
 
-PADDLE = AIPaddleSmall
+MODEL_NAME = "default"
 
-MODEL = PADDLE.MODEL
+MODEL = AIPaddle.MODELS[MODEL_NAME]
 
 FUNCTION = BallPredictionPaddle.determine_direction
 
@@ -25,7 +25,7 @@ EPOCHS = 20
 LEARNING_RATE = 0.0005
 
 def create_data(n: int):
-    X_test = np.random.rand(n, PADDLE.X_INPUT)
+    X_test = np.random.rand(n, AIPaddle.X_INPUT)
 
     # more realistic ball velocities
     directions = np.random.rand(n) * np.pi
@@ -50,8 +50,8 @@ def main() -> None:
     print(f"{BATCH_SIZE=}, {EPOCHS=}, {LEARNING_RATE=}")
 
     if LOAD_PAST_MODEL:
-        MODEL.load(str(PADDLE.NETWORK_FILE))
-        print(f"Loaded past model from {PADDLE.NETWORK_FILE}")
+        MODEL.load(str(AIPaddle.DEFAULT_NETWORK_FILE / MODEL_NAME))
+        print(f"Loaded past model from {AIPaddle.DEFAULT_NETWORK_FILE / MODEL_NAME}")
 
     X_test, y_test = create_data(TEST_N)
 
@@ -95,8 +95,8 @@ def main() -> None:
         print(f"Test loss: {loss}")
         print(f"Sign accuracy: {accuracy} / {TEST_N} ({accuracy / TEST_N:.2%})")
 
-        MODEL.dump(str(PADDLE.NETWORK_FILE))
-        print(f"Model saved to {PADDLE.NETWORK_FILE}")
+        MODEL.dump(str(AIPaddle.DEFAULT_NETWORK_FILE))
+        print(f"Model saved to {AIPaddle.DEFAULT_NETWORK_FILE}")
 
     print()
     print("Training complete. (100.00%)")

@@ -3,7 +3,7 @@ import random
 import pygame
 
 from ball import Ball
-from player import Paddle, BallFollowPaddle, HumanPaddle, WallPaddle, BallPredictionPaddle, AIPaddle, AIPaddleSmall
+from player import Paddle, BallFollowPaddle, HumanPaddle, WallPaddle, BallPredictionPaddle, AIPaddle
 from choose import Chooser
 from button import Button
 from utils import ScreenRelativeVector2 as RelVec2
@@ -68,16 +68,18 @@ def main() -> None:
         "WASD": HumanPaddle(screen, PaddleConstants.START_LOCATION, PaddleConstants.PADDLE_SIZE, pygame.K_w, pygame.K_s),
         "Wall": WallPaddle(screen, PaddleConstants.START_LOCATION, PaddleConstants.PADDLE_SIZE),
         # "Follower": BallFollowPaddle(screen, PaddleConstants.START_LOCATION, PaddleConstants.PADDLE_SIZE),
-        "Predictor": BallPredictionPaddle(screen, PaddleConstants.START_LOCATION, PaddleConstants.PADDLE_SIZE),
-        "AI": AIPaddle(screen, PaddleConstants.START_LOCATION, PaddleConstants.PADDLE_SIZE),
+        # "Predictor": BallPredictionPaddle(screen, PaddleConstants.START_LOCATION, PaddleConstants.PADDLE_SIZE),
+        "AI": AIPaddle(screen, PaddleConstants.START_LOCATION, PaddleConstants.PADDLE_SIZE, model="default"),
+        "AI (Small)": AIPaddle(screen, PaddleConstants.START_LOCATION, PaddleConstants.PADDLE_SIZE, model="small"),
     }
 
     right_players: dict[str, Paddle] = {
         "Arrows": HumanPaddle(screen, PaddleConstants.START_LOCATION.mirrored(), PaddleConstants.PADDLE_SIZE, pygame.K_UP, pygame.K_DOWN),
         "Wall": WallPaddle(screen, PaddleConstants.START_LOCATION.mirrored(), PaddleConstants.PADDLE_SIZE),
         # "Follower": BallFollowPaddle(screen, PaddleConstants.START_LOCATION.mirrored(), PaddleConstants.PADDLE_SIZE),
-        "Predictor": BallPredictionPaddle(screen, PaddleConstants.START_LOCATION.mirrored(), PaddleConstants.PADDLE_SIZE),
-        "AI": AIPaddle(screen, PaddleConstants.START_LOCATION.mirrored(), PaddleConstants.PADDLE_SIZE),
+        # "Predictor": BallPredictionPaddle(screen, PaddleConstants.START_LOCATION.mirrored(), PaddleConstants.PADDLE_SIZE),
+        "AI": AIPaddle(screen, PaddleConstants.START_LOCATION.mirrored(), PaddleConstants.PADDLE_SIZE, model="default"),
+        "AI (Small)": AIPaddle(screen, PaddleConstants.START_LOCATION.mirrored(), PaddleConstants.PADDLE_SIZE, model="small"),
     }
 
     left_buttons = [
