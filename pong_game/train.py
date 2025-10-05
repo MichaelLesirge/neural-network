@@ -9,7 +9,6 @@ import numpy as np
 MODEL = AIPaddle.MODEL
 
 FUNCTION = BallPredictionPaddle.determine_direction
-FUNCTION_MODIFIER = np.sign
 
 LOAD_PAST_MODEL = True
 
@@ -21,14 +20,26 @@ TEST_N = 1000
 BATCH_SIZE = 2**6
 EPOCHS = 20
 
-LEARNING_RATE = 0.0001
-
-BALANCE_TRAINING_SIGNS = True
+LEARNING_RATE = 0.0005
 
 def create_data(n: int):
     X_test = np.random.rand(n, AIPaddle.X_INPUT)
-    X_test[:, -2:] = (X_test[:, -2:] * 2 - 1)
-    y_test = FUNCTION_MODIFIER(np.array([FUNCTION(*x) for x in X_test]).reshape(-1, 1))
+
+    # more realistic ball velocities
+    directions = np.random.rand(n) * np.pi
+    speeds = np.random.uniform(-BallConstants.MAX_VELOCITY, BallConstants.MAX_VELOCITY, size=(n,))
+    X_test[:, 4] = np.cos(directions) * speeds
+    X_test[:, 5] = np.sin(directions) * speeds
+
+    # paddle normally on left or right side
+    X_test[:, 0] = 1 - np.random.uniform(0, 1, size=(n,))
+
+    y_test = np.array([FUNCTION(*x) for x in X_test])
+    
+    y_test = np.sign(y_test)
+
+    y_test = y_test.reshape(-1, 1)
+
     return X_test, y_test
 
 def main() -> None:
@@ -41,6 +52,12 @@ def main() -> None:
         print(f"Loaded past model from {AIPaddle.NETWORK_FILE}")
 
     X_test, y_test = create_data(TEST_N)
+
+    predictions = MODEL.compute(X_test)
+    initial_loss = MODEL.loss.forward(y_test, predictions)
+    initial_accuracy = np.sum(np.sign(predictions) == np.sign(y_test))
+    print(f"Test loss: {initial_loss}")
+    print(f"Sign accuracy: {initial_accuracy} / {TEST_N} ({initial_accuracy / TEST_N:.2%})")
 
     for i in range(ROUNDS):
         print()
@@ -65,7 +82,7 @@ def main() -> None:
         predictions = MODEL.compute(X_test)
 
         loss = MODEL.loss.forward(y_test, predictions)
-        sign_matches = np.sum(np.sign(predictions) == np.sign(y_test))
+        accuracy = np.sum(np.sign(predictions) == np.sign(y_test))
 
         print("Sample predictions:")
         for i in range(5):
@@ -73,7 +90,7 @@ def main() -> None:
             print(f"  Prediction: {predictions[i][0]}, Actual: {y_test[i][0]}, Sign match: {(np.sign(predictions[i]) == np.sign(y_test[i]))[0]}, Loss: {MODEL.loss.forward(y_test[i], predictions[i])}")
 
         print(f"Test loss: {loss}")
-        print(f"Sign accuracy: {sign_matches} / {TEST_N} ({sign_matches / TEST_N:.2%})")
+        print(f"Sign accuracy: {accuracy} / {TEST_N} ({accuracy / TEST_N:.2%})")
 
         MODEL.dump(str(AIPaddle.NETWORK_FILE))
         print(f"Model saved to {AIPaddle.NETWORK_FILE}")
