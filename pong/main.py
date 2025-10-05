@@ -69,8 +69,8 @@ def main() -> None:
         "Wall": WallPaddle(screen, PaddleConstants.START_LOCATION, PaddleConstants.PADDLE_SIZE),
         # "Follower": BallFollowPaddle(screen, PaddleConstants.START_LOCATION, PaddleConstants.PADDLE_SIZE),
         # "Predictor": BallPredictionPaddle(screen, PaddleConstants.START_LOCATION, PaddleConstants.PADDLE_SIZE),
-        "AI": AIPaddle(screen, PaddleConstants.START_LOCATION, PaddleConstants.PADDLE_SIZE, model="default"),
-        "AI (Small)": AIPaddle(screen, PaddleConstants.START_LOCATION, PaddleConstants.PADDLE_SIZE, model="small"),
+        "AI": AIPaddle(screen, PaddleConstants.START_LOCATION, PaddleConstants.PADDLE_SIZE, model_name="default"),
+        "AI (Small)": AIPaddle(screen, PaddleConstants.START_LOCATION, PaddleConstants.PADDLE_SIZE, model_name="small"),
     }
 
     right_players: dict[str, Paddle] = {
@@ -78,8 +78,8 @@ def main() -> None:
         "Wall": WallPaddle(screen, PaddleConstants.START_LOCATION.mirrored(), PaddleConstants.PADDLE_SIZE),
         # "Follower": BallFollowPaddle(screen, PaddleConstants.START_LOCATION.mirrored(), PaddleConstants.PADDLE_SIZE),
         # "Predictor": BallPredictionPaddle(screen, PaddleConstants.START_LOCATION.mirrored(), PaddleConstants.PADDLE_SIZE),
-        "AI": AIPaddle(screen, PaddleConstants.START_LOCATION.mirrored(), PaddleConstants.PADDLE_SIZE, model="default"),
-        "AI (Small)": AIPaddle(screen, PaddleConstants.START_LOCATION.mirrored(), PaddleConstants.PADDLE_SIZE, model="small"),
+        "AI": AIPaddle(screen, PaddleConstants.START_LOCATION.mirrored(), PaddleConstants.PADDLE_SIZE, model_name="default"),
+        "AI (Small)": AIPaddle(screen, PaddleConstants.START_LOCATION.mirrored(), PaddleConstants.PADDLE_SIZE, model_name="small"),
     }
 
     left_buttons = [
@@ -156,6 +156,9 @@ def main() -> None:
             left_player = left_players[left_player_chooser.get()]
             right_player = right_players[right_player_chooser.get()]
 
+            print(f"Left Player: {left_player.get_description()}")
+            print(f"Right Player: {right_player.get_description()}")
+
             player_group.add(left_player, right_player)
             ball_group.add(ball)
 
@@ -197,21 +200,21 @@ def main() -> None:
             ball.set_position(BallConstants.START_LOCATION)
             ball.set_velocity(BallConstants.START_VELOCITY + RelVec2(random.random(), random.random()) / 1000)
             right_player.add_score()
-            print("Left Player Scored")
+            print("Right Player Scored")
         
         elif ball.rect.left > screen.get_rect().right and has_game_started:
             # ball went over right side of wall
             ball.set_position(BallConstants.START_LOCATION.mirrored())
             ball.set_velocity((BallConstants.START_VELOCITY + RelVec2(random.random(), random.random()) / 1000).mirrored_velocity())
             left_player.add_score()
-            print("Right Player Scored")
+            print("Left Player Scored")
 
         if ball.rect.top < screen.get_rect().top or ball.rect.bottom > screen.get_rect().bottom:
             # ball hit top or bottom
             ball.bounce_y()
 
         if (left_player.score >= GameConstants.SCORE_TO_WIN or right_player.score >= GameConstants.SCORE_TO_WIN) and not has_game_finished:
-            print("Game Finished", has_game_finished)
+            print("Game Finished")
 
             has_game_finished = True
             has_game_started = False

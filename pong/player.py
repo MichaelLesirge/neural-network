@@ -67,7 +67,10 @@ class Paddle(pygame.sprite.Sprite):
             self.go_up()
         elif self.direction < 0:
             self.go_down()
-    
+        
+    def get_description(self) -> str:
+        return "Default Paddle"
+
     @staticmethod
     def inputs_to_array(paddle: "Paddle", ball: Ball) -> np.ndarray:
         return np.array([
@@ -87,6 +90,9 @@ class HumanPaddle(Paddle):
         keys = pygame.key.get_pressed()
         self.direction = keys[self.up_key] - keys[self.down_key]
 
+    def get_description(self) -> str:
+        return f"Player controlled paddle (up: {pygame.key.name(self.up_key).upper()}, down: {pygame.key.name(self.down_key).upper()})"
+
 class BallFollowPaddle(Paddle):
 
     def find_next_move(self, ball: Ball) -> None:
@@ -95,6 +101,9 @@ class BallFollowPaddle(Paddle):
 class WallPaddle(Paddle):
     def __init__(self, screen: pygame.Surface, start_position: RelVec2, size: RelVec2) -> None:
         super().__init__(screen, start_position, RelVec2(size.x, 1.0))
+
+    def get_description(self):
+        return "Wall paddle (does not move)"
 
 class BallPredictionPaddle(Paddle):
 
@@ -114,6 +123,9 @@ class BallPredictionPaddle(Paddle):
     def find_next_move(self, ball: Ball) -> None:
         inputs = Paddle.inputs_to_array(self, ball)
         self.direction = BallPredictionPaddle.determine_direction(*inputs.tolist())
+
+    def get_description(self) -> str:
+        return "Ball prediction paddle (predicts where the ball will be when it reaches the paddle)"
 
 class AIPaddle(Paddle):
 
@@ -146,17 +158,18 @@ class AIPaddle(Paddle):
     }
 
 
-    def __init__(self, screen: pygame.Surface, start_position: RelVec2, size: RelVec2, model: str = "default") -> None:
+    def __init__(self, screen: pygame.Surface, start_position: RelVec2, size: RelVec2, model_name: str = "default") -> None:
         super().__init__(screen, start_position, size)
-        if model not in self.MODELS:
-            raise ValueError(f"Model '{model}' not recognized. Available models: {self.MODELS}")
+        if model_name not in self.MODELS:
+            raise ValueError(f"Model '{model_name}' not recognized. Available models: {self.MODELS}")
         
-        self.model = AIPaddle.MODELS[model]
+        self.model_name = model_name
+        self.model = AIPaddle.MODELS[model_name]
 
         try:
-            self.model.load(str(self.DEFAULT_NETWORK_FILE / model))
+            self.model.load(str(self.DEFAULT_NETWORK_FILE / model_name))
         except FileNotFoundError as e:
-            e.add_note(f"No saved weights for '{model}' model found. Please train the model before using it.")
+            e.add_note(f"No saved weights for '{model_name}' model found. Please train the model before using it.")
             raise e
             
 
@@ -164,3 +177,6 @@ class AIPaddle(Paddle):
         inputs = Paddle.inputs_to_array(self, ball)
         output = self.model.compute(inputs)
         self.direction = output[0]
+
+    def get_description(self) -> str:
+        return f"AI paddle (model: {self.model_name}, parameters {sum(layer.weights.size + layer.biases.size for layer in self.model.layers if isinstance(layer, nn.layers.Dense))})"
