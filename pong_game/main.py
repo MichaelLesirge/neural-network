@@ -3,7 +3,7 @@ import random
 import pygame
 
 from ball import Ball
-from player import Paddle, BallFollowPaddle, HumanPaddle, WallPaddle, BallPredictionPaddle, AIPaddle
+from player import Paddle, BallFollowPaddle, HumanPaddle, WallPaddle, BallPredictionPaddle, AIPaddle, AIPaddleSmall
 from choose import Chooser
 from button import Button
 from utils import ScreenRelativeVector2 as RelVec2

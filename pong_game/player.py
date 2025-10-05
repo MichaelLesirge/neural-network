@@ -136,7 +136,37 @@ class AIPaddle(Paddle):
     def __init__(self, screen: pygame.Surface, start_position: RelVec2, size: RelVec2) -> None:
         super().__init__(screen, start_position, size)
         try:
-            self.MODEL.load(str(AIPaddle.NETWORK_FILE))
+            self.MODEL.load(str(self.NETWORK_FILE))
+        except FileNotFoundError:
+            print("No pre-trained model found, please see train.py to train the model.")
+
+    def find_next_move(self, ball: Ball) -> None:
+        inputs = Paddle.inputs_to_array(self, ball).reshape(1, -1)
+        output = self.MODEL.compute(inputs)
+        self.direction = output[0][0]
+
+class AIPaddleSmall(Paddle):
+
+    NETWORK_FILE = directory / "paddle_model_small"
+    
+    X_INPUT = 6
+    Y_OUTPUT = 1
+
+    MODEL = nn.network.Network(
+        [
+            nn.layers.Dense(X_INPUT, 4),
+            nn.activations.Tanh(),
+            nn.layers.Dense(4, 4),
+            nn.activations.Tanh(),
+            nn.layers.Dense(4, Y_OUTPUT),
+        ],
+        loss=nn.losses.MSE()
+    )
+
+    def __init__(self, screen: pygame.Surface, start_position: RelVec2, size: RelVec2) -> None:
+        super().__init__(screen, start_position, size)
+        try:
+            self.MODEL.load(str(self.NETWORK_FILE))
         except FileNotFoundError:
             print("No pre-trained model found, please see train.py to train the model.")
 
