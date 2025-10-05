@@ -172,6 +172,11 @@ def main() -> None:
         player_group.update()
         ball_group.update()
 
+        if any(button.is_hovered for button in menu_buttons):
+            pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND)
+        else:
+            pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
+
         left_player.find_next_move(ball)
         right_player.find_next_move(ball)
 
