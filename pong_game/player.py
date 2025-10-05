@@ -118,10 +118,7 @@ class BallPredictionPaddle(Paddle):
 class AIPaddle(Paddle):
 
     NETWORK_FILE = directory / "paddle_model"
-
-    TRAINING_DATA_X_FILE = directory / "training_data_x.npy"
-    TRAINING_DATA_Y_FILE = directory / "training_data_y.npy"
-
+    
     X_INPUT = 6
     Y_OUTPUT = 1
 
