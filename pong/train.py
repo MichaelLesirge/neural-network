@@ -7,7 +7,11 @@ import numpy as np
 MODEL = AIPaddle.DEFAULT_NETWORK
 MODEL_FILE = AIPaddle.MODEL_SAVE_FILES[MODEL]
 
-FUNCTION = BallPredictionPaddle.determine_direction
+def function(*args):
+    return BallPredictionPaddle.determine_direction(*args, handle_bounces=True)
+
+def accuracy_function(y_true, y_pred):
+    return np.sign(y_true) == np.sign(y_pred)
 
 LOAD_PAST_MODEL = True
 
@@ -19,7 +23,7 @@ TEST_N = 1000
 BATCH_SIZE = 2**6
 EPOCHS = 20
 
-LEARNING_RATE = 0.00005
+LEARNING_RATE = 0.0005
 
 def create_data(n: int):
     X_test = np.random.rand(n, AIPaddle.X_INPUT)
@@ -33,7 +37,7 @@ def create_data(n: int):
     # paddle normally on left or right side
     X_test[:, 0] = 1 - np.random.uniform(0, 1, size=(n,))
 
-    y_test = np.array([FUNCTION(*x) for x in X_test])
+    y_test = np.array([function(*x) for x in X_test])
     
     y_test = np.sign(y_test)
 
@@ -57,7 +61,7 @@ def main() -> None:
     print()
     predictions = MODEL.compute(X_test)
     initial_loss = MODEL.loss.forward(y_test, predictions)
-    initial_accuracy = np.sum(np.sign(predictions) == np.sign(y_test))
+    initial_accuracy = np.sum(accuracy_function(y_test, predictions))
     print(f"Test loss: {initial_loss}")
     print(f"Sign accuracy score: {initial_accuracy} / {TEST_N} ({initial_accuracy / TEST_N:.2%})")
 
@@ -84,7 +88,7 @@ def main() -> None:
         predictions = MODEL.compute(X_test)
 
         loss = MODEL.loss.forward(y_test, predictions)
-        accuracy = np.sum(np.sign(predictions) == np.sign(y_test))
+        accuracy = np.sum(accuracy_function(y_test, predictions))
 
         accuracy_change = accuracy - initial_accuracy
 

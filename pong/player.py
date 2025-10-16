@@ -100,14 +100,14 @@ class WallPaddle(Paddle):
 class BallPredictionPaddle(Paddle):
 
     @staticmethod
-    def determine_direction(paddle_x, paddle_y, ball_x, ball_y, ball_vx, ball_vy) -> float:
+    def determine_direction(paddle_x, paddle_y, ball_x, ball_y, ball_vx, ball_vy, handle_bounces: bool = True) -> float:
         if ball_vx == 0:
             return paddle_y - ball_y
         time_to_reach_paddle = abs((paddle_x - ball_x) / ball_vx)
         predicted_y = ball_y + ball_vy * time_to_reach_paddle
         
         predicted_y = predicted_y % 2.0
-        if predicted_y > 1.0:
+        if predicted_y > 1.0 and handle_bounces:
             predicted_y = 2.0 - predicted_y
 
         return paddle_y - predicted_y
