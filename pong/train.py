@@ -4,7 +4,7 @@ from player import AIPaddle, BallPredictionPaddle
 
 import numpy as np
 
-MODEL = AIPaddle.SMALL_NETWORK
+MODEL = AIPaddle.DEFAULT_NETWORK
 MODEL_FILE = AIPaddle.MODEL_SAVE_FILES[MODEL]
 
 FUNCTION = BallPredictionPaddle.determine_direction
@@ -19,7 +19,7 @@ TEST_N = 1000
 BATCH_SIZE = 2**6
 EPOCHS = 20
 
-LEARNING_RATE = 0.0005
+LEARNING_RATE = 0.00005
 
 def create_data(n: int):
     X_test = np.random.rand(n, AIPaddle.X_INPUT)
@@ -44,7 +44,9 @@ def create_data(n: int):
 def main() -> None:
     print("Training AI Paddle model...")
     print(f"{ROUNDS=}, {TRAIN_N=}, {TEST_N=}")
-    print(f"{BATCH_SIZE=}, {EPOCHS=}, {LEARNING_RATE=}")
+    print(f"{BATCH_SIZE=}, {EPOCHS=}")
+    print(f"{LEARNING_RATE=} ({LEARNING_RATE:%})")
+    print()
 
     if LOAD_PAST_MODEL:
         MODEL.load(MODEL_FILE)
@@ -57,7 +59,7 @@ def main() -> None:
     initial_loss = MODEL.loss.forward(y_test, predictions)
     initial_accuracy = np.sum(np.sign(predictions) == np.sign(y_test))
     print(f"Test loss: {initial_loss}")
-    print(f"Sign accuracy: {initial_accuracy} / {TEST_N} ({initial_accuracy / TEST_N:.2%})")
+    print(f"Sign accuracy score: {initial_accuracy} / {TEST_N} ({initial_accuracy / TEST_N:.2%})")
 
     for i in range(ROUNDS):
         print()
@@ -84,13 +86,16 @@ def main() -> None:
         loss = MODEL.loss.forward(y_test, predictions)
         accuracy = np.sum(np.sign(predictions) == np.sign(y_test))
 
+        accuracy_change = accuracy - initial_accuracy
+
         print("Sample predictions:")
         for i in range(5):
             print(f"  Input: {X_test[i]}")
             print(f"  Prediction: {predictions[i][0]}, Actual: {y_test[i][0]}, Sign match: {(np.sign(predictions[i]) == np.sign(y_test[i]))[0]}, Loss: {MODEL.loss.forward(y_test[i], predictions[i])}")
 
         print(f"Test loss: {loss}")
-        print(f"Sign accuracy: {accuracy} / {TEST_N} ({accuracy / TEST_N:.2%})")
+        print(f"Sign accuracy score: {accuracy} / {TEST_N} ({accuracy / TEST_N:.2%})")
+        print(f"Sign accuracy score change from initial: {accuracy_change:+}")
 
         MODEL.dump(MODEL_FILE)
         print(f"Model saved to {MODEL_FILE}")
