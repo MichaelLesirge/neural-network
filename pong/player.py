@@ -71,14 +71,6 @@ class Paddle(pygame.sprite.Sprite):
     def get_description(self) -> str:
         return "Default Paddle"
 
-    @staticmethod
-    def inputs_to_array(paddle: "Paddle", ball: Ball) -> np.ndarray:
-        return np.array([
-            *paddle.position.xy,
-            *ball.position.xy,
-            *ball.velocity.xy
-        ])
-
 class HumanPaddle(Paddle):
     def __init__(self, screen: pygame.Surface, start_position: RelVec2, size: RelVec2, up_key: int, down_key: int) -> None:
         super().__init__(screen, start_position, size)
@@ -128,55 +120,62 @@ class BallPredictionPaddle(Paddle):
         return "Ball prediction paddle (predicts where the ball will be when it reaches the paddle)"
 
 class AIPaddle(Paddle):
-
-    DEFAULT_NETWORK_FILE = directory / "models"
-    
+ 
     X_INPUT = 6
     Y_OUTPUT = 1
 
-    MODELS = {
-        "default": nn.network.Network(
-            [
-                nn.layers.Dense(X_INPUT, 16),
-                nn.activations.Tanh(),
-                nn.layers.Dense(16, 8),
-                nn.activations.Tanh(),
-                nn.layers.Dense(8, Y_OUTPUT),
-            ],
-            loss=nn.losses.MSE()
-        ),
-        "small": nn.network.Network(
-            [
-                nn.layers.Dense(X_INPUT, 4),
-                nn.activations.Tanh(),
-                nn.layers.Dense(4, 4),
-                nn.activations.Tanh(),
-                nn.layers.Dense(4, Y_OUTPUT),
-            ],
-            loss=nn.losses.MSE()
-        )
+    DEFAULT_NETWORK = nn.network.Network(
+        [
+            nn.layers.Dense(X_INPUT, 16),
+            nn.activations.Tanh(),
+            nn.layers.Dense(16, 8),
+            nn.activations.Tanh(),
+            nn.layers.Dense(8, Y_OUTPUT),
+        ],
+        loss=nn.losses.MSE()
+    )
+    
+    SMALL_NETWORK = nn.network.Network(
+        [
+            nn.layers.Dense(X_INPUT, 4),
+            nn.activations.Tanh(),
+            nn.layers.Dense(4, 4),
+            nn.activations.Tanh(),
+            nn.layers.Dense(4, Y_OUTPUT),
+        ],
+        loss=nn.losses.MSE()
+    )
+
+    NETWORK_FOLDER = directory / "models"
+
+    MODEL_SAVE_FILES = {
+        DEFAULT_NETWORK: str(NETWORK_FOLDER / "default"),
+        SMALL_NETWORK: str(NETWORK_FOLDER / "small"),
     }
 
-
-    def __init__(self, screen: pygame.Surface, start_position: RelVec2, size: RelVec2, model_name: str = "default") -> None:
+    def __init__(self, screen: pygame.Surface, start_position: RelVec2, size: RelVec2, model: nn.network.Network = DEFAULT_NETWORK) -> None:
         super().__init__(screen, start_position, size)
-        if model_name not in self.MODELS:
-            raise ValueError(f"Model '{model_name}' not recognized. Available models: {self.MODELS}")
-        
-        self.model_name = model_name
-        self.model = AIPaddle.MODELS[model_name]
 
-        try:
-            self.model.load(str(self.DEFAULT_NETWORK_FILE / model_name))
-        except FileNotFoundError as e:
-            e.add_note(f"No saved weights for '{model_name}' model found. Please train the model before using it.")
-            raise e
+        self.model = model
+        self.model_file = self.MODEL_SAVE_FILES.get(model)
+
+        if self.model_file is not None:
+            self.model.load(self.model_file)
+        else:
+            print("Warning: Model not recognized, not loading any saved weights.")
+    
+    @staticmethod
+    def inputs_to_array(paddle: "Paddle", ball: Ball) -> np.ndarray:
+        return np.array([
+            *paddle.position.xy,
+            *ball.position.xy,
+            *ball.velocity.xy
+        ])
             
-
     def find_next_move(self, ball: Ball) -> None:
-        inputs = Paddle.inputs_to_array(self, ball)
+        inputs = self.inputs_to_array(self, ball)
         output = self.model.compute(inputs)
         self.direction = output[0]
 
     def get_description(self) -> str:
-        return f"AI paddle (model: {self.model_name}, parameters {sum(layer.weights.size + layer.biases.size for layer in self.model.layers if isinstance(layer, nn.layers.Dense))})"
+        return f"AI paddle (model: {self.model_file}, neurons: {sum(layer.weights.shape[1] for layer in self.model.layers if isinstance(layer, nn.layers.Dense))})"
