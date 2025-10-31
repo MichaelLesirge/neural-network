@@ -15,5 +15,5 @@ class Chooser:
 
     def get(self):
         for button in self.options:
-            if button.get(): return button.get_name()
+            if button.get(): return button.get_object()
         raise ValueError("No option selected")
