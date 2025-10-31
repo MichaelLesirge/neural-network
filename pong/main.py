@@ -46,6 +46,16 @@ class MenuConstants:
     SCORE_LOCATION = RelVec2(0.45, 0.05)
     VERSUS_LOCATION = RelVec2(0.5, 0.4)
 
+def simple_bounce_angle(ball: Ball, paddle: Paddle) -> float:
+    start_angle = ball.velocity.as_polar()[1]
+    return 180 - start_angle
+
+def advanced_bounce_angle(ball: Ball, paddle: Paddle) -> float:
+    bounce_location = (ball.rect.centery - paddle.rect.centery) / (paddle.rect.height / 2)
+    return (180 if ball.velocity.x > 0 else 0) + bounce_location * 75
+
+BOUNCE_ANGLE_FUNCTION = simple_bounce_angle
+
 def main() -> None:
 
     # Initialization
@@ -109,7 +119,7 @@ def main() -> None:
 
     player_group = pygame.sprite.Group(left_player, right_player)
     
-    ball = Ball(screen, BallConstants.SIZE, BallConstants.MAX_VELOCITY)
+    ball = Ball(screen, BallConstants.SIZE)
     ball_group = pygame.sprite.GroupSingle(ball)
     
     ball.set_position(BallConstants.START_LOCATION)
@@ -119,6 +129,8 @@ def main() -> None:
 
     has_game_started = False
     has_game_finished = False
+
+    last_collision_paddle: Paddle | None = None
 
     going = True
 
@@ -170,6 +182,7 @@ def main() -> None:
 
             has_game_started = True
             has_game_finished = False
+            last_collision_paddle = None
 
         menu_buttons.update(pygame.mouse.get_pos(), pygame.mouse.get_pressed()[0])
         player_group.update()
@@ -186,20 +199,22 @@ def main() -> None:
         collisions = pygame.sprite.spritecollide(ball, player_group, False)
 
         if collisions:
-            collision_paddle = collisions[0].rect
-            ball_velocity_pixel = (ball.velocity.normalize() * ball.max_velocity).to_pixels(screen).magnitude()
-            if abs(ball.rect.right - collision_paddle.left) < ball_velocity_pixel or abs(ball.rect.left - collision_paddle.right) < ball_velocity_pixel:
-                ball.bounce_x()
-            if abs(ball.rect.top - collision_paddle.bottom) < ball_velocity_pixel or abs(ball.rect.bottom - collision_paddle.top) < ball_velocity_pixel:
-                ball.bounce_y()
+            collision_paddle: Paddle = collisions[0]
 
-            ball.velocity_times(BallConstants.BOUNCE_SPEED_COEFFICIENT)
+            if collision_paddle is not last_collision_paddle:
+                ball.set_velocity(RelVec2.from_polar((
+                    min(ball.velocity.magnitude() * BallConstants.BOUNCE_SPEED_COEFFICIENT, BallConstants.MAX_VELOCITY),
+                    BOUNCE_ANGLE_FUNCTION(ball, collision_paddle
+                ))))
+
+            last_collision_paddle = collision_paddle
         
         if ball.rect.right < screen.get_rect().left and has_game_started:
             # ball went over left side of wall
             ball.set_position(BallConstants.START_LOCATION)
             ball.set_velocity(BallConstants.START_VELOCITY + RelVec2(random.random(), random.random()) / 1000)
             right_player.add_score()
+            last_collision_paddle = None
             print("Right Player Scored")
         
         elif ball.rect.left > screen.get_rect().right and has_game_started:
@@ -207,6 +222,7 @@ def main() -> None:
             ball.set_position(BallConstants.START_LOCATION.mirrored())
             ball.set_velocity((BallConstants.START_VELOCITY + RelVec2(random.random(), random.random()) / 1000).mirrored_velocity())
             left_player.add_score()
+            last_collision_paddle = None
             print("Left Player Scored")
 
         if ball.rect.top < screen.get_rect().top or ball.rect.bottom > screen.get_rect().bottom:
@@ -221,7 +237,7 @@ def main() -> None:
 
             ball_group.empty()
 
-            ball.velocity_times(0)
+            ball.set_velocity(RelVec2(0, 0))
             ball.set_position(RelVec2(0.5, 0.5))
 
             start_game_button.set(False)
