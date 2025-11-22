@@ -19,7 +19,7 @@ class GameConstants:
     WINDOW_SIZE = make_screen_size(size_px=600, aspect_ration=(1+5**0.5)/2)
     FRAMERATE = 60
 
-    SCORE_TO_WIN = 10
+    SCORE_TO_WIN = 1
 
     SCORE_LOCATION = RelVec2(0.45, 0.05)
 
@@ -42,6 +42,7 @@ class MenuConstants:
     START_BUTTON_LOCATION = RelVec2(0.5, 0.8)
     OPTIONS_LOCATION = RelVec2(0.25, 0.2)
     BUTTON_SIZE = RelVec2(0.3, 0.1)
+    MENU_BUTTON_SIZE = RelVec2(0.4, 0.1)
 
     SCORE_LOCATION = RelVec2(0.45, 0.05)
     VERSUS_LOCATION = RelVec2(0.5, 0.4)
@@ -62,7 +63,8 @@ def main() -> None:
     font = pygame.font.Font('freesansbold.ttf', 32)
 
     # Menu elements
-    start_game_button = Button(screen, "Start Game", MenuConstants.START_BUTTON_LOCATION, MenuConstants.BUTTON_SIZE)
+    start_game_button = Button(screen, "Start Game", MenuConstants.START_BUTTON_LOCATION, MenuConstants.MENU_BUTTON_SIZE)
+    quit_game_button = Button(screen, "Quit Game", MenuConstants.START_BUTTON_LOCATION - RelVec2(0, 0.15), MenuConstants.MENU_BUTTON_SIZE)
 
     left_players: dict[str, Paddle] = {
         "WASD": HumanPaddle(screen, PaddleConstants.START_LOCATION, PaddleConstants.PADDLE_SIZE, pygame.K_w, pygame.K_s),
@@ -101,8 +103,6 @@ def main() -> None:
         start_game_button
     )
 
-    quit_game_button = Button(screen, "Quit Game", MenuConstants.START_BUTTON_LOCATION - RelVec2(0, 0.15), MenuConstants.BUTTON_SIZE)
-
     # Game elements
     left_player = left_players["Wall"]
     right_player = right_players["Wall"]
@@ -120,6 +120,8 @@ def main() -> None:
     has_game_started = False
     has_game_finished = False
 
+    game_paused = False
+
     going = True
 
     while going:
@@ -130,6 +132,16 @@ def main() -> None:
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RETURN:
                     start_game_button.set(True)
+                elif event.key == pygame.K_ESCAPE and has_game_started and not has_game_finished:
+                    game_paused = not game_paused
+                    start_game_button.set(not game_paused)
+                    if game_paused:
+                        print("Game Paused")
+                        menu_buttons.add(start_game_button, quit_game_button)
+                        start_game_button.set_name("Resume Game")
+                    else:
+                        print("Game Resumed")
+                        menu_buttons.empty()
 
         screen.fill(GameConstants.BACKGROUND_COLOR)
     
@@ -171,9 +183,14 @@ def main() -> None:
             has_game_started = True
             has_game_finished = False
 
+        if start_game_button.get() and game_paused:
+            pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE))
+
         menu_buttons.update(pygame.mouse.get_pos(), pygame.mouse.get_pressed()[0])
-        player_group.update()
-        ball_group.update()
+
+        if not game_paused:
+            player_group.update()
+            ball_group.update()
 
         if any(button.is_hovered for button in menu_buttons):
             pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND)
