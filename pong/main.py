@@ -19,7 +19,7 @@ class GameConstants:
     WINDOW_SIZE = make_screen_size(size_px=600, aspect_ration=(1+5**0.5)/2)
     FRAMERATE = 60
 
-    SCORE_TO_WIN = 1
+    SCORE_TO_WIN = 10
 
     SCORE_LOCATION = RelVec2(0.45, 0.05)
 
@@ -196,6 +196,9 @@ def main() -> None:
         if start_game_button.get() and game_paused:
             pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE))
 
+        if quit_game_button.get():
+            pygame.event.post(pygame.event.Event(pygame.QUIT))
+
         menu_buttons.update(pygame.mouse.get_pos(), pygame.mouse.get_pressed()[0])
 
         if not game_paused:
@@ -216,10 +219,9 @@ def main() -> None:
             collision_paddle: Paddle = collisions[0]
 
             if collision_paddle is not last_collision_paddle:
-                ball.set_velocity(RelVec2.from_polar((
-                    min(ball.velocity.magnitude() * BallConstants.BOUNCE_SPEED_COEFFICIENT, BallConstants.MAX_VELOCITY),
-                    BOUNCE_ANGLE_FUNCTION(ball, collision_paddle
-                ))))
+                new_velocity_magnitude = min(ball.velocity.magnitude() * BallConstants.BOUNCE_SPEED_COEFFICIENT, BallConstants.MAX_VELOCITY)
+                new_velocity_angle = BOUNCE_ANGLE_FUNCTION(ball, collision_paddle)
+                ball.set_velocity(RelVec2.from_polar((new_velocity_magnitude, new_velocity_angle)))
 
             last_collision_paddle = collision_paddle
         
@@ -258,9 +260,6 @@ def main() -> None:
             start_game_button.set_object("Play Again?")
 
             menu_buttons.add(start_game_button, quit_game_button)
-
-        if quit_game_button.get():
-            pygame.event.post(pygame.event.Event(pygame.QUIT))
 
         left_player_score_font = font.render(str(left_player.score), True, GameConstants.MAP_ITEM_COLOR)
         right_player_score_font = font.render(str(right_player.score), True, GameConstants.MAP_ITEM_COLOR)
