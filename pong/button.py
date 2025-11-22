@@ -8,11 +8,11 @@ class Button(pygame.sprite.Sprite):
     BACKGROUND_COLOR = "black"
     ENABLED_COLOR = (50, 0, 100)
 
-    def __init__(self, screen: pygame.Surface, name: str, position: ScreenRelativeVector2, size: ScreenRelativeVector2) -> None:
+    def __init__(self, screen: pygame.Surface, object, position: ScreenRelativeVector2, size: ScreenRelativeVector2) -> None:
         super().__init__()
 
         self.screen = screen
-        self.name = name
+        self.object = object
         self.position = position
         self.size = size
 
@@ -30,7 +30,7 @@ class Button(pygame.sprite.Sprite):
             image.fill(self.ENABLED_COLOR)
 
         font = pygame.font.Font(None, image.get_height())
-        text_surface = font.render(self.name, True, self.TEXT_COLOR)
+        text_surface = font.render(str(self.object), True, self.TEXT_COLOR)
 
         pygame.draw.rect(image, self.OUTLINE_COLOR, image.get_rect(), 3)
 
@@ -55,11 +55,11 @@ class Button(pygame.sprite.Sprite):
     def add_toggle_listener(self, callback) -> None:
         self.on_toggle.append(callback)
 
-    def get_name(self):
-        return self.name
+    def get_object(self):
+        return self.object
     
-    def set_name(self, name: str) -> None:
-        self.name = name
+    def set_object(self, object) -> None:
+        self.object = object
 
     def toggle(self) -> None:
         self.state = not self.state

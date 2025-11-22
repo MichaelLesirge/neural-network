@@ -70,6 +70,12 @@ class Paddle(pygame.sprite.Sprite):
         
     def get_description(self) -> str:
         return "Default Paddle"
+    
+    def get_name(self) -> str:
+        return "Paddle"
+    
+    def __str__(self):
+        return self.get_name()
 
 class HumanPaddle(Paddle):
     def __init__(self, screen: pygame.Surface, start_position: RelVec2, size: RelVec2, up_key: int, down_key: int) -> None:
@@ -84,11 +90,19 @@ class HumanPaddle(Paddle):
 
     def get_description(self) -> str:
         return f"Player controlled paddle (up: {pygame.key.name(self.up_key).upper()}, down: {pygame.key.name(self.down_key).upper()})"
+    
+    def get_name(self) -> str:
+        return f"{pygame.key.name(self.up_key).title()}/{pygame.key.name(self.down_key).title()} Key"
 
 class BallFollowPaddle(Paddle):
-
     def find_next_move(self, ball: Ball) -> None:
         self.direction = self.position.y - ball.position.y
+
+    def get_description(self) -> str:
+        return "Ball follow paddle"
+    
+    def get_name(self) -> str:
+        return "Follower"
     
 class WallPaddle(Paddle):
     def __init__(self, screen: pygame.Surface, start_position: RelVec2, size: RelVec2) -> None:
@@ -96,6 +110,9 @@ class WallPaddle(Paddle):
 
     def get_description(self):
         return "Wall paddle (does not move)"
+
+    def get_name(self) -> str:
+        return "Wall"
 
 class BallPredictionPaddle(Paddle):
 
@@ -118,6 +135,9 @@ class BallPredictionPaddle(Paddle):
 
     def get_description(self) -> str:
         return "Ball prediction paddle (predicts where the ball will be when it reaches the paddle)"
+
+    def get_name(self) -> str:
+        return "Predictor"
 
 class AIPaddle(Paddle):
  
@@ -179,3 +199,7 @@ class AIPaddle(Paddle):
 
     def get_description(self) -> str:
         return f"AI paddle (model: {self.model_file}, neurons: {sum(layer.weights.shape[1] for layer in self.model.layers if isinstance(layer, nn.layers.Dense))})"
+    
+    def get_name(self) -> str:
+        neurons = sum(layer.weights.shape[1] for layer in self.model.layers if isinstance(layer, nn.layers.Dense))
+        return f"{neurons} Neuron AI"

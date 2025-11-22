@@ -47,6 +47,16 @@ class MenuConstants:
     SCORE_LOCATION = RelVec2(0.45, 0.05)
     VERSUS_LOCATION = RelVec2(0.5, 0.4)
 
+def simple_bounce_angle(ball: Ball, paddle: Paddle) -> float:
+    start_angle = ball.velocity.as_polar()[1]
+    return 180 - start_angle
+
+def advanced_bounce_angle(ball: Ball, paddle: Paddle) -> float:
+    bounce_location = (ball.rect.centery - paddle.rect.centery) / (paddle.rect.height / 2)
+    return (180 if ball.velocity.x > 0 else 0) + bounce_location * 75
+
+BOUNCE_ANGLE_FUNCTION = simple_bounce_angle
+
 def main() -> None:
 
     # Initialization
@@ -64,34 +74,32 @@ def main() -> None:
 
     # Menu elements
     start_game_button = Button(screen, "Start Game", MenuConstants.START_BUTTON_LOCATION, MenuConstants.MENU_BUTTON_SIZE)
-    quit_game_button = Button(screen, "Quit Game", MenuConstants.START_BUTTON_LOCATION - RelVec2(0, 0.15), MenuConstants.MENU_BUTTON_SIZE)
+    quit_game_button = Button(screen, "Quit Game", MenuConstants.START_BUTTON_LOCATION + RelVec2(0, -0.15), MenuConstants.MENU_BUTTON_SIZE)
 
-    left_players: dict[str, Paddle] = {
-        "WASD": HumanPaddle(screen, PaddleConstants.START_LOCATION, PaddleConstants.PADDLE_SIZE, pygame.K_w, pygame.K_s),
-        "Wall": WallPaddle(screen, PaddleConstants.START_LOCATION, PaddleConstants.PADDLE_SIZE),
-        # "Follower": BallFollowPaddle(screen, PaddleConstants.START_LOCATION, PaddleConstants.PADDLE_SIZE),
-        # "Predictor": BallPredictionPaddle(screen, PaddleConstants.START_LOCATION, PaddleConstants.PADDLE_SIZE),
-        "AI (Large)": AIPaddle(screen, PaddleConstants.START_LOCATION, PaddleConstants.PADDLE_SIZE, AIPaddle.DEFAULT_NETWORK),
-        "AI (Small)": AIPaddle(screen, PaddleConstants.START_LOCATION, PaddleConstants.PADDLE_SIZE, AIPaddle.SMALL_NETWORK),
-    }
+    def create_players(left_side: bool) -> list[Paddle]:
+        start_location = PaddleConstants.START_LOCATION if left_side else PaddleConstants.START_LOCATION.mirrored()
+        size = PaddleConstants.PADDLE_SIZE
+        
+        return [
+            HumanPaddle(screen, start_location, size, pygame.K_w if left_side else pygame.K_UP, pygame.K_s if left_side else pygame.K_DOWN),
+            WallPaddle(screen, start_location, size),
+            # "Follower": BallFollowPaddle(screen, start_location, size),
+            # "Predictor": BallPredictionPaddle(screen, start_location, size),
+            AIPaddle(screen, start_location, size, AIPaddle.DEFAULT_NETWORK),
+            AIPaddle(screen, start_location, size, AIPaddle.SMALL_NETWORK),
+        ]
 
-    right_players: dict[str, Paddle] = {
-        "Arrows": HumanPaddle(screen, PaddleConstants.START_LOCATION.mirrored(), PaddleConstants.PADDLE_SIZE, pygame.K_UP, pygame.K_DOWN),
-        "Wall": WallPaddle(screen, PaddleConstants.START_LOCATION.mirrored(), PaddleConstants.PADDLE_SIZE),
-        # "Follower": BallFollowPaddle(screen, PaddleConstants.START_LOCATION.mirrored(), PaddleConstants.PADDLE_SIZE),
-        # "Predictor": BallPredictionPaddle(screen, PaddleConstants.START_LOCATION.mirrored(), PaddleConstants.PADDLE_SIZE),
-        "AI (Large)": AIPaddle(screen, PaddleConstants.START_LOCATION.mirrored(), PaddleConstants.PADDLE_SIZE, AIPaddle.DEFAULT_NETWORK),
-        "AI (Small)": AIPaddle(screen, PaddleConstants.START_LOCATION.mirrored(), PaddleConstants.PADDLE_SIZE, AIPaddle.SMALL_NETWORK),
-    }
+    left_players = create_players(left_side=True)
+    right_players = create_players(left_side=False)
 
     left_buttons = [
-        Button(screen, name, MenuConstants.OPTIONS_LOCATION + RelVec2(0, i * (MenuConstants.BUTTON_SIZE.y + 0.05)), MenuConstants.BUTTON_SIZE)
-        for i, name in enumerate(left_players.keys())
+        Button(screen, player, MenuConstants.OPTIONS_LOCATION + RelVec2(0, i * (MenuConstants.BUTTON_SIZE.y + 0.05)), MenuConstants.BUTTON_SIZE)
+        for i, player in enumerate(left_players)
     ]
 
     right_buttons = [
-        Button(screen, name, MenuConstants.OPTIONS_LOCATION.mirrored() + RelVec2(0, i * (MenuConstants.BUTTON_SIZE.y + 0.05)), MenuConstants.BUTTON_SIZE)
-        for i, name in enumerate(right_players.keys())
+        Button(screen, player, MenuConstants.OPTIONS_LOCATION.mirrored() + RelVec2(0, i * (MenuConstants.BUTTON_SIZE.y + 0.05)), MenuConstants.BUTTON_SIZE)
+        for i, player in enumerate(right_players)
     ]
 
     left_player_chooser = Chooser(left_buttons)
@@ -104,12 +112,12 @@ def main() -> None:
     )
 
     # Game elements
-    left_player = left_players["Wall"]
-    right_player = right_players["Wall"]
+    left_player = WallPaddle(screen, PaddleConstants.START_LOCATION, PaddleConstants.PADDLE_SIZE)
+    right_player = WallPaddle(screen, PaddleConstants.START_LOCATION.mirrored(), PaddleConstants.PADDLE_SIZE)
 
     player_group = pygame.sprite.Group(left_player, right_player)
     
-    ball = Ball(screen, BallConstants.SIZE, BallConstants.MAX_VELOCITY)
+    ball = Ball(screen, BallConstants.SIZE)
     ball_group = pygame.sprite.GroupSingle(ball)
     
     ball.set_position(BallConstants.START_LOCATION)
@@ -121,6 +129,8 @@ def main() -> None:
     has_game_finished = False
 
     game_paused = False
+
+    last_collision_paddle: Paddle | None = None
 
     going = True
 
@@ -138,7 +148,7 @@ def main() -> None:
                     if game_paused:
                         print("Game Paused")
                         menu_buttons.add(start_game_button, quit_game_button)
-                        start_game_button.set_name("Resume Game")
+                        start_game_button.set_object("Resume Game")
                     else:
                         print("Game Resumed")
                         menu_buttons.empty()
@@ -165,8 +175,8 @@ def main() -> None:
             menu_buttons.empty()
             player_group.empty()
 
-            left_player = left_players[left_player_chooser.get()]
-            right_player = right_players[right_player_chooser.get()]
+            left_player = left_player_chooser.get()
+            right_player = right_player_chooser.get()
 
             print(f"Left Player: {left_player.get_description()}")
             print(f"Right Player: {right_player.get_description()}")
@@ -203,20 +213,22 @@ def main() -> None:
         collisions = pygame.sprite.spritecollide(ball, player_group, False)
 
         if collisions:
-            collision_paddle = collisions[0].rect
-            ball_velocity_pixel = (ball.velocity.normalize() * ball.max_velocity).to_pixels(screen).magnitude()
-            if abs(ball.rect.right - collision_paddle.left) < ball_velocity_pixel or abs(ball.rect.left - collision_paddle.right) < ball_velocity_pixel:
-                ball.bounce_x()
-            if abs(ball.rect.top - collision_paddle.bottom) < ball_velocity_pixel or abs(ball.rect.bottom - collision_paddle.top) < ball_velocity_pixel:
-                ball.bounce_y()
+            collision_paddle: Paddle = collisions[0]
 
-            ball.velocity_times(BallConstants.BOUNCE_SPEED_COEFFICIENT)
+            if collision_paddle is not last_collision_paddle:
+                ball.set_velocity(RelVec2.from_polar((
+                    min(ball.velocity.magnitude() * BallConstants.BOUNCE_SPEED_COEFFICIENT, BallConstants.MAX_VELOCITY),
+                    BOUNCE_ANGLE_FUNCTION(ball, collision_paddle
+                ))))
+
+            last_collision_paddle = collision_paddle
         
         if ball.rect.right < screen.get_rect().left and has_game_started:
             # ball went over left side of wall
             ball.set_position(BallConstants.START_LOCATION)
             ball.set_velocity(BallConstants.START_VELOCITY + RelVec2(random.random(), random.random()) / 1000)
             right_player.add_score()
+            last_collision_paddle = None
             print("Right Player Scored")
         
         elif ball.rect.left > screen.get_rect().right and has_game_started:
@@ -224,6 +236,7 @@ def main() -> None:
             ball.set_position(BallConstants.START_LOCATION.mirrored())
             ball.set_velocity((BallConstants.START_VELOCITY + RelVec2(random.random(), random.random()) / 1000).mirrored_velocity())
             left_player.add_score()
+            last_collision_paddle = None
             print("Left Player Scored")
 
         if ball.rect.top < screen.get_rect().top or ball.rect.bottom > screen.get_rect().bottom:
@@ -238,11 +251,11 @@ def main() -> None:
 
             ball_group.empty()
 
-            ball.velocity_times(0)
+            ball.set_velocity(RelVec2(0, 0))
             ball.set_position(RelVec2(0.5, 0.5))
 
             start_game_button.set(False)
-            start_game_button.set_name("Play Again?")
+            start_game_button.set_object("Play Again?")
 
             menu_buttons.add(start_game_button, quit_game_button)
 
