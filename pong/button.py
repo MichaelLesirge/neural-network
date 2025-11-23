@@ -8,13 +8,14 @@ class Button(pygame.sprite.Sprite):
     BACKGROUND_COLOR = "black"
     ENABLED_COLOR = (50, 0, 100)
 
-    def __init__(self, screen: pygame.Surface, object, position: ScreenRelativeVector2, size: ScreenRelativeVector2) -> None:
+    def __init__(self, screen: pygame.Surface, object, position: ScreenRelativeVector2, size: ScreenRelativeVector2, outline_size: int = 3) -> None:
         super().__init__()
 
         self.screen = screen
         self.object = object
         self.position = position
         self.size = size
+        self.outline_size = outline_size
 
         self.state = self.is_pressed = self.is_hovered = False
         
@@ -23,8 +24,11 @@ class Button(pygame.sprite.Sprite):
 
         self.on_toggle = []
 
-    def generate_image(self) -> pygame.Surface:
+    def generate_image(self, sizing_only=False) -> pygame.Surface:
         image = pygame.Surface(self.size.to_pixels(self.screen))
+
+        if sizing_only:
+            return image
 
         if self.get():
             image.fill(self.ENABLED_COLOR)
@@ -32,14 +36,18 @@ class Button(pygame.sprite.Sprite):
         font = pygame.font.Font(None, image.get_height())
         text_surface = font.render(str(self.object), True, self.TEXT_COLOR)
 
-        pygame.draw.rect(image, self.OUTLINE_COLOR, image.get_rect(), 3)
+        pygame.draw.rect(image, self.OUTLINE_COLOR, image.get_rect(), self.outline_size)
 
         image.blit(text_surface, text_surface.get_rect(center=image.get_rect().center))
+
         image = pygame.transform.scale_by(image, 1 + (-0.2 if self.is_pressed else 0) + (0.1 if self.is_hovered else 0))
 
         return image
 
     def update(self, mouse_pos: tuple[int, int], mouse_down: bool = False) -> None:
+        self.image = self.generate_image(sizing_only=True)
+        self.rect = self.image.get_rect(center=self.position.to_pixels(self.screen))
+
         self.is_hovered = self.rect.collidepoint(mouse_pos)
 
         was_clicked = self.is_pressed
@@ -67,6 +75,7 @@ class Button(pygame.sprite.Sprite):
             callback(self)
 
     def set(self, state: bool) -> None:
+        self.is_hovered = self.is_pressed = False
         self.state = state
 
     def get(self) -> bool:

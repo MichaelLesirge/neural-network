@@ -58,6 +58,7 @@ class Paddle(pygame.sprite.Sprite):
     def update(self) -> None:
 
         self.image = pygame.Surface(self.size.to_pixels(self.screen))
+        self.rect = self.image.get_rect(center=self.rect.center)
         self.image.fill(Constants.COLOR)
 
         self.rect.centerx = self.start_position.to_pixels(self.screen).x
@@ -138,6 +139,11 @@ class WallPaddle(Paddle):
 
     def get_name(self) -> str:
         return "Wall"
+    
+    def draw_overlay(self, screen):
+        rect = pygame.Rect(0, 0, self.rect.width * 2, self.rect.height)
+        rect.center = self.rect.center
+        pygame.draw.rect(screen, "red", rect)
 
 class BallPredictionPaddle(Paddle):
 

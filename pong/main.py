@@ -105,10 +105,13 @@ def main() -> None:
     left_player_chooser = Chooser(left_buttons)
     right_player_chooser = Chooser(right_buttons, default_enabled=2)
 
+    overlay_toggle_button = Button(screen, "Overlays", RelVec2(0.5, 0.95), RelVec2(0.1, 0.05), outline_size=1)
+
     menu_buttons = pygame.sprite.Group(
         *left_buttons,
         *right_buttons,
-        start_game_button
+        start_game_button,
+        overlay_toggle_button,
     )
 
     # Game elements
@@ -134,8 +137,6 @@ def main() -> None:
 
     going = True
 
-    show_overlay = False
-
     while going:
 
         for event in pygame.event.get():
@@ -155,11 +156,11 @@ def main() -> None:
                         print("Game Resumed")
                         menu_buttons.empty()
                 if event.key == pygame.K_TAB:
-                    show_overlay = not show_overlay
+                    overlay_toggle_button.set(not overlay_toggle_button.get())
 
         screen.fill(GameConstants.BACKGROUND_COLOR)
     
-        if show_overlay:
+        if overlay_toggle_button.get():
             left_player.draw_overlay(screen)
             right_player.draw_overlay(screen)
 
@@ -200,6 +201,8 @@ def main() -> None:
 
             has_game_started = True
             has_game_finished = False
+
+            menu_buttons.add(overlay_toggle_button)
 
         if start_game_button.get() and game_paused:
             pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE))
