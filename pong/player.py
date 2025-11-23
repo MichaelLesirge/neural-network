@@ -282,7 +282,7 @@ class AIPaddle(Paddle):
 
                     pygame.draw.line(screen, line_color, position, next_position, 1)
 
-                normized_value = np.tanh(neuron)
+                normized_value = np.clip(neuron, -1.0, 1.0)
                 color = (
                     10 if normized_value > 0 else int(255 * abs(normized_value)),
                     10,
