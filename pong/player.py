@@ -1,10 +1,8 @@
 import pathlib
-from re import A
 import sys
 
 import pygame
 import numpy as np
-from pyparsing import null_debug_action
 
 from ball import Ball
 from utils import ScreenRelativeVector2 as RelVec2
