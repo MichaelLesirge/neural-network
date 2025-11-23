@@ -13,7 +13,7 @@ sys.path.append(str(directory.parent))
 import neural_network as nn
 
 class Constants:
-    SPEED = 3
+    SPEED = 0.007
     COLOR = "white"
 
 class Paddle(pygame.sprite.Sprite):
@@ -22,17 +22,17 @@ class Paddle(pygame.sprite.Sprite):
         
         self.screen = screen
 
-        self.start_position = start_position
         self.size = size
         
         self.score = 0
             
+        self.position = start_position
+
         self.image = pygame.Surface(self.size.to_pixels(self.screen))
         self.image.fill(Constants.COLOR)
         
         self.rect = self.image.get_rect()
-                
-        self.rect.center = self.start_position.to_pixels(self.screen)
+        self.rect.center = start_position.to_pixels(self.screen)
 
         self.direction = 0
 
@@ -46,28 +46,24 @@ class Paddle(pygame.sprite.Sprite):
         self.score += 1
                     
     def go_up(self) -> None:
-        self.rect.y -= Constants.SPEED
+        self.position.y -= Constants.SPEED
     
     def go_down(self) -> None:
-        self.rect.y += Constants.SPEED
-    
-    @property
-    def position(self) -> RelVec2:
-        return RelVec2.from_pixels(self.screen, self.rect.center)
+        self.position.y += Constants.SPEED
 
     def update(self) -> None:
-
         self.image = pygame.Surface(self.size.to_pixels(self.screen))
         self.rect = self.image.get_rect(center=self.rect.center)
         self.image.fill(Constants.COLOR)
 
-        self.rect.centerx = self.start_position.to_pixels(self.screen).x
-        self.rect.clamp_ip(self.screen.get_rect())
-        
+        self.rect.center = self.position.to_pixels(self.screen)
+
         if self.direction > 0:
             self.go_up()
         elif self.direction < 0:
             self.go_down()
+
+        self.position.y = np.clip(self.position.y, self.size.y / 2, 1.0 - self.size.y / 2)
         
     def get_description(self) -> str:
         return "Default Paddle"
