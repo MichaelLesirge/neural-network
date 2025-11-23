@@ -126,14 +126,33 @@ def main() -> None:
     ball.set_position(BallConstants.START_LOCATION)
     ball.set_velocity(BallConstants.START_VELOCITY)
 
+    last_collision_paddle: Paddle | None = None
+
+    def handle_collision() -> None:
+        nonlocal last_collision_paddle
+
+        collisions = pygame.sprite.spritecollide(ball, player_group, False)
+
+        if collisions:
+            collision_paddle: Paddle = collisions[0]
+
+            if collision_paddle is not last_collision_paddle:
+                new_velocity_magnitude = min(ball.velocity.magnitude() * BallConstants.BOUNCE_SPEED_COEFFICIENT, BallConstants.MAX_VELOCITY)
+                new_velocity_angle = BOUNCE_ANGLE_FUNCTION(ball, collision_paddle)
+                ball.set_velocity(RelVec2.from_polar((new_velocity_magnitude, new_velocity_angle)))
+
+            last_collision_paddle = collision_paddle
+        
+        return len(collisions) > 0
+
+    ball.set_collision_handler(handle_collision)
+
     # Main loop
 
     has_game_started = False
     has_game_finished = False
 
     game_paused = False
-
-    last_collision_paddle: Paddle | None = None
 
     going = True
 
@@ -224,17 +243,7 @@ def main() -> None:
         left_player.find_next_move(ball)
         right_player.find_next_move(ball)
 
-        collisions = pygame.sprite.spritecollide(ball, player_group, False)
 
-        if collisions:
-            collision_paddle: Paddle = collisions[0]
-
-            if collision_paddle is not last_collision_paddle:
-                new_velocity_magnitude = min(ball.velocity.magnitude() * BallConstants.BOUNCE_SPEED_COEFFICIENT, BallConstants.MAX_VELOCITY)
-                new_velocity_angle = BOUNCE_ANGLE_FUNCTION(ball, collision_paddle)
-                ball.set_velocity(RelVec2.from_polar((new_velocity_magnitude, new_velocity_angle)))
-
-            last_collision_paddle = collision_paddle
         
         if ball.rect.right < screen.get_rect().left and has_game_started:
             # ball went over left side of wall

@@ -13,6 +13,8 @@ class Ball(pygame.sprite.Sprite):
         
         self.rect = self.image.get_rect() 
 
+        self.collision_check_function = lambda: False
+
         self.position = RelVec2()
         self.velocity = RelVec2()
     
@@ -27,9 +29,17 @@ class Ball(pygame.sprite.Sprite):
 
     def bounce_y(self) -> None:
         self.velocity.y = -self.velocity.y
+
+    def set_collision_handler(self, func) -> None:
+        self.collision_check_function = func
     
     def update(self) -> None:
-        self.position += self.velocity
 
-        self.rect.center = self.position.to_pixels(self.screen)
+        subdivisions = int(self.velocity.to_pixels(self.screen).magnitude() // 2) + 1
+        
+        for _ in range(subdivisions):
+            self.position += self.velocity / subdivisions
+            self.rect.center = self.position.to_pixels(self.screen)
+            if self.collision_check_function():
+                break
         
