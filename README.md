@@ -42,6 +42,10 @@ Here are a few projects I have created that make use of the neural network. I th
 <p>This is a demo of the model trained to predict the next character. It was based on a variety of text files I found on the internet, including the Shrek and Bee Movie script, the entirety of the Bible and Harry Potter, all Shakespeare's works, and some other random stuff I found. To interact (as shown in the demo) you start typing out some characters, and it keeps on guessing what will come next until it guesses a new line character (\n) which terminates the message. I am pretty happy it even generates words but it is definitely overfit on the data.</p>
 <img alt="using predict_next_char.py in console GIF" src="https://github.com/user-attachments/assets/0d81e016-1437-4f90-8977-b2fdd4d0897c">
 
+## Pong [pong](https://github.com/MichaelLesirge/neural-network/tree/main/pong)
+<p>This is a demo two competing models playing pong. The models get 6 inputs (paddle x, paddle y, ball x, ball y, ball vx, ball vy) and output either a positive or negative value which determines if the paddle moves up or down. You can pick player types in the start menu. In the neural network overlay, positive is blue and negative is red.</p>
+<img alt="Pong AI vs AI game with overlay" src="https://github.com/user-attachments/assets/e5c9a635-00f8-41f9-acd7-86171f7c09b8">
+
 ## Experiments [random-practice](https://github.com/MichaelLesirge/neural-network/tree/main/random_practice)
 All the things I made to get a better understanding of how neural networks work when I was early in writing my own version. They all have plenty of comments that I made when I was trying to wrap my head around it.
 <img width="1000" alt="image" src="https://github.com/MichaelLesirge/neural-network/blob/main/random_practice/one_neuron_back_prop.gif" />
