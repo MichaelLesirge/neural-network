@@ -246,7 +246,7 @@ class AIPaddle(Paddle):
         neurons = sum(layer.weights.shape[1] for layer in self.model.layers if isinstance(layer, nn.layers.Dense))
         return f"{neurons} Neuron AI"
     
-    def draw_network(self, screen: pygame.Surface) -> None:
+    def draw_network(self, screen: pygame.Surface, flipped: bool) -> None:
         data = []
         kept_layers = []
         for input, layer in zip(self.inputs, [None] + self.model.layers, strict=True):
@@ -260,7 +260,11 @@ class AIPaddle(Paddle):
         def get_position(i: int, j: int) -> RelVec2:
             x = (i + 1) / (width + 1)
             y = 0.5 + (j - (len(data[i]) - 1) / 2) / height
+            if not flipped:
+                x = 1 - x
             return RelVec2(x, y)
+
+        inputs = ["Paddle X", "Paddle Y", "Ball X", "Ball Y", "Ball VX", "Ball VY"]
 
         for i, layer in enumerate(data):
             for j, neuron in enumerate(layer):
@@ -294,7 +298,23 @@ class AIPaddle(Paddle):
                     255 if normized_value > 0 else 0,
                 )
 
-                neruon_radius = 10
+                neruon_radius = 0.02 * min(screen.get_width(), screen.get_height())
+
+                if i == 0 or i == len(data) - 1:
+                    if i == 0:
+                        neuron_name = inputs[j] if j < len(inputs) else f"Input {j}"
+                    else:
+                        neuron_name = "Λ" if normized_value > 0 else "V"
+                    font = pygame.font.Font(None, 15)
+                    text = font.render(neuron_name, True, (100, 100, 100))
+                    text_rect = text.get_rect()
+                    if flipped ^ (i == 0):
+                        text_rect.midleft = (position[0] + neruon_radius * 1.5, position[1])
+                    else:
+                        text_rect.midright = (position[0] - neruon_radius * 1.5, position[1])
+
+                    screen.blit(text, text_rect)
+
                 pygame.draw.circle(screen, (30, 30, 30), position, neruon_radius + 1)
                 pygame.draw.circle(screen, color, position, neruon_radius)
                 pygame.draw.circle(screen, inner_color, position, interplate(1, neruon_radius, abs(normized_value)))
@@ -305,9 +325,9 @@ class AIPaddle(Paddle):
         rect.center = (screen.get_width() * (0.75 if flipped else 0.25), screen.get_height() * 0.5)
 
         newwork_surface = pygame.Surface(rect.size)
-        self.draw_network(newwork_surface)
+        self.draw_network(newwork_surface, flipped)
 
-        self.screen.blit(pygame.transform.flip(newwork_surface, not flipped, False), rect)
+        self.screen.blit(newwork_surface, rect)
 
 
 def interplate(a: float, b: float, t: float) -> float:
