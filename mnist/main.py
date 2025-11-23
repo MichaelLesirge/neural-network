@@ -3,6 +3,8 @@ print("Loading modules...")
 import pathlib
 import sys
 
+from matplotlib.pylab import f
+
 directory = pathlib.Path(__file__).parent.absolute()
 sys.path.append(str(directory.parent))
 
@@ -103,13 +105,6 @@ except FileNotFoundError:
 
     # --- test model on test data ---
 
-    test_output = network.compute(X_test)
-
-    predictions = test_output.argmax(1)
-    accuracy = np.mean(predictions == y_test)
-    
-    print(f"{accuracy:%} accurate on test data")
-
     # print("\nDisplaying tests...")
     # for num in range(0, n_outputs):
     #     index = np.random.choice(np.where(y_test == num)[0])
@@ -122,6 +117,8 @@ except FileNotFoundError:
     #         f"Test Data Example {num}:\n{guess=}, confidence={output[guess]:.2%}, correct={guess==num}")
     #     plt.imshow(X_test[index], cmap="Greys")
     #     plt.show()
+else:
+    print("Loaded saved network.")
 
 # --- create drawing GUI ---
 
@@ -135,12 +132,20 @@ def draw_circle(array, row, col, value, radius=10, *, _pens={}) -> None:
         circle = np.sqrt((x - radius)**2 + (y - radius)**2) / np.sqrt(2 * radius**2)
         _pens[radius] = (1 - circle) * 255
     
-    # array[row - radius:row + radius + 1, col - radius:col + radius + 1] = np.clip(
-    #         array[row - radius:row + radius + 1, col - radius:col + radius + 1] + 
-    #         _pens[radius].astype(array.dtype) * (1 - value), 0, 255)
-    array[row - radius:row + radius + 1, col - radius:col + radius + 1] = np.maximum(
-            array[row - radius:row + radius + 1, col - radius:col + radius + 1],
-            _pens[radius].astype(array.dtype) * (1 - value))
+    row_start = max(0, row - radius)
+    row_end = min(array.shape[0], row + radius + 1)
+    col_start = max(0, col - radius)
+    col_end = min(array.shape[1], col + radius + 1)
+    
+    pen_row_start = row_start - (row - radius)
+    pen_row_end = pen_row_start + (row_end - row_start)
+    pen_col_start = col_start - (col - radius)
+    pen_col_end = pen_col_start + (col_end - col_start)
+    
+    array[row_start:row_end, col_start:col_end] = np.maximum(
+        array[row_start:row_end, col_start:col_end],
+        _pens[radius][pen_row_start:pen_row_end, pen_col_start:pen_col_end].astype(array.dtype) * (1 - value)
+    )
 
 
 def draw_line(array: np.ndarray, row1: int, col1: int, row2: int, col2: int):
@@ -254,13 +259,12 @@ class DrawingDisplay:
         plt.show()
 
     def place_buttons(self) -> None:
-        button_canvas = tk.Canvas(self.canvas)
-        button_canvas.place(in_=self.canvas, relx=0.0, rely=1.0)
+        lower_button_canvas = tk.Canvas(self.canvas)
+        lower_button_canvas.place(in_=self.canvas, relx=0.0, rely=1.0)
 
         for button in self.buttons:
-            button.pack(in_=button_canvas, side="left", padx=5, pady=5)
-
-
+            button.pack(in_=lower_button_canvas, side="left", padx=5, pady=5)
+        
 class NetworkInfoDisplay:
     def __init__(self, canvas: tk.Canvas, n_neurons: int) -> None:
         self.canvas = canvas
