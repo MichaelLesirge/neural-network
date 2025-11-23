@@ -45,7 +45,6 @@ class MenuConstants:
     MENU_BUTTON_SIZE = RelVec2(0.4, 0.1)
 
     SCORE_LOCATION = RelVec2(0.45, 0.05)
-    VERSUS_LOCATION = RelVec2(0.5, 0.4)
 
 def simple_bounce_angle(ball: Ball, paddle: Paddle) -> float:
     start_angle = ball.velocity.as_polar()[1]
@@ -191,7 +190,11 @@ def main() -> None:
         
         if not has_game_started and not has_game_finished:
             versus_text = font.render("VS", True, GameConstants.MAP_ITEM_COLOR, GameConstants.BACKGROUND_COLOR)
-            screen.blit(versus_text, versus_text.get_rect(center=MenuConstants.VERSUS_LOCATION.to_pixels(screen)))
+            screen.blit(versus_text, versus_text.get_rect(center=RelVec2(0.5, 0.4).to_pixels(screen)))
+
+        if game_paused:
+            pause_text = font.render("Game Paused", True, GameConstants.MAP_ITEM_COLOR, GameConstants.BACKGROUND_COLOR)
+            screen.blit(pause_text, pause_text.get_rect(center=RelVec2(0.5, 0.3).to_pixels(screen)))
 
         if has_game_finished:
             win_text = "Left Player Wins!" if left_player.score >= GameConstants.SCORE_TO_WIN else "Right Player Wins!"
