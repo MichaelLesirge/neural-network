@@ -83,8 +83,8 @@ def main() -> None:
         return [
             HumanPaddle(screen, start_location, size, pygame.K_w if left_side else pygame.K_UP, pygame.K_s if left_side else pygame.K_DOWN),
             WallPaddle(screen, start_location, size),
-            # "Follower": BallFollowPaddle(screen, start_location, size),
-            # "Predictor": BallPredictionPaddle(screen, start_location, size),
+            # BallFollowPaddle(screen, start_location, size),
+            # BallPredictionPaddle(screen, start_location, size),
             AIPaddle(screen, start_location, size, AIPaddle.DEFAULT_NETWORK),
             AIPaddle(screen, start_location, size, AIPaddle.SMALL_NETWORK),
         ]
@@ -103,7 +103,7 @@ def main() -> None:
     ]
 
     left_player_chooser = Chooser(left_buttons)
-    right_player_chooser = Chooser(right_buttons)
+    right_player_chooser = Chooser(right_buttons, default_enabled=2)
 
     menu_buttons = pygame.sprite.Group(
         *left_buttons,
@@ -134,6 +134,8 @@ def main() -> None:
 
     going = True
 
+    show_overlay = False
+
     while going:
 
         for event in pygame.event.get():
@@ -152,9 +154,15 @@ def main() -> None:
                     else:
                         print("Game Resumed")
                         menu_buttons.empty()
+                if event.key == pygame.K_TAB:
+                    show_overlay = not show_overlay
 
         screen.fill(GameConstants.BACKGROUND_COLOR)
     
+        if show_overlay:
+            left_player.draw_overlay(screen)
+            right_player.draw_overlay(screen)
+
         pygame.draw.line(screen, GameConstants.MAP_ITEM_COLOR, 
             (screen.get_rect().centerx, 0), 
             (screen.get_rect().centerx, screen.get_rect().bottom), 
