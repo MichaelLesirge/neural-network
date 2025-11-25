@@ -177,6 +177,8 @@ class AIPaddle(Paddle):
     X_INPUT = 6
     Y_OUTPUT = 1
 
+    INPUTS = ("Paddle X", "Paddle Y", "Ball X", "Ball Y", "Ball VX", "Ball VY")
+
     DEFAULT_NETWORK = nn.network.Network(
         [
             nn.layers.Dense(X_INPUT, 16),
@@ -206,6 +208,8 @@ class AIPaddle(Paddle):
         SMALL_NETWORK: str(NETWORK_FOLDER / "small"),
     }
 
+    OUTPUT_THRESHOLD = 0.05
+
     def __init__(self, screen: pygame.Surface, start_position: RelVec2, size: RelVec2, model: nn.network.Network = DEFAULT_NETWORK) -> None:
         super().__init__(screen, start_position, size)
 
@@ -234,6 +238,9 @@ class AIPaddle(Paddle):
             self.inputs.append(layer.forward(self.inputs[-1]))
 
         self.direction = self.inputs[-1][0]
+        
+        if abs(self.direction) < self.OUTPUT_THRESHOLD:
+            self.direction = 0.0
 
     def get_description(self) -> str:
         return f"AI paddle (model: {self.model_file}, neurons: {sum(layer.weights.shape[1] for layer in self.model.layers if isinstance(layer, nn.layers.Dense))})"
@@ -259,8 +266,6 @@ class AIPaddle(Paddle):
             if not flipped:
                 x = 1 - x
             return RelVec2(x, y)
-
-        inputs = ["Paddle X", "Paddle Y", "Ball X", "Ball Y", "Ball VX", "Ball VY"]
 
         for i, layer in enumerate(data):
             for j, neuron in enumerate(layer):
@@ -296,9 +301,9 @@ class AIPaddle(Paddle):
 
                 neruon_radius = 0.02 * min(screen.get_width(), screen.get_height())
 
-                if i == 0 or i == len(data) - 1:
+                if i == 0 or (i == len(data) - 1 and abs(neuron) > self.OUTPUT_THRESHOLD):
                     if i == 0:
-                        neuron_name = inputs[j] if j < len(inputs) else f"Input {j}"
+                        neuron_name = self.INPUTS[j]
                     else:
                         neuron_name = "Λ" if normized_value > 0 else "V"
                     font = pygame.font.Font(None, 15)
