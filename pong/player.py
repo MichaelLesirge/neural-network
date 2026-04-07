@@ -221,7 +221,7 @@ class AIPaddle(Paddle):
         else:
             print("Warning: Model not recognized, not loading any saved weights.")
 
-        self.inputs = []
+        self.layer_activations = []
     
     @staticmethod
     def inputs_to_array(paddle: "Paddle", ball: Ball) -> np.ndarray:
@@ -232,12 +232,12 @@ class AIPaddle(Paddle):
         ])
             
     def find_next_move(self, ball: Ball) -> None:
-        self.inputs = [self.inputs_to_array(self, ball).reshape(1, -1)]
+        self.layer_activations = [self.inputs_to_array(self, ball).reshape(1, -1)]
 
         for layer in self.model.layers:
-            self.inputs.append(layer.forward(self.inputs[-1]))
+            self.layer_activations.append(layer.forward(self.layer_activations[-1]))
 
-        self.direction = self.inputs[-1][0]
+        self.direction = self.layer_activations[-1][0]
         
         if abs(self.direction) < self.OUTPUT_THRESHOLD:
             self.direction = 0.0
@@ -250,44 +250,48 @@ class AIPaddle(Paddle):
         return f"{neurons} Neuron AI"
     
     def draw_network(self, screen: pygame.Surface, flipped: bool) -> None:
-        data = []
-        kept_layers = []
-        for input, layer in zip(self.inputs, [None] + self.model.layers, strict=True):
+        dense_layers_actations: list[np.ndarray] = []
+        dense_layers: list[nn.layers.Dense] = []
+        for layer_activations, layer in zip(self.layer_activations, [None] + self.model.layers, strict=True):
             if isinstance(layer, nn.layers.Dense) or layer is None:
-                data.append(input[0])
-                kept_layers.append(layer)
+                dense_layers_actations.append(layer_activations[0])
+                dense_layers.append(layer)
 
-        width = len(data)
-        height = max(len(layer) for layer in data)
+        width = len(dense_layers_actations)
+        height = max(len(activation) for activation in dense_layers_actations)
 
-        def get_position(i: int, j: int) -> RelVec2:
+        def get_neuron_position(i: int, j: int) -> RelVec2:
             x = (i + 1) / (width + 1)
-            y = 0.5 + (j - (len(data[i]) - 1) / 2) / height
+            y = 0.5 + (j - (len(dense_layers_actations[i]) - 1) / 2) / height
             if not flipped:
                 x = 1 - x
             return RelVec2(x, y)
+        
+        # print("Network")
+        for i, layer_activations in enumerate(dense_layers_actations):
+            # print("\tLayer")
+            for j, neuron_activation in enumerate(layer_activations):
+                # print("\t\tNeuron")
 
-        for i, layer in enumerate(data):
-            for j, neuron in enumerate(layer):
+                position = get_neuron_position(i, j).to_pixels(screen)
 
-                position = get_position(i, j).to_pixels(screen)
+                for k, next_neuron_activation in enumerate(dense_layers_actations[i + 1] if i + 1 < width else []):
+                    next_position = get_neuron_position(i + 1, k).to_pixels(screen)
 
-                for k, next_neuron in enumerate(data[i + 1] if i + 1 < len(data) else []):
-                    next_position = get_position(i + 1, k).to_pixels(screen)
+                    weight = abs(dense_layers[i + 1].weights[j, k])
+                    max_layer_weight = np.max(np.abs(dense_layers[i + 1].weights))
 
-                    weight = abs(kept_layers[i + 1].weights[j, k] if isinstance(kept_layers[i + 1], nn.layers.Dense) else 0.0)
-                    max_weight = max(kept_layers[i + 1].weights.flatten(), default=0.0) if isinstance(kept_layers[i + 1], nn.layers.Dense) else 0.0
+                    normized_weight = weight / max_layer_weight
 
-                    normized_weight = weight / max_weight if max_weight != 0 else 0
                     line_color = (
                         100 * normized_weight,
-                        100 * normized_weight,
+                        101 * normized_weight,
                         100 * normized_weight
                     )
 
                     pygame.draw.line(screen, line_color, position, next_position, 1)
 
-                normized_value = np.clip(neuron, -1.0, 1.0)
+                normized_value = np.clip(neuron_activation, -1.0, 1.0)
                 color = (
                     10 if normized_value > 0 else int(255 * abs(normized_value)),
                     10,
@@ -301,7 +305,7 @@ class AIPaddle(Paddle):
 
                 neruon_radius = 0.02 * min(screen.get_width(), screen.get_height())
 
-                if i == 0 or (i == len(data) - 1 and abs(neuron) > self.OUTPUT_THRESHOLD):
+                if i == 0 or (i == len(dense_layers_actations) - 1 and abs(neuron_activation) > self.OUTPUT_THRESHOLD):
                     if i == 0:
                         neuron_name = self.INPUTS[j]
                     else:
