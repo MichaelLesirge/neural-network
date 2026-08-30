@@ -1,9 +1,8 @@
 import pathlib
 import sys
 
-import pygame
 import numpy as np
-
+import pygame
 from ball import Ball
 from utils import ScreenRelativeVector2 as RelVec2
 
@@ -12,25 +11,29 @@ sys.path.append(str(directory.parent))
 
 import neural_network as nn
 
+DIRECTORY = pathlib.Path(__file__).parent.absolute()
+
+
 class Constants:
     SPEED = 0.007
     COLOR = "white"
 
+
 class Paddle(pygame.sprite.Sprite):
     def __init__(self, screen: pygame.Surface, start_position: RelVec2, size: RelVec2) -> None:
         super().__init__()
-        
+
         self.screen = screen
 
         self.size = size
-        
+
         self.score = 0
-            
+
         self.position = start_position
 
         self.image = pygame.Surface(self.size.to_pixels(self.screen))
         self.image.fill(Constants.COLOR)
-        
+
         self.rect = self.image.get_rect()
         self.rect.center = start_position.to_pixels(self.screen)
 
@@ -44,10 +47,10 @@ class Paddle(pygame.sprite.Sprite):
 
     def add_score(self) -> None:
         self.score += 1
-                    
+
     def go_up(self) -> None:
         self.position.y -= Constants.SPEED
-    
+
     def go_down(self) -> None:
         self.position.y += Constants.SPEED
 
@@ -64,23 +67,24 @@ class Paddle(pygame.sprite.Sprite):
             self.go_down()
 
         self.position.y = np.clip(self.position.y, self.size.y / 2, 1.0 - self.size.y / 2)
-        
+
     def get_description(self) -> str:
         return "Default Paddle"
-    
+
     def get_name(self) -> str:
         return "Paddle"
-    
+
     def draw_overlay(self, screen: pygame.Surface) -> None:
         pass
-    
+
     def __str__(self):
         return self.get_name()
+
 
 class HumanPaddle(Paddle):
     def __init__(self, screen: pygame.Surface, start_position: RelVec2, size: RelVec2, up_key: int, down_key: int) -> None:
         super().__init__(screen, start_position, size)
-            
+
         self.up_key = up_key
         self.down_key = down_key
 
@@ -89,7 +93,7 @@ class HumanPaddle(Paddle):
 
         self.up_key_pressed = False
         self.down_key_pressed = False
-    
+
     def find_next_move(self, ball):
         keys = pygame.key.get_pressed()
         self.up_key_pressed = keys[self.up_key]
@@ -98,10 +102,10 @@ class HumanPaddle(Paddle):
 
     def get_description(self) -> str:
         return f"Player controlled paddle (up: {self.up_key_name}, down: {self.down_key_name})"
-    
+
     def get_name(self) -> str:
         return f"{self.up_key_name.title()}/{self.down_key_name.title()} Key"
-    
+
     def draw_overlay(self, screen: pygame.Surface) -> None:
         font = pygame.font.Font(None, 24)
 
@@ -122,10 +126,11 @@ class BallFollowPaddle(Paddle):
 
     def get_description(self) -> str:
         return "Ball follow paddle"
-    
+
     def get_name(self) -> str:
         return "Follower"
-    
+
+
 class WallPaddle(Paddle):
     def __init__(self, screen: pygame.Surface, start_position: RelVec2, size: RelVec2) -> None:
         super().__init__(screen, start_position, RelVec2(size.x, 1.0))
@@ -135,21 +140,21 @@ class WallPaddle(Paddle):
 
     def get_name(self) -> str:
         return "Wall"
-    
+
     def draw_overlay(self, screen):
         rect = pygame.Rect(0, 0, self.rect.width * 2, self.rect.height)
         rect.center = self.rect.center
         pygame.draw.rect(screen, "red", rect)
 
-class BallPredictionPaddle(Paddle):
 
+class BallPredictionPaddle(Paddle):
     @staticmethod
     def determine_direction(paddle_x, paddle_y, ball_x, ball_y, ball_vx, ball_vy, handle_bounces: bool = True) -> float:
         if ball_vx == 0:
             return paddle_y - ball_y
         time_to_reach_paddle = abs((paddle_x - ball_x) / ball_vx)
         predicted_y = ball_y + ball_vy * time_to_reach_paddle
-        
+
         predicted_y = predicted_y % 2.0
         if predicted_y > 1.0 and handle_bounces:
             predicted_y = 2.0 - predicted_y
@@ -165,15 +170,15 @@ class BallPredictionPaddle(Paddle):
 
     def get_name(self) -> str:
         return "Predictor"
-    
+
     def draw_overlay(self, screen):
         rect = pygame.Rect(0, 0, self.rect.width * 2, self.rect.width)
         setpoint = self.position.y - self.direction
         rect.center = RelVec2(self.position.x, setpoint).to_pixels(screen)
         pygame.draw.rect(screen, "green", rect)
 
+
 class AIPaddle(Paddle):
- 
     X_INPUT = 6
     Y_OUTPUT = 1
 
@@ -187,9 +192,9 @@ class AIPaddle(Paddle):
             nn.activations.Tanh(),
             nn.layers.Dense(8, Y_OUTPUT),
         ],
-        loss=nn.losses.MSE()
+        loss=nn.losses.MSE(),
     )
-    
+
     SMALL_NETWORK = nn.network.Network(
         [
             nn.layers.Dense(X_INPUT, 4),
@@ -198,10 +203,10 @@ class AIPaddle(Paddle):
             nn.activations.Tanh(),
             nn.layers.Dense(4, Y_OUTPUT),
         ],
-        loss=nn.losses.MSE()
+        loss=nn.losses.MSE(),
     )
 
-    NETWORK_FOLDER = directory / "models"
+    NETWORK_FOLDER = DIRECTORY / "models"
 
     MODEL_SAVE_FILES = {
         DEFAULT_NETWORK: str(NETWORK_FOLDER / "default"),
@@ -222,15 +227,11 @@ class AIPaddle(Paddle):
             print("Warning: Model not recognized, not loading any saved weights.")
 
         self.layer_activations = []
-    
+
     @staticmethod
     def inputs_to_array(paddle: "Paddle", ball: Ball) -> np.ndarray:
-        return np.array([   
-            *paddle.position.xy,
-            *ball.position.xy,
-            *ball.velocity.xy
-        ])
-            
+        return np.array([*paddle.position.xy, *ball.position.xy, *ball.velocity.xy])
+
     def find_next_move(self, ball: Ball) -> None:
         self.layer_activations = [self.inputs_to_array(self, ball).reshape(1, -1)]
 
@@ -238,102 +239,96 @@ class AIPaddle(Paddle):
             self.layer_activations.append(layer.forward(self.layer_activations[-1]))
 
         self.direction = self.layer_activations[-1][0]
-        
+
         if abs(self.direction) < self.OUTPUT_THRESHOLD:
             self.direction = 0.0
 
     def get_description(self) -> str:
         return f"AI paddle (model: {self.model_file}, neurons: {sum(layer.weights.shape[1] for layer in self.model.layers if isinstance(layer, nn.layers.Dense))})"
-    
+
     def get_name(self) -> str:
         neurons = sum(layer.weights.shape[1] for layer in self.model.layers if isinstance(layer, nn.layers.Dense))
         return f"{neurons} Neuron AI"
-    
+
     def draw_network(self, screen: pygame.Surface, flipped: bool) -> None:
-        dense_layers_actations: list[np.ndarray] = []
+        dense_layers_activations: list[np.ndarray] = []
         dense_layers: list[nn.layers.Dense] = []
         for layer_activations, layer in zip(self.layer_activations, [None] + self.model.layers, strict=True):
             if isinstance(layer, nn.layers.Dense) or layer is None:
-                dense_layers_actations.append(layer_activations[0])
+                dense_layers_activations.append(layer_activations[0])
                 dense_layers.append(layer)
 
-        width = len(dense_layers_actations)
-        height = max(len(activation) for activation in dense_layers_actations)
+        width = len(dense_layers_activations)
+        height = max(len(activation) for activation in dense_layers_activations)
 
         def get_neuron_position(i: int, j: int) -> RelVec2:
             x = (i + 1) / (width + 1)
-            y = 0.5 + (j - (len(dense_layers_actations[i]) - 1) / 2) / height
+            y = 0.5 + (j - (len(dense_layers_activations[i]) - 1) / 2) / height
             if not flipped:
                 x = 1 - x
             return RelVec2(x, y)
-        
+
         # print("Network")
-        for i, layer_activations in enumerate(dense_layers_actations):
+        for i, layer_activations in enumerate(dense_layers_activations):
             # print("\tLayer")
             for j, neuron_activation in enumerate(layer_activations):
                 # print("\t\tNeuron")
 
                 position = get_neuron_position(i, j).to_pixels(screen)
 
-                for k, next_neuron_activation in enumerate(dense_layers_actations[i + 1] if i + 1 < width else []):
+                for k, next_neuron_activation in enumerate(dense_layers_activations[i + 1] if i + 1 < width else []):
                     next_position = get_neuron_position(i + 1, k).to_pixels(screen)
 
                     weight = abs(dense_layers[i + 1].weights[j, k])
                     max_layer_weight = np.max(np.abs(dense_layers[i + 1].weights))
 
-                    normized_weight = weight / max_layer_weight
+                    normalized_weight = weight / max_layer_weight
 
-                    line_color = (
-                        100 * normized_weight,
-                        101 * normized_weight,
-                        100 * normized_weight
-                    )
+                    line_color = (110 * normalized_weight, 125 * normalized_weight, 115 * normalized_weight)
 
                     pygame.draw.line(screen, line_color, position, next_position, 1)
 
-                normized_value = np.clip(neuron_activation, -1.0, 1.0)
+                normalized_activation_value = np.clip(neuron_activation, -1.0, 1.0)
                 color = (
-                    10 if normized_value > 0 else int(255 * abs(normized_value)),
+                    10 if normalized_activation_value > 0 else int(255 * abs(normalized_activation_value)),
                     10,
-                    10 if normized_value < 0 else int(255 * abs(normized_value)),
+                    10 if normalized_activation_value < 0 else int(255 * abs(normalized_activation_value)),
                 )
                 inner_color = (
-                    255 if normized_value < 0 else 0,
+                    255 if normalized_activation_value < 0 else 0,
                     0,
-                    255 if normized_value > 0 else 0,
+                    255 if normalized_activation_value > 0 else 0,
                 )
 
-                neruon_radius = 0.02 * min(screen.get_width(), screen.get_height())
+                neuron_radius = 0.02 * min(screen.get_width(), screen.get_height())
 
-                if i == 0 or (i == len(dense_layers_actations) - 1 and abs(neuron_activation) > self.OUTPUT_THRESHOLD):
-                    if i == 0:
-                        neuron_name = self.INPUTS[j]
-                    else:
-                        neuron_name = "Λ" if normized_value > 0 else "V"
+                if i == 0 or (i == len(dense_layers_activations) - 1 and abs(neuron_activation) > self.OUTPUT_THRESHOLD):
+                    direction_arrow = "Λ" if normalized_activation_value > 0 else "V"
+                    neuron_name = self.INPUTS[j] if i == 0 else direction_arrow
                     font = pygame.font.Font(None, 15)
                     text = font.render(neuron_name, True, (100, 100, 100))
                     text_rect = text.get_rect()
                     if flipped ^ (i == 0):
-                        text_rect.midleft = (position[0] + neruon_radius * 1.5, position[1])
+                        text_rect.midleft = (position[0] + neuron_radius * 1.5, position[1])
                     else:
-                        text_rect.midright = (position[0] - neruon_radius * 1.5, position[1])
+                        text_rect.midright = (position[0] - neuron_radius * 1.5, position[1])
 
                     screen.blit(text, text_rect)
 
-                pygame.draw.circle(screen, (30, 30, 30), position, neruon_radius + 1)
-                pygame.draw.circle(screen, color, position, neruon_radius)
-                pygame.draw.circle(screen, inner_color, position, interplate(1, neruon_radius, abs(normized_value)))
+                pygame.draw.circle(screen, (30, 30, 30), position, neuron_radius + 1)
+                pygame.draw.circle(screen, color, position, neuron_radius)
+                pygame.draw.circle(screen, inner_color, position, interpolate(1, neuron_radius, abs(normalized_activation_value)))
 
     def draw_overlay(self, screen: pygame.Surface) -> None:
         rect = pygame.Rect(0, 0, screen.get_width() * 0.5, screen.get_height() * 0.8)
         flipped = self.rect.centerx > screen.get_width() / 2
         rect.center = (screen.get_width() * (0.75 if flipped else 0.25), screen.get_height() * 0.5)
 
-        newwork_surface = pygame.Surface(rect.size)
-        self.draw_network(newwork_surface, flipped)
+        network_surface = pygame.Surface(rect.size)
+        self.draw_network(network_surface, flipped)
 
-        self.screen.blit(newwork_surface, rect)
+        self.screen.blit(network_surface, rect)
 
 
-def interplate(a: float, b: float, t: float) -> float:
+def interpolate(a: float, b: float, t: float) -> float:
     return a + (b - a) * t

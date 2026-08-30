@@ -1,6 +1,6 @@
 import pygame
-
 from utils import ScreenRelativeVector2
+
 
 class Button(pygame.sprite.Sprite):
     TEXT_COLOR = "white"
@@ -18,7 +18,7 @@ class Button(pygame.sprite.Sprite):
         self.outline_size = outline_size
 
         self.state = self.is_pressed = self.is_hovered = False
-        
+
         self.image = self.generate_image()
         self.rect = self.image.get_rect(center=self.position.to_pixels(self.screen))
 
@@ -56,7 +56,7 @@ class Button(pygame.sprite.Sprite):
         # Detect button release
         if was_clicked and not self.is_pressed and self.is_hovered:
             self.toggle()
-        
+
         self.image = self.generate_image()
         self.rect = self.image.get_rect(center=self.position.to_pixels(self.screen))
 
@@ -65,7 +65,7 @@ class Button(pygame.sprite.Sprite):
 
     def get_object(self):
         return self.object
-    
+
     def set_object(self, object) -> None:
         self.object = object
 

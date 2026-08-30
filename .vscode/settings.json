@@ -8,7 +8,10 @@
         }
     },
     "cSpell.words": [
-        "cooldown",
-        "Hitboxes"
+        "midright",
+        "midleft",
+        "centerx",
+        "centery",
+        "blit"
     ]
 }
