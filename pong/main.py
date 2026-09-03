@@ -142,9 +142,11 @@ def main() -> None:
         collided = pygame.sprite.collide_rect(ball, collision_paddle)
 
         if collided:
+            vec = RelVec2()
             new_velocity_magnitude = min(ball.velocity.magnitude() * BallConstants.BOUNCE_SPEED_COEFFICIENT, BallConstants.MAX_VELOCITY)
             new_velocity_angle = BOUNCE_ANGLE_FUNCTION(ball, collision_paddle)
-            ball.set_velocity(RelVec2.from_polar((new_velocity_magnitude, new_velocity_angle)))
+            vec.from_polar((new_velocity_magnitude, new_velocity_angle))
+            ball.set_velocity(vec)
 
         return collided
 
